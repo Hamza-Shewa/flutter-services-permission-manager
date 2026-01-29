@@ -1,0 +1,3103 @@
+{
+  "Other": [
+    {
+      "permission": "ACCEPT_HANDOVER",
+      "description": "Allows a calling app to continue a call which was started in another app. An example is a video calling app that wants to continue a voice call on the user's mobile network.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.ACCEPT_HANDOVER",
+      "category": "Other",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "ACCESS_CHECKIN_PROPERTIES",
+      "description": "Allows read/write access to the \"properties\" table in the checkin database, to change values that get uploaded.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.ACCESS_CHECKIN_PROPERTIES",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_APP_FUNCTION_SERVICE",
+      "description": "Must be required by an AppFunctionService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_APP_FUNCTION_SERVICE",
+      "category": "Other",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_AUTOFILL_SERVICE",
+      "description": "Must be required by a AutofillService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_AUTOFILL_SERVICE",
+      "category": "Other",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_CARRIER_MESSAGING_CLIENT_SERVICE",
+      "description": "A subclass of CarrierMessagingClientService must be protected with this permission.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_CARRIER_MESSAGING_CLIENT_SERVICE",
+      "category": "Other",
+      "apiLevel": "22",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_CARRIER_MESSAGING_SERVICE",
+      "description": "",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BIND_CARRIER_MESSAGING_SERVICE",
+      "category": "Other",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_CARRIER_SERVICES",
+      "description": "The system process that is allowed to bind to services in carrier apps will have this permission. Carrier apps should use this permission to protect their services that only the system is allowed to bind to.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_CARRIER_SERVICES",
+      "category": "Other",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_CHOOSER_TARGET_SERVICE",
+      "description": "",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_CHOOSER_TARGET_SERVICE",
+      "category": "Other",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_COMPANION_DEVICE_SERVICE",
+      "description": "Must be required by any CompanionDeviceServices to ensure that only the system can bind to it.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BIND_COMPANION_DEVICE_SERVICE",
+      "category": "Other",
+      "apiLevel": "24",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_CONDITION_PROVIDER_SERVICE",
+      "description": "Must be required by a ConditionProviderService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_CONDITION_PROVIDER_SERVICE",
+      "category": "Other",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_CONTROLS",
+      "description": "Allows SystemUI to request third party controls.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BIND_CONTROLS",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_DREAM_SERVICE",
+      "description": "Must be required by an DreamService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_DREAM_SERVICE",
+      "category": "Other",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_TEXT_SERVICE",
+      "description": "Must be required by a TextService (e.g. SpellCheckerService) to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_TEXT_SERVICE",
+      "category": "Other",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_TV_AD_SERVICE",
+      "description": "Must be required by a android.media.tv.ad.TvAdService to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_TV_AD_SERVICE",
+      "category": "Other",
+      "apiLevel": "21",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_TV_INPUT",
+      "description": "Must be required by a TvInputService to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_TV_INPUT",
+      "category": "Other",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_TV_INTERACTIVE_APP",
+      "description": "Must be required by a TvInteractiveAppService to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_TV_INTERACTIVE_APP",
+      "category": "Other",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_VPN_SERVICE",
+      "description": "Must be required by a VpnService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_VPN_SERVICE",
+      "category": "Other",
+      "apiLevel": "24",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_VR_LISTENER_SERVICE",
+      "description": "Must be required by an VrListenerService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_VR_LISTENER_SERVICE",
+      "category": "Other",
+      "apiLevel": "8",
+      "removedIn": ""
+    },
+    {
+      "permission": "BROADCAST_STICKY",
+      "description": "Allows an application to broadcast sticky intents. These are broadcasts whose data is held by the system after being finished, so that clients can quickly retrieve that data without having to wait for the next broadcast.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.BROADCAST_STICKY",
+      "category": "Other",
+      "apiLevel": "2",
+      "removedIn": ""
+    },
+    {
+      "permission": "CAPTURE_KEYBOARD",
+      "description": "Allows the currently focused application to be able to consume keys before Android system get chance to process system keys and shortcuts.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.CAPTURE_KEYBOARD",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "CHANGE_COMPONENT_ENABLED_STATE",
+      "description": "Allows an application to change whether an application component (other than its own) is enabled or not.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.CHANGE_COMPONENT_ENABLED_STATE",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "CHANGE_CONFIGURATION",
+      "description": "Allows an application to modify the current configuration, such as locale.",
+      "protectionLevel": "signature|privileged|development",
+      "constantValue": "android.permission.CHANGE_CONFIGURATION",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "DELIVER_COMPANION_MESSAGES",
+      "description": "Allows an application to deliver companion messages to system",
+      "protectionLevel": "",
+      "constantValue": "android.permission.DELIVER_COMPANION_MESSAGES",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "DETECT_SCREEN_CAPTURE",
+      "description": "Allows an application to get notified when a screen capture of its windows is attempted.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.DETECT_SCREEN_CAPTURE",
+      "category": "Other",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "ENFORCE_UPDATE_OWNERSHIP",
+      "description": "Allows an application to indicate via PackageInstaller.SessionParams.setRequestUpdateOwnership(boolean) that it has the intention of becoming the update owner.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.ENFORCE_UPDATE_OWNERSHIP",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "EXECUTE_APP_ACTION",
+      "description": "Allows an assistive application to perform actions on behalf of users inside of applications.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.EXECUTE_APP_ACTION",
+      "category": "Other",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "EXECUTE_APP_FUNCTIONS",
+      "description": "Allows an application to perform actions on behalf of users inside of applications.",
+      "protectionLevel": "internal|privileged",
+      "constantValue": "android.permission.EXECUTE_APP_FUNCTIONS",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "FACTORY_TEST",
+      "description": "Run as a manufacturer test application, running as the root user. Only available when the device is running in manufacturer test mode.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.FACTORY_TEST",
+      "category": "Other",
+      "apiLevel": "28",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE",
+      "description": "Allows a regular application to use Service.startForeground.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.FOREGROUND_SERVICE",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_DATA_SYNC",
+      "description": "Allows a regular application to use Service.startForeground with the type \"dataSync\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_HEALTH",
+      "description": "Allows a regular application to use Service.startForeground with the type \"health\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_HEALTH",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_REMOTE_MESSAGING",
+      "description": "Allows a regular application to use Service.startForeground with the type \"remoteMessaging\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_SPECIAL_USE",
+      "description": "Allows a regular application to use Service.startForeground with the type \"specialUse\".",
+      "protectionLevel": "normal|appop|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_SYSTEM_EXEMPTED",
+      "description": "Allows a regular application to use Service.startForeground with the type \"systemExempted\". Apps are allowed to use this type only in the use cases listed in ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED.",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "GET_TASKS",
+      "description": "",
+      "protectionLevel": "",
+      "constantValue": "android.permission.GET_TASKS",
+      "category": "Other",
+      "apiLevel": "21",
+      "removedIn": ""
+    },
+    {
+      "permission": "GLOBAL_SEARCH",
+      "description": "This permission can be used on content providers to allow the global search system to access their data. Typically it used when the provider has some permissions protecting it (which global search would not be expected to hold), and added as a read-only permission to the path in the provider where global search queries are performed. This permission can not be held by regular applications; it is used by applications to protect themselves from everyone else besides global search.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.GLOBAL_SEARCH",
+      "category": "Other",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "INSTANT_APP_FOREGROUND_SERVICE",
+      "description": "Allows an instant app to create foreground services.",
+      "protectionLevel": "signature|development|instant|appop",
+      "constantValue": "android.permission.INSTANT_APP_FOREGROUND_SERVICE",
+      "category": "Other",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "LAUNCH_MULTI_PANE_SETTINGS_DEEP_LINK",
+      "description": "An application needs this permission for Settings.ACTION_SETTINGS_EMBED_DEEP_LINK_ACTIVITY to show its Activity embedded in Settings app.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.LAUNCH_MULTI_PANE_SETTINGS_DEEP_LINK",
+      "category": "Other",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "LOADER_USAGE_STATS",
+      "description": "Allows a data loader to read a package's access logs. The access logs contain the set of pages referenced over time.",
+      "protectionLevel": "signature|privileged|appop",
+      "constantValue": "android.permission.LOADER_USAGE_STATS",
+      "category": "Other",
+      "apiLevel": "18",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_LOCK_STATE",
+      "description": "Allows financed device kiosk apps to perform actions on the Device Lock service",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_LOCK_STATE",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MASTER_CLEAR",
+      "description": "Not for use by third-party applications.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MASTER_CLEAR",
+      "category": "Other",
+      "apiLevel": "19",
+      "removedIn": ""
+    },
+    {
+      "permission": "PERSISTENT_ACTIVITY",
+      "description": "",
+      "protectionLevel": "",
+      "constantValue": "android.permission.PERSISTENT_ACTIVITY",
+      "category": "Other",
+      "apiLevel": "15",
+      "removedIn": ""
+    },
+    {
+      "permission": "PROVIDE_OWN_AUTOFILL_SUGGESTIONS",
+      "description": "Allows an application to display its suggestions using the autofill framework.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.PROVIDE_OWN_AUTOFILL_SUGGESTIONS",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "QUERY_ADVANCED_PROTECTION_MODE",
+      "description": "Allows an application to query the device's advanced protection mode status.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.QUERY_ADVANCED_PROTECTION_MODE",
+      "category": "Other",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_ASSISTANT_APP_SEARCH_DATA",
+      "description": "Allows an application to query over global data in AppSearch that's visible to the ASSISTANT role.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_ASSISTANT_APP_SEARCH_DATA",
+      "category": "Other",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_COLOR_ZONES",
+      "description": "Allows an application to read the aggregated color zones on the screen for use cases like TV ambient backlight usages.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.READ_COLOR_ZONES",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_DROPBOX_DATA",
+      "description": "Allows an application to access the data in Dropbox.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_DROPBOX_DATA",
+      "category": "Other",
+      "apiLevel": "16",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_HOME_APP_SEARCH_DATA",
+      "description": "Allows an application to query over global data in AppSearch that's visible to the HOME role.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_HOME_APP_SEARCH_DATA",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_INPUT_STATE",
+      "description": "",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_INPUT_STATE",
+      "category": "Other",
+      "apiLevel": "16",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_SYNC_SETTINGS",
+      "description": "Allows applications to read the sync settings.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.READ_SYNC_SETTINGS",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_SYNC_STATS",
+      "description": "Allows applications to read the sync stats.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.READ_SYNC_STATS",
+      "category": "Other",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_SYSTEM_PREFERENCES",
+      "description": "Allows an application to access the Settings Preference services to read settings exposed by the system Settings app and system apps that contribute settings surfaced by the Settings app.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_SYSTEM_PREFERENCES",
+      "category": "Other",
+      "apiLevel": "21",
+      "removedIn": ""
+    },
+    {
+      "permission": "REBOOT",
+      "description": "Required to be able to reboot the device.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.REBOOT",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "RECEIVE_BOOT_COMPLETED",
+      "description": "Allows an application to receive the Intent.ACTION_BOOT_COMPLETED that is broadcast after the system finishes booting. If you don't request this permission, you will not receive the broadcast at that time. Though holding this permission does not have any security implications, it can have a negative impact on the user experience by increasing the amount of time it takes the system to start and allowing applications to have themselves running without the user being aware of them. As such, you must explicitly declare your use of this facility to make that visible to the user.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.RECEIVE_BOOT_COMPLETED",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "REORDER_TASKS",
+      "description": "Allows an application to change the Z-order of tasks.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REORDER_TASKS",
+      "category": "Other",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_SELF_MANAGED",
+      "description": "Allows an application to create a \"self-managed\" association.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.REQUEST_COMPANION_SELF_MANAGED",
+      "category": "Other",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE",
+      "description": "Allows an application to subscribe to notifications about the presence status change of their associated companion device",
+      "protectionLevel": "",
+      "constantValue": "android.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE",
+      "category": "Other",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_PASSWORD_COMPLEXITY",
+      "description": "Allows an application to request the screen lock complexity and prompt users to update the screen lock to a certain complexity level.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REQUEST_PASSWORD_COMPLEXITY",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SEND_RESPOND_VIA_MESSAGE",
+      "description": "Allows an application (Phone) to send a request to other applications to handle the respond-via-message action during incoming calls.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SEND_RESPOND_VIA_MESSAGE",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_ALWAYS_FINISH",
+      "description": "Allows an application to control whether activities are immediately finished when put in the background.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SET_ALWAYS_FINISH",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_PREFERRED_APPLICATIONS",
+      "description": "",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SET_PREFERRED_APPLICATIONS",
+      "category": "Other",
+      "apiLevel": "15",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_PROCESS_LIMIT",
+      "description": "Allows an application to set the maximum number of (not needed) application processes that can be running.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SET_PROCESS_LIMIT",
+      "category": "Other",
+      "apiLevel": "8",
+      "removedIn": ""
+    },
+    {
+      "permission": "SIGNAL_PERSISTENT_PROCESSES",
+      "description": "Allow an application to request that a signal be sent to all persistent processes.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SIGNAL_PERSISTENT_PROCESSES",
+      "category": "Other",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "START_VIEW_APP_FEATURES",
+      "description": "Allows the holder to start the screen with a list of app features.",
+      "protectionLevel": "signature|installer",
+      "constantValue": "android.permission.START_VIEW_APP_FEATURES",
+      "category": "Other",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "START_VIEW_PERMISSION_USAGE",
+      "description": "Allows the holder to start the permission usage screen for an app.",
+      "protectionLevel": "signature|installer",
+      "constantValue": "android.permission.START_VIEW_PERMISSION_USAGE",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "TRANSMIT_IR",
+      "description": "Allows using the device's IR transmitter, if available.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.TRANSMIT_IR",
+      "category": "Other",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "TURN_SCREEN_ON",
+      "description": "Allows an app to turn on the screen on, e.g. with PowerManager.ACQUIRE_CAUSES_WAKEUP.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.TURN_SCREEN_ON",
+      "category": "Other",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "TV_IMPLICIT_ENTER_PIP",
+      "description": "Allows an app to enter Picture-in-Picture mode when the user is not explicitly requesting it. This includes using ERROR(/PictureInPictureParams.Builder#setAutoEnterEnabled) as well as lifecycle methods such as ERROR(/Activity#onUserLeaveHint) and ERROR(/Activity#onPause) to enter PiP when the user leaves the app. This permission should only be used for certain PiP usage types.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.TV_IMPLICIT_ENTER_PIP",
+      "category": "Other",
+      "apiLevel": "19",
+      "removedIn": ""
+    },
+    {
+      "permission": "UPDATE_DEVICE_STATS",
+      "description": "Allows an application to update device statistics.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.UPDATE_DEVICE_STATS",
+      "category": "Other",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "USE_BIOMETRIC",
+      "description": "Allows an app to use device supported biometric modalities.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.USE_BIOMETRIC",
+      "category": "Other",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "USE_FULL_SCREEN_INTENT",
+      "description": "Required for apps targeting Build.VERSION_CODES.Q that want to use notification full screen intents.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.USE_FULL_SCREEN_INTENT",
+      "category": "Other",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER",
+      "description": "Allows to read device identifiers and use ICC based authentication like EAP-AKA. Often required in authentication to access the carrier's server and manage services of the subscriber.",
+      "protectionLevel": "signature|appop",
+      "constantValue": "android.permission.USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER",
+      "category": "Other",
+      "apiLevel": "9",
+      "removedIn": ""
+    },
+    {
+      "permission": "VIBRATE",
+      "description": "Allows access to the vibrator.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.VIBRATE",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_GSERVICES",
+      "description": "Allows an application to modify the Google service map.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.WRITE_GSERVICES",
+      "category": "Other",
+      "apiLevel": "3",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_SECURE_SETTINGS",
+      "description": "Allows an application to read or write the secure system settings.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.WRITE_SECURE_SETTINGS",
+      "category": "Other",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_SETTINGS",
+      "description": "Allows an application to read or write the system settings.",
+      "protectionLevel": "signature|preinstalled|appop|pre23",
+      "constantValue": "android.permission.WRITE_SETTINGS",
+      "category": "Other",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_SYNC_SETTINGS",
+      "description": "Allows applications to write the sync settings.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.WRITE_SYNC_SETTINGS",
+      "category": "Other",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_SYSTEM_PREFERENCES",
+      "description": "Allows an application to access the Settings Preference services to write settings values exposed by the system Settings app and system apps that contribute settings surfaced in the Settings app.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.WRITE_SYSTEM_PREFERENCES",
+      "category": "Other",
+      "apiLevel": "21",
+      "removedIn": ""
+    }
+  ],
+  "Location": [
+    {
+      "permission": "ACCESS_BACKGROUND_LOCATION",
+      "description": "Allows an app to access location in the background. If you're requesting this permission, you must also request either ACCESS_COARSE_LOCATION or ACCESS_FINE_LOCATION. Requesting this permission by itself doesn't give you location access.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.ACCESS_BACKGROUND_LOCATION",
+      "category": "Location",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "ACCESS_COARSE_LOCATION",
+      "description": "Allows an app to access approximate location. Alternatively, you might want ACCESS_FINE_LOCATION.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.ACCESS_COARSE_LOCATION",
+      "category": "Location",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "ACCESS_FINE_LOCATION",
+      "description": "Allows an app to access precise location. Alternatively, you might want ACCESS_COARSE_LOCATION.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.ACCESS_FINE_LOCATION",
+      "category": "Location",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "ACCESS_LOCATION_EXTRA_COMMANDS",
+      "description": "Allows an application to access extra location provider commands.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.ACCESS_LOCATION_EXTRA_COMMANDS",
+      "category": "Location",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "ACCESS_MEDIA_LOCATION",
+      "description": "Allows an application to access any geographic locations persisted in the user's shared collection.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.ACCESS_MEDIA_LOCATION",
+      "category": "Location",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "BODY_SENSORS_BACKGROUND",
+      "description": "Allows an application to access data from sensors that the user uses to measure what is happening inside their body, such as heart rate. If you're requesting this permission, you must also request BODY_SENSORS. Requesting this permission by itself doesn't give you Body sensors access.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.BODY_SENSORS_BACKGROUND",
+      "category": "Location",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "CONTROL_LOCATION_UPDATES",
+      "description": "Allows enabling/disabling location update notifications from the radio.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.CONTROL_LOCATION_UPDATES",
+      "category": "Location",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_LOCATION",
+      "description": "Allows a regular application to use Service.startForeground with the type \"location\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_LOCATION",
+      "category": "Location",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "INSTALL_LOCATION_PROVIDER",
+      "description": "Allows an application to install a location provider into the Location Manager.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.INSTALL_LOCATION_PROVIDER",
+      "category": "Location",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "KILL_BACKGROUND_PROCESSES",
+      "description": "Allows an application to call ActivityManager.killBackgroundProcesses(String).",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.KILL_BACKGROUND_PROCESSES",
+      "category": "Location",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "LOCATION_HARDWARE",
+      "description": "Allows an application to use location features in hardware, such as the geofencing api.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.LOCATION_HARDWARE",
+      "category": "Location",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_LOCATION",
+      "description": "Allows an application to set policy related to location.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_LOCATION",
+      "category": "Location",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_RUN_IN_BACKGROUND",
+      "description": "Allows an application to set policy related to users running in the background.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_RUN_IN_BACKGROUND",
+      "category": "Location",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "RANGING",
+      "description": "Required to be able to range to devices using generic ranging module.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.RANGING",
+      "category": "Location",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_RUN_IN_BACKGROUND",
+      "description": "Allows a companion app to run in the background. This permission implies REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND, and allows to start a foreground service from the background. If an app does not have to run in the background, but only needs to start a foreground service from the background, consider using REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND, which is less powerful.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND",
+      "category": "Location",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND",
+      "description": "Allows a companion app to start a foreground service from the background.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND",
+      "category": "Location",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_USE_DATA_IN_BACKGROUND",
+      "description": "Allows a companion app to use data in the background.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND",
+      "category": "Location",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "START_FOREGROUND_SERVICES_FROM_BACKGROUND",
+      "description": "Allows an application to start foreground services from the background at any time. This permission is not for use by third-party applications, with the only exception being if the app is the default SMS app. Otherwise, it's only usable by privileged apps, app verifier app, and apps with any of the EMERGENCY or SYSTEM GALLERY roles.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.START_FOREGROUND_SERVICES_FROM_BACKGROUND",
+      "category": "Location",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "UWB_RANGING",
+      "description": "Required to be able to range to devices using ultra-wideband.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.UWB_RANGING",
+      "category": "Location",
+      "apiLevel": "1",
+      "removedIn": ""
+    }
+  ],
+  "Network": [
+    {
+      "permission": "ACCESS_NETWORK_STATE",
+      "description": "Allows applications to access information about networks.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.ACCESS_NETWORK_STATE",
+      "category": "Network",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "ACCESS_WIFI_STATE",
+      "description": "Allows applications to access information about Wi-Fi networks.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.ACCESS_WIFI_STATE",
+      "category": "Network",
+      "apiLevel": "5",
+      "removedIn": ""
+    },
+    {
+      "permission": "CHANGE_NETWORK_STATE",
+      "description": "Allows applications to change network connectivity state.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.CHANGE_NETWORK_STATE",
+      "category": "Network",
+      "apiLevel": "4",
+      "removedIn": ""
+    },
+    {
+      "permission": "CHANGE_WIFI_MULTICAST_STATE",
+      "description": "Allows applications to enter Wi-Fi Multicast mode.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.CHANGE_WIFI_MULTICAST_STATE",
+      "category": "Network",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "CHANGE_WIFI_STATE",
+      "description": "Allows applications to change Wi-Fi connectivity state.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.CHANGE_WIFI_STATE",
+      "category": "Network",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "CONFIGURE_WIFI_DISPLAY",
+      "description": "Allows an application to configure and connect to Wifi displays",
+      "protectionLevel": "",
+      "constantValue": "android.permission.CONFIGURE_WIFI_DISPLAY",
+      "category": "Network",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_CONNECTED_DEVICE",
+      "description": "Allows a regular application to use Service.startForeground with the type \"connectedDevice\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE",
+      "category": "Network",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "INTERNET",
+      "description": "Allows applications to open network sockets.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.INTERNET",
+      "category": "Network",
+      "apiLevel": "8",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_MOBILE_NETWORK",
+      "description": "Allows an application to set policy related to mobile networks.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_MOBILE_NETWORK",
+      "category": "Network",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_NETWORK_LOGGING",
+      "description": "Allows an application to set policy related to network logging.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_NETWORK_LOGGING",
+      "category": "Network",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_THREAD_NETWORK",
+      "description": "Allows an application to set policy related to Thread network.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_THREAD_NETWORK",
+      "category": "Network",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_WIFI",
+      "description": "Allows an application to set policy related to Wifi.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_WIFI",
+      "category": "Network",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_WIFI_INTERFACES",
+      "description": "Allows applications to get notified when a Wi-Fi interface request cannot be satisfied without tearing down one or more other interfaces, and provide a decision whether to approve the request or reject it.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MANAGE_WIFI_INTERFACES",
+      "category": "Network",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_WIFI_NETWORK_SELECTION",
+      "description": "This permission is used to let OEMs grant their trusted app access to a subset of privileged wifi APIs to improve wifi performance. Allows applications to manage Wi-Fi network selection related features such as enable or disable global auto-join, modify connectivity scan intervals, and approve Wi-Fi Direct connections.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MANAGE_WIFI_NETWORK_SELECTION",
+      "category": "Network",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "OVERRIDE_WIFI_CONFIG",
+      "description": "Allows an application to modify any wifi configuration, even if created by another application. Once reconfigured the original creator cannot make any further modifications.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.OVERRIDE_WIFI_CONFIG",
+      "category": "Network",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_APN_SETTINGS",
+      "description": "Allows applications to write the apn settings and read sensitive fields of an existing apn settings like user and password.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.WRITE_APN_SETTINGS",
+      "category": "Network",
+      "apiLevel": "1",
+      "removedIn": ""
+    }
+  ],
+  "Notifications": [
+    {
+      "permission": "ACCESS_NOTIFICATION_POLICY",
+      "description": "Marker permission for applications that wish to access notification policy. This permission is not supported on managed profiles.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.ACCESS_NOTIFICATION_POLICY",
+      "category": "Notifications",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "POST_NOTIFICATIONS",
+      "description": "Allows an app to post notifications",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.POST_NOTIFICATIONS",
+      "category": "Notifications",
+      "apiLevel": "",
+      "removedIn": ""
+    },
+    {
+      "permission": "POST_PROMOTED_NOTIFICATIONS",
+      "description": "Required for apps to post promoted notifications.",
+      "protectionLevel": "normal|appops",
+      "constantValue": "android.permission.POST_PROMOTED_NOTIFICATIONS",
+      "category": "Notifications",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "RECEIVE_SENSITIVE_NOTIFICATIONS",
+      "description": "Allows apps with a NotificationListenerService to receive notifications with sensitive information",
+      "protectionLevel": "signature|preinstalled|knownSigner|role",
+      "constantValue": "android.permission.RECEIVE_SENSITIVE_NOTIFICATIONS",
+      "category": "Notifications",
+      "apiLevel": "1",
+      "removedIn": ""
+    }
+  ],
+  "Sensors": [
+    {
+      "permission": "ACTIVITY_RECOGNITION",
+      "description": "Allows an application to recognize physical activity.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.ACTIVITY_RECOGNITION",
+      "category": "Sensors",
+      "apiLevel": "14",
+      "removedIn": ""
+    },
+    {
+      "permission": "BODY_SENSORS",
+      "description": "Allows an application to access data from sensors that the user uses to measure what is happening inside their body, such as heart rate.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.BODY_SENSORS",
+      "category": "Sensors",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "HIGH_SAMPLING_RATE_SENSORS",
+      "description": "Allows an app to access sensor data with a sampling rate greater than 200 Hz.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.HIGH_SAMPLING_RATE_SENSORS",
+      "category": "Sensors",
+      "apiLevel": "4",
+      "removedIn": ""
+    }
+  ],
+  "Phone": [
+    {
+      "permission": "ANSWER_PHONE_CALLS",
+      "description": "Allows the app to answer an incoming phone call.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.ANSWER_PHONE_CALLS",
+      "category": "Phone",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_CALL_REDIRECTION_SERVICE",
+      "description": "Must be required by a CallRedirectionService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_CALL_REDIRECTION_SERVICE",
+      "category": "Phone",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_TELECOM_CONNECTION_SERVICE",
+      "description": "Must be required by a ConnectionService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_TELECOM_CONNECTION_SERVICE",
+      "category": "Phone",
+      "apiLevel": "14",
+      "removedIn": ""
+    },
+    {
+      "permission": "CALL_COMPANION_APP",
+      "description": "Allows an app which implements the InCallService API to be eligible to be enabled as a calling companion app. This means that the Telecom framework will bind to the app's InCallService implementation when there are calls active. The app can use the InCallService API to view information about calls on the system and control these calls.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.CALL_COMPANION_APP",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "CALL_PHONE",
+      "description": "Allows an application to initiate a phone call without going through the Dialer user interface for the user to confirm the call.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.CALL_PHONE",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "CALL_PRIVILEGED",
+      "description": "Allows an application to call any phone number, including emergency numbers, without going through the Dialer user interface for the user to confirm the call being placed.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.CALL_PRIVILEGED",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_MICROPHONE",
+      "description": "Allows a regular application to use Service.startForeground with the type \"microphone\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+      "category": "Phone",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_PHONE_CALL",
+      "description": "Allows a regular application to use Service.startForeground with the type \"phoneCall\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_PHONE_CALL",
+      "category": "Phone",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_CALLS",
+      "description": "Allows an application to manage calling policy.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_CALLS",
+      "category": "Phone",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_MICROPHONE",
+      "description": "Allows an application to set policy related to restricting a user's ability to use or enable and disable the microphone.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_MICROPHONE",
+      "category": "Phone",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_MICROPHONE_TOGGLE",
+      "description": "Allows an application to manage policy related to microphone toggle.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_MICROPHONE_TOGGLE",
+      "category": "Phone",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_ONGOING_CALLS",
+      "description": "Allows to query ongoing call details and manage ongoing calls",
+      "protectionLevel": "signature|appop",
+      "constantValue": "android.permission.MANAGE_ONGOING_CALLS",
+      "category": "Phone",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_OWN_CALLS",
+      "description": "Allows a calling application which manages its own calls through the self-managed ConnectionService APIs. See PhoneAccount.CAPABILITY_SELF_MANAGED for more information on the self-managed ConnectionService APIs.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.MANAGE_OWN_CALLS",
+      "category": "Phone",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "MODIFY_PHONE_STATE",
+      "description": "Allows modification of the telephony state - power on, mmi, etc. Does not include placing calls.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MODIFY_PHONE_STATE",
+      "category": "Phone",
+      "apiLevel": "3",
+      "removedIn": ""
+    },
+    {
+      "permission": "PROCESS_OUTGOING_CALLS",
+      "description": "",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.PROCESS_OUTGOING_CALLS",
+      "category": "Phone",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_BASIC_PHONE_STATE",
+      "description": "Allows read only access to phone state with a non dangerous permission, including the information like cellular network type, software version.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_BASIC_PHONE_STATE",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_CALL_LOG",
+      "description": "Allows an application to read the user's call log.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_CALL_LOG",
+      "category": "Phone",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_PHONE_NUMBERS",
+      "description": "Allows read access to the device's phone number(s), which is exposed to instant applications.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_PHONE_NUMBERS",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_PHONE_STATE",
+      "description": "Allows read only access to phone state, including the current cellular network information, the status of any ongoing calls, and a list of any PhoneAccounts registered on the device.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_PHONE_STATE",
+      "category": "Phone",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_PRECISE_PHONE_STATE",
+      "description": "Allows read only access to precise phone state. Allows reading of detailed information about phone state for special-use applications such as dialers, carrier applications, or ims applications.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_PRECISE_PHONE_STATE",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_CALL_LOG",
+      "description": "Allows an application to write and read the user's call log data.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.WRITE_CALL_LOG",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "ADD_VOICEMAIL",
+      "description": "Allows an application to add voicemails into the system.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.ADD_VOICEMAIL",
+      "category": "Phone",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_VISUAL_VOICEMAIL_SERVICE",
+      "description": "Must be required by a link VisualVoicemailService to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_VISUAL_VOICEMAIL_SERVICE",
+      "category": "Phone",
+      "apiLevel": "21",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_VOICEMAIL",
+      "description": "Allows an application to read voicemails in the system.",
+      "protectionLevel": "signature|privileged|role",
+      "constantValue": "android.permission.READ_VOICEMAIL",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_BIOMETRIC_DIALOG_ADVANCED",
+      "description": "Allows an application to set the advanced features on BiometricDialog (SystemUI), including logo, logo description, and content view with more options button.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SET_BIOMETRIC_DIALOG_ADVANCED",
+      "category": "Phone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "USE_SIP",
+      "description": "Allows an application to use SIP service.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.USE_SIP",
+      "category": "Phone",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_VOICEMAIL",
+      "description": "Allows an application to modify and remove existing voicemails in the system.",
+      "protectionLevel": "signature|privileged|role",
+      "constantValue": "android.permission.WRITE_VOICEMAIL",
+      "category": "Phone",
+      "apiLevel": "",
+      "removedIn": ""
+    }
+  ],
+  "Accessibility": [
+    {
+      "permission": "BIND_ACCESSIBILITY_SERVICE",
+      "description": "Must be required by an AccessibilityService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_ACCESSIBILITY_SERVICE",
+      "category": "Accessibility",
+      "apiLevel": "3",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_ACCESSIBILITY",
+      "description": "Allows an application to manage policy related to accessibility.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_ACCESSIBILITY",
+      "category": "Accessibility",
+      "apiLevel": "34",
+      "removedIn": ""
+    }
+  ],
+  "Bluetooth": [
+    {
+      "permission": "BLUETOOTH",
+      "description": "Allows applications to connect to paired bluetooth devices.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.BLUETOOTH",
+      "category": "Bluetooth",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "BLUETOOTH_ADMIN",
+      "description": "Allows applications to discover and pair bluetooth devices.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.BLUETOOTH_ADMIN",
+      "category": "Bluetooth",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "BLUETOOTH_ADVERTISE",
+      "description": "Required to be able to advertise to nearby Bluetooth devices.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.BLUETOOTH_ADVERTISE",
+      "category": "Bluetooth",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "BLUETOOTH_CONNECT",
+      "description": "Required to be able to connect to paired Bluetooth devices.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.BLUETOOTH_CONNECT",
+      "category": "Bluetooth",
+      "apiLevel": "19",
+      "removedIn": ""
+    },
+    {
+      "permission": "BLUETOOTH_PRIVILEGED",
+      "description": "Allows applications to pair bluetooth devices without user interaction, and to allow or disallow phonebook access or message access.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BLUETOOTH_PRIVILEGED",
+      "category": "Bluetooth",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "BLUETOOTH_SCAN",
+      "description": "Required to be able to discover and pair nearby Bluetooth devices.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.BLUETOOTH_SCAN",
+      "category": "Bluetooth",
+      "apiLevel": "20",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_BLUETOOTH",
+      "description": "Allows an application to set policy related to bluetooth.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_BLUETOOTH",
+      "category": "Bluetooth",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_NEARBY_COMMUNICATION",
+      "description": "Allows an application to set policy related to nearby communications (e.g. Beam and nearby streaming).",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_NEARBY_COMMUNICATION",
+      "category": "Bluetooth",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "NEARBY_WIFI_DEVICES",
+      "description": "Required to be able to advertise and connect to nearby devices via Wi-Fi.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.NEARBY_WIFI_DEVICES",
+      "category": "Bluetooth",
+      "apiLevel": "9",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_NEARBY_STREAMING_POLICY",
+      "description": "Allows an application to read nearby streaming policy. The policy controls whether to allow the device to stream its notifications and apps to nearby devices. Applications that are not the device owner will need this permission to call DevicePolicyManager.getNearbyNotificationStreamingPolicy() or DevicePolicyManager.getNearbyAppStreamingPolicy().",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_NEARBY_STREAMING_POLICY",
+      "category": "Bluetooth",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_PROFILE_NEARBY_DEVICE_STREAMING",
+      "description": "Allows application to request to stream content from an Android host to a nearby device (AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING) by CompanionDeviceManager.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.REQUEST_COMPANION_PROFILE_NEARBY_DEVICE_STREAMING",
+      "category": "Bluetooth",
+      "apiLevel": "31",
+      "removedIn": ""
+    }
+  ],
+  "SMS": [
+    {
+      "permission": "BROADCAST_SMS",
+      "description": "Allows an application to broadcast an SMS receipt notification.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BROADCAST_SMS",
+      "category": "SMS",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "BROADCAST_WAP_PUSH",
+      "description": "Allows an application to broadcast a WAP PUSH receipt notification.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BROADCAST_WAP_PUSH",
+      "category": "SMS",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_DEFAULT_SMS",
+      "description": "Allows an application to set policy related to the default sms application.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_DEFAULT_SMS",
+      "category": "SMS",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SMS",
+      "description": "Allows an application to set policy related to sms.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SMS",
+      "category": "SMS",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_SMS",
+      "description": "Allows an application to read SMS messages.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_SMS",
+      "category": "SMS",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "RECEIVE_MMS",
+      "description": "Allows an application to monitor incoming MMS messages.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.RECEIVE_MMS",
+      "category": "SMS",
+      "apiLevel": "",
+      "removedIn": ""
+    },
+    {
+      "permission": "RECEIVE_SMS",
+      "description": "Allows an application to receive SMS messages.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.RECEIVE_SMS",
+      "category": "SMS",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "RECEIVE_WAP_PUSH",
+      "description": "Allows an application to receive WAP push messages.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.RECEIVE_WAP_PUSH",
+      "category": "SMS",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SEND_SMS",
+      "description": "Allows an application to send SMS messages.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.SEND_SMS",
+      "category": "SMS",
+      "apiLevel": "9",
+      "removedIn": ""
+    },
+    {
+      "permission": "SMS_FINANCIAL_TRANSACTIONS",
+      "description": "",
+      "protectionLevel": "signature|appop",
+      "constantValue": "android.permission.SMS_FINANCIAL_TRANSACTIONS",
+      "category": "SMS",
+      "apiLevel": "31",
+      "removedIn": ""
+    }
+  ],
+  "Camera": [
+    {
+      "permission": "CAMERA",
+      "description": "Required to be able to access the camera device.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.CAMERA",
+      "category": "Camera",
+      "apiLevel": "19",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_CAMERA",
+      "description": "Allows a regular application to use Service.startForeground with the type \"camera\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_CAMERA",
+      "category": "Camera",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "LAUNCH_CAPTURE_CONTENT_ACTIVITY_FOR_NOTE",
+      "description": "Allows an application to capture screen content to perform a screenshot using the intent action Intent.ACTION_LAUNCH_CAPTURE_CONTENT_ACTIVITY_FOR_NOTE.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.LAUNCH_CAPTURE_CONTENT_ACTIVITY_FOR_NOTE",
+      "category": "Camera",
+      "apiLevel": "32",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_CAMERA",
+      "description": "Allows an application to set policy related to restricting a user's ability to use or enable and disable the camera.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_CAMERA",
+      "category": "Camera",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_CAMERA_TOGGLE",
+      "description": "Allows an application to manage policy related to camera toggle.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_CAMERA_TOGGLE",
+      "category": "Camera",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "APPLY_PICTURE_PROFILE",
+      "description": "Allows an app to apply a ERROR(/MediaQualityManager.PictureProfile) to a layer via ERROR(/MediaCodec.PARAMETER_KEY_PICTURE_PROFILE) and, additionally, system apps via ERROR(/SurfaceControl.Transaction#setPictureProfileHandle).",
+      "protectionLevel": "",
+      "constantValue": "android.permission.APPLY_PICTURE_PROFILE",
+      "category": "Camera",
+      "apiLevel": "1",
+      "removedIn": ""
+    }
+  ],
+  "Microphone": [
+    {
+      "permission": "CAPTURE_AUDIO_OUTPUT",
+      "description": "Allows an application to capture audio output. Use the CAPTURE_MEDIA_OUTPUT permission if only the USAGE_UNKNOWN), USAGE_MEDIA) or USAGE_GAME) usages are intended to be captured.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.CAPTURE_AUDIO_OUTPUT",
+      "category": "Microphone",
+      "apiLevel": "",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_AUDIO_OUTPUT",
+      "description": "Allows an application to set policy related to audio output.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_AUDIO_OUTPUT",
+      "category": "Microphone",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MODIFY_AUDIO_SETTINGS",
+      "description": "Allows an application to modify global audio settings.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.MODIFY_AUDIO_SETTINGS",
+      "category": "Microphone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_MEDIA_AUDIO",
+      "description": "Allows an application to read audio files from external storage.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_MEDIA_AUDIO",
+      "category": "Microphone",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "RECORD_AUDIO",
+      "description": "Allows an application to record audio.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.RECORD_AUDIO",
+      "category": "Microphone",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_VOICE_INTERACTION",
+      "description": "Must be required by a VoiceInteractionService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_VOICE_INTERACTION",
+      "category": "Microphone",
+      "apiLevel": "14",
+      "removedIn": ""
+    },
+    {
+      "permission": "DETECT_SCREEN_RECORDING",
+      "description": "Allows an application to get notified when it is being recorded.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.DETECT_SCREEN_RECORDING",
+      "category": "Microphone",
+      "apiLevel": "1",
+      "removedIn": ""
+    }
+  ],
+  "Media": [
+    {
+      "permission": "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+      "description": "Allows a regular application to use Service.startForeground with the type \"mediaPlayback\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+      "category": "Media",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_MEDIA_PROCESSING",
+      "description": "Allows a regular application to use Service.startForeground with the type \"mediaProcessing\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING",
+      "category": "Media",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "FOREGROUND_SERVICE_MEDIA_PROJECTION",
+      "description": "Allows a regular application to use Service.startForeground with the type \"mediaProjection\".",
+      "protectionLevel": "normal|instant",
+      "constantValue": "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION",
+      "category": "Media",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_PHYSICAL_MEDIA",
+      "description": "Allows an application to set policy related to physical media.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_PHYSICAL_MEDIA",
+      "category": "Media",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_MEDIA",
+      "description": "Allows an application to modify and delete media files on this device or any connected storage device without user confirmation. Applications must already be granted the READ_EXTERNAL_STORAGE or MANAGE_EXTERNAL_STORAGE} permissions for this permission to take effect.",
+      "protectionLevel": "signature|appop|preinstalled",
+      "constantValue": "android.permission.MANAGE_MEDIA",
+      "category": "Media",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "MEDIA_CONTENT_CONTROL",
+      "description": "Allows an application to know what content is playing and control its playback.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MEDIA_CONTENT_CONTROL",
+      "category": "Media",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "MEDIA_ROUTING_CONTROL",
+      "description": "Allows an application to control the routing of media apps.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MEDIA_ROUTING_CONTROL",
+      "category": "Media",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_MEDIA_IMAGES",
+      "description": "Allows an application to read image files from external storage.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_MEDIA_IMAGES",
+      "category": "Media",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_MEDIA_VIDEO",
+      "description": "Allows an application to read video files from external storage.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_MEDIA_VIDEO",
+      "category": "Media",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_MEDIA_VISUAL_USER_SELECTED",
+      "description": "Allows an application to read image or video files from external storage that a user has selected via the permission prompt photo picker. Apps can check this permission to verify that a user has decided to use the photo picker, instead of granting access to READ_MEDIA_IMAGES or READ_MEDIA_VIDEO. It does not prevent apps from accessing the standard photo picker manually. This permission should be requested alongside READ_MEDIA_IMAGES and/or READ_MEDIA_VIDEO, depending on which type of media is desired.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+      "category": "Media",
+      "apiLevel": "33",
+      "removedIn": ""
+    }
+  ],
+  "Contacts": [
+    {
+      "permission": "GET_ACCOUNTS",
+      "description": "Allows access to the list of accounts in the Accounts Service.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.GET_ACCOUNTS",
+      "category": "Contacts",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "GET_ACCOUNTS_PRIVILEGED",
+      "description": "Allows access to the list of accounts in the Accounts Service.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.GET_ACCOUNTS_PRIVILEGED",
+      "category": "Contacts",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_CONTACTS",
+      "description": "Allows an application to read the user's contacts data.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_CONTACTS",
+      "category": "Contacts",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_CONTACTS",
+      "description": "Allows an application to write the user's contacts data.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.WRITE_CONTACTS",
+      "category": "Contacts",
+      "apiLevel": "4",
+      "removedIn": ""
+    }
+  ],
+  "Calendar": [
+    {
+      "permission": "READ_CALENDAR",
+      "description": "Allows an application to read the user's calendar data.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_CALENDAR",
+      "category": "Calendar",
+      "apiLevel": "16",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_CALENDAR",
+      "description": "Allows an application to write the user's calendar data.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.WRITE_CALENDAR",
+      "category": "Calendar",
+      "apiLevel": "16",
+      "removedIn": ""
+    }
+  ],
+  "Storage": [
+    {
+      "permission": "MANAGE_EXTERNAL_STORAGE",
+      "description": "Allows an application a broad access to external storage in scoped storage. Intended to be used by few apps that need to manage files on behalf of the users.",
+      "protectionLevel": "signature|appop|preinstalled",
+      "constantValue": "android.permission.MANAGE_EXTERNAL_STORAGE",
+      "category": "Storage",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_EXTERNAL_STORAGE",
+      "description": "Allows an application to read from external storage.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.READ_EXTERNAL_STORAGE",
+      "category": "Storage",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "WRITE_EXTERNAL_STORAGE",
+      "description": "Allows an application to write to external storage.",
+      "protectionLevel": "dangerous",
+      "constantValue": "android.permission.WRITE_EXTERNAL_STORAGE",
+      "category": "Storage",
+      "apiLevel": "19",
+      "removedIn": ""
+    },
+    {
+      "permission": "CLEAR_APP_CACHE",
+      "description": "Allows an application to clear the caches of all installed applications on the device.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.CLEAR_APP_CACHE",
+      "category": "Storage",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "DELETE_CACHE_FILES",
+      "description": "Old permission for deleting an app's cache files, no longer used, but signals for us to quietly ignore calls instead of throwing an exception.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.DELETE_CACHE_FILES",
+      "category": "Storage",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DOCUMENTS",
+      "description": "Allows an application to manage access to documents, usually as part of a document picker.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MANAGE_DOCUMENTS",
+      "category": "Storage",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "MOUNT_FORMAT_FILESYSTEMS",
+      "description": "Allows formatting file systems for removable storage.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MOUNT_FORMAT_FILESYSTEMS",
+      "category": "Storage",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "MOUNT_UNMOUNT_FILESYSTEMS",
+      "description": "Allows mounting and unmounting file systems for removable storage.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.MOUNT_UNMOUNT_FILESYSTEMS",
+      "category": "Storage",
+      "apiLevel": "33",
+      "removedIn": ""
+    }
+  ],
+  "NFC": [
+    {
+      "permission": "NFC",
+      "description": "Allows applications to perform I/O operations over NFC.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.NFC",
+      "category": "NFC",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "NFC_PREFERRED_PAYMENT_INFO",
+      "description": "Allows applications to receive NFC preferred payment service information.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.NFC_PREFERRED_PAYMENT_INFO",
+      "category": "NFC",
+      "apiLevel": "28",
+      "removedIn": ""
+    },
+    {
+      "permission": "NFC_TRANSACTION_EVENT",
+      "description": "Allows applications to receive NFC transaction events.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.NFC_TRANSACTION_EVENT",
+      "category": "NFC",
+      "apiLevel": "33",
+      "removedIn": ""
+    }
+  ],
+  "Printing": [
+    {
+      "permission": "MANAGE_DEVICE_POLICY_PRINTING",
+      "description": "Allows an application to set policy related to printing.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_PRINTING",
+      "category": "Printing",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "USE_FINGERPRINT",
+      "description": "",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.USE_FINGERPRINT",
+      "category": "Printing",
+      "apiLevel": "28",
+      "removedIn": ""
+    }
+  ],
+  "Device policy": [
+    {
+      "permission": "MANAGE_DEVICE_POLICY_ACCOUNT_MANAGEMENT",
+      "description": "Allows an application to set policy related to account management.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_ACCOUNT_MANAGEMENT",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_ACROSS_USERS",
+      "description": "Allows an application to set device policies outside the current user that are required for securing device ownership without accessing user data.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_ACROSS_USERS_FULL",
+      "description": "Allows an application to set device policies outside the current user.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS_FULL",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_ACROSS_USERS_SECURITY_CRITICAL",
+      "description": "Allows an application to set device policies outside the current user that are critical for securing data within the current user.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS_SECURITY_CRITICAL",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_AIRPLANE_MODE",
+      "description": "Allows an application to set policy related to airplane mode.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_AIRPLANE_MODE",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_APPS_CONTROL",
+      "description": "Allows an application to manage policy regarding modifying applications.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_APPS_CONTROL",
+      "category": "Device policy",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_APP_FUNCTIONS",
+      "description": "Allows an application to manage policy related to AppFunctions.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_APP_FUNCTIONS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_APP_RESTRICTIONS",
+      "description": "Allows an application to manage application restrictions.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_APP_RESTRICTIONS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_APP_USER_DATA",
+      "description": "Allows an application to manage policy related to application user data.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_APP_USER_DATA",
+      "category": "Device policy",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_ASSIST_CONTENT",
+      "description": "Allows an application to set policy related to sending assist content to a privileged app such as the Assistant app.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_ASSIST_CONTENT",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_AUTOFILL",
+      "description": "Allows an application to set policy related to autofill.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_AUTOFILL",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_BACKUP_SERVICE",
+      "description": "Allows an application to manage backup service policy.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_BACKUP_SERVICE",
+      "category": "Device policy",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_BLOCK_UNINSTALL",
+      "description": "Allows an application to manage policy related to block package uninstallation.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_BLOCK_UNINSTALL",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_BUGREPORT",
+      "description": "Allows an application to request bugreports with user consent.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_BUGREPORT",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_CERTIFICATES",
+      "description": "Allows an application to set policy related to certificates.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_CERTIFICATES",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_COMMON_CRITERIA_MODE",
+      "description": "Allows an application to manage policy related to common criteria mode.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_COMMON_CRITERIA_MODE",
+      "category": "Device policy",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_CONTENT_PROTECTION",
+      "description": "Allows an application to manage policy related to content protection.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_CONTENT_PROTECTION",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_DEBUGGING_FEATURES",
+      "description": "Allows an application to manage debugging features policy.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_DEBUGGING_FEATURES",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_DEVICE_IDENTIFIERS",
+      "description": "Allows an application to manage policy related to device identifiers.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_DEVICE_IDENTIFIERS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_DISPLAY",
+      "description": "Allows an application to set policy related to the display.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_DISPLAY",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_FACTORY_RESET",
+      "description": "Allows an application to set policy related to factory reset.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_FACTORY_RESET",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_FUN",
+      "description": "Allows an application to set policy related to fun.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_FUN",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_INPUT_METHODS",
+      "description": "Allows an application to set policy related to input methods.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_INPUT_METHODS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_INSTALL_UNKNOWN_SOURCES",
+      "description": "Allows an application to manage installing from unknown sources policy.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_INSTALL_UNKNOWN_SOURCES",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_KEEP_UNINSTALLED_PACKAGES",
+      "description": "Allows an application to set policy related to keeping uninstalled packages.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_KEEP_UNINSTALLED_PACKAGES",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_KEYGUARD",
+      "description": "Allows an application to manage policy related to keyguard.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_KEYGUARD",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_LOCALE",
+      "description": "Allows an application to set policy related to locale.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_LOCALE",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_LOCK",
+      "description": "Allows an application to lock a profile or the device with the appropriate cross-user permission.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_LOCK",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_LOCK_CREDENTIALS",
+      "description": "Allows an application to set policy related to lock credentials.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_LOCK_CREDENTIALS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_LOCK_TASK",
+      "description": "Allows an application to manage lock task policy.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_LOCK_TASK",
+      "category": "Device policy",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_MANAGED_SUBSCRIPTIONS",
+      "description": "Allows an application to set policy related to subscriptions downloaded by an admin.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_MANAGED_SUBSCRIPTIONS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_METERED_DATA",
+      "description": "Allows an application to manage policy related to metered data.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_METERED_DATA",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_MODIFY_USERS",
+      "description": "Allows an application to manage policy preventing users from modifying users.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_MODIFY_USERS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_MTE",
+      "description": "Allows an application to manage policy related to the Memory Tagging Extension (MTE).",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_MTE",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_ORGANIZATION_IDENTITY",
+      "description": "Allows an application to manage the identity of the managing organization.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_ORGANIZATION_IDENTITY",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_OVERRIDE_APN",
+      "description": "Allows an application to set policy related to override APNs.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_OVERRIDE_APN",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_PACKAGE_STATE",
+      "description": "Allows an application to set policy related to hiding and suspending packages.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_PACKAGE_STATE",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_PRIVATE_DNS",
+      "description": "Allows an application to set policy related to private DNS.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_PRIVATE_DNS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_PROFILES",
+      "description": "Allows an application to set policy related to profiles.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_PROFILES",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_PROFILE_INTERACTION",
+      "description": "Allows an application to set policy related to interacting with profiles (e.g. Disallowing cross-profile copy and paste).",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_PROFILE_INTERACTION",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_PROXY",
+      "description": "Allows an application to set a network-independent global HTTP proxy.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_PROXY",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_QUERY_SYSTEM_UPDATES",
+      "description": "Allows an application query system updates.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_QUERY_SYSTEM_UPDATES",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_RESET_PASSWORD",
+      "description": "Allows an application to force set a new device unlock password or a managed profile challenge on current user.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_RESET_PASSWORD",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_RESTRICT_PRIVATE_DNS",
+      "description": "Allows an application to set policy related to restricting the user from configuring private DNS.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_RESTRICT_PRIVATE_DNS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_RUNTIME_PERMISSIONS",
+      "description": "Allows an application to set the grant state of runtime permissions on packages.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_RUNTIME_PERMISSIONS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SAFE_BOOT",
+      "description": "Allows an application to manage safe boot policy.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SAFE_BOOT",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SCREEN_CAPTURE",
+      "description": "Allows an application to set policy related to screen capture.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SCREEN_CAPTURE",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SCREEN_CONTENT",
+      "description": "Allows an application to set policy related to the usage of the contents of the screen.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SCREEN_CONTENT",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SECURITY_LOGGING",
+      "description": "Allows an application to set policy related to security logging.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SECURITY_LOGGING",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SETTINGS",
+      "description": "Allows an application to set policy related to settings.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SETTINGS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_STATUS_BAR",
+      "description": "Allows an application to set policy related to the status bar.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_STATUS_BAR",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SUPPORT_MESSAGE",
+      "description": "Allows an application to set support messages for when a user action is affected by an active policy.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SUPPORT_MESSAGE",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SUSPEND_PERSONAL_APPS",
+      "description": "Allows an application to set policy related to suspending personal apps.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SUSPEND_PERSONAL_APPS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SYSTEM_APPS",
+      "description": "Allows an application to manage policy related to system apps.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SYSTEM_APPS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SYSTEM_DIALOGS",
+      "description": "Allows an application to set policy related to system dialogs.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SYSTEM_DIALOGS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_SYSTEM_UPDATES",
+      "description": "Allows an application to set policy related to system updates.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_SYSTEM_UPDATES",
+      "category": "Device policy",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_TIME",
+      "description": "Allows an application to manage device policy relating to time.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_TIME",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING",
+      "description": "Allows an application to set policy related to usb data signalling.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_USB_FILE_TRANSFER",
+      "description": "Allows an application to set policy related to usb file transfers.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_USB_FILE_TRANSFER",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_USERS",
+      "description": "Allows an application to set policy related to users.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_USERS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_VPN",
+      "description": "Allows an application to set policy related to VPNs.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_VPN",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_WALLPAPER",
+      "description": "Allows an application to set policy related to the wallpaper.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_WALLPAPER",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_WINDOWS",
+      "description": "Allows an application to set policy related to windows.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_WINDOWS",
+      "category": "Device policy",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "MANAGE_DEVICE_POLICY_WIPE_DATA",
+      "description": "Allows an application to manage policy related to wiping data.",
+      "protectionLevel": "internal|role",
+      "constantValue": "android.permission.MANAGE_DEVICE_POLICY_WIPE_DATA",
+      "category": "Device policy",
+      "apiLevel": "19",
+      "removedIn": ""
+    }
+  ],
+  "Accounts": [
+    {
+      "permission": "ACCOUNT_MANAGER",
+      "description": "Allows applications to call into AccountAuthenticators.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.ACCOUNT_MANAGER",
+      "category": "Accounts",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_CREDENTIAL_PROVIDER_SERVICE",
+      "description": "Must be required by a CredentialProviderService to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE",
+      "category": "Accounts",
+      "apiLevel": "8",
+      "removedIn": ""
+    },
+    {
+      "permission": "CREDENTIAL_MANAGER_QUERY_CANDIDATE_CREDENTIALS",
+      "description": "Allows a browser to invoke the set of query apis to get metadata about credential candidates prepared during the CredentialManager.prepareGetCredential API.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.CREDENTIAL_MANAGER_QUERY_CANDIDATE_CREDENTIALS",
+      "category": "Accounts",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "CREDENTIAL_MANAGER_SET_ALLOWED_PROVIDERS",
+      "description": "Allows specifying candidate credential providers to be queried in Credential Manager get flows, or to be preferred as a default in the Credential Manager create flows.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.CREDENTIAL_MANAGER_SET_ALLOWED_PROVIDERS",
+      "category": "Accounts",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "CREDENTIAL_MANAGER_SET_ORIGIN",
+      "description": "Allows a browser to invoke credential manager APIs on behalf of another RP.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.CREDENTIAL_MANAGER_SET_ORIGIN",
+      "category": "Accounts",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "PROVIDE_REMOTE_CREDENTIALS",
+      "description": "Allows an application to be able to store and retrieve credentials from a remote device.",
+      "protectionLevel": "signature|privileged|role",
+      "constantValue": "android.permission.PROVIDE_REMOTE_CREDENTIALS",
+      "category": "Accounts",
+      "apiLevel": "36",
+      "removedIn": ""
+    }
+  ],
+  "Installation": [
+    {
+      "permission": "BROADCAST_PACKAGE_REMOVED",
+      "description": "Allows an application to broadcast a notification that an application package has been removed.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BROADCAST_PACKAGE_REMOVED",
+      "category": "Installation",
+      "apiLevel": "2",
+      "removedIn": ""
+    },
+    {
+      "permission": "DELETE_PACKAGES",
+      "description": "Allows an application to delete packages.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.DELETE_PACKAGES",
+      "category": "Installation",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "GET_PACKAGE_SIZE",
+      "description": "Allows an application to find out the space used by any package.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.GET_PACKAGE_SIZE",
+      "category": "Installation",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "INSTALL_PACKAGES",
+      "description": "Allows an application to install packages.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.INSTALL_PACKAGES",
+      "category": "Installation",
+      "apiLevel": "19",
+      "removedIn": ""
+    },
+    {
+      "permission": "INSTALL_SHORTCUT",
+      "description": "Allows an application to install a shortcut in Launcher.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.INSTALL_SHORTCUT",
+      "category": "Installation",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "PACKAGE_USAGE_STATS",
+      "description": "Allows an application to collect component usage statistics",
+      "protectionLevel": "signature|privileged|development|appop|retailDemo",
+      "constantValue": "android.permission.PACKAGE_USAGE_STATS",
+      "category": "Installation",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "QUERY_ALL_PACKAGES",
+      "description": "Allows query of any normal app on the device, regardless of manifest declarations.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.QUERY_ALL_PACKAGES",
+      "category": "Installation",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_DELETE_PACKAGES",
+      "description": "Allows an application to request deleting packages. Apps targeting APIs Build.VERSION_CODES.P or greater must hold this permission in order to use Intent.ACTION_UNINSTALL_PACKAGE or PackageInstaller.uninstall(VersionedPackage, IntentSender).",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REQUEST_DELETE_PACKAGES",
+      "category": "Installation",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_INSTALL_PACKAGES",
+      "description": "Allows an application to request installing packages. Apps targeting APIs greater than 25 must hold this permission in order to use Intent.ACTION_INSTALL_PACKAGE.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.REQUEST_INSTALL_PACKAGES",
+      "category": "Installation",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "RESTART_PACKAGES",
+      "description": "",
+      "protectionLevel": "",
+      "constantValue": "android.permission.RESTART_PACKAGES",
+      "category": "Installation",
+      "apiLevel": "15",
+      "removedIn": ""
+    },
+    {
+      "permission": "UNINSTALL_SHORTCUT",
+      "description": "",
+      "protectionLevel": "",
+      "constantValue": "android.permission.UNINSTALL_SHORTCUT",
+      "category": "Installation",
+      "apiLevel": "3",
+      "removedIn": ""
+    },
+    {
+      "permission": "UPDATE_PACKAGES_WITHOUT_USER_ACTION",
+      "description": "Allows an application to indicate via PackageInstaller.SessionParams.setRequireUserAction(int) that user action should not be required for an app update.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION",
+      "category": "Installation",
+      "apiLevel": "28",
+      "removedIn": ""
+    }
+  ],
+  "UI & System": [
+    {
+      "permission": "ACCESS_LAUNCHER_DATA",
+      "description": "This permission protects a content provider within home/launcher applications, enabling management of home screen metadata such as shortcut placement, launch intents, and labels.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.ACCESS_LAUNCHER_DATA",
+      "category": "UI & System",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_APPWIDGET",
+      "description": "Allows an application to tell the AppWidget service which application can access AppWidget's data. The normal user flow is that a user picks an AppWidget to go into a particular host, thereby giving that host application access to the private data from the AppWidget app. An application that has this permission should honor that contract.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BIND_APPWIDGET",
+      "category": "UI & System",
+      "apiLevel": "36",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_WALLPAPER",
+      "description": "Must be required by a WallpaperService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_WALLPAPER",
+      "category": "UI & System",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "DISABLE_KEYGUARD",
+      "description": "Allows applications to disable the keyguard if it is not secure.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.DISABLE_KEYGUARD",
+      "category": "UI & System",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "EXPAND_STATUS_BAR",
+      "description": "Allows an application to expand or collapse the status bar.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.EXPAND_STATUS_BAR",
+      "category": "UI & System",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "HIDE_OVERLAY_WINDOWS",
+      "description": "Allows an app to prevent non-system-overlay windows from being drawn on top of it",
+      "protectionLevel": "",
+      "constantValue": "android.permission.HIDE_OVERLAY_WINDOWS",
+      "category": "UI & System",
+      "apiLevel": "31",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_OBSERVE_DEVICE_UUID_PRESENCE",
+      "description": "Allows an application to subscribe to notifications about the nearby devices' presence status change base on the UUIDs.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE",
+      "category": "UI & System",
+      "apiLevel": "29",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_ANIMATION_SCALE",
+      "description": "Modify the global animation scaling factor.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SET_ANIMATION_SCALE",
+      "category": "UI & System",
+      "apiLevel": "35",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_WALLPAPER",
+      "description": "Allows applications to set the wallpaper.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.SET_WALLPAPER",
+      "category": "UI & System",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_WALLPAPER_HINTS",
+      "description": "Allows applications to set the wallpaper hints.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.SET_WALLPAPER_HINTS",
+      "category": "UI & System",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "STATUS_BAR",
+      "description": "Allows an application to open, close, or disable the status bar and its icons.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.STATUS_BAR",
+      "category": "UI & System",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "SUBSCRIBE_TO_KEYGUARD_LOCKED_STATE",
+      "description": "Allows an application to subscribe to device locked and keyguard locked (i.e., showing) state.",
+      "protectionLevel": "signature|privileged|module|role",
+      "constantValue": "android.permission.SUBSCRIBE_TO_KEYGUARD_LOCKED_STATE",
+      "category": "UI & System",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SYSTEM_ALERT_WINDOW",
+      "description": "Allows an app to create windows using the type WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, shown on top of all other apps. Very few apps should use this permission; these windows are intended for system-level interaction with the user.",
+      "protectionLevel": "signature|setup|appop|installer|pre23|development",
+      "constantValue": "android.permission.SYSTEM_ALERT_WINDOW",
+      "category": "UI & System",
+      "apiLevel": "23",
+      "removedIn": ""
+    }
+  ],
+  "Power & Time": [
+    {
+      "permission": "BATTERY_STATS",
+      "description": "Allows an application to collect battery statistics",
+      "protectionLevel": "signature|privileged|development",
+      "constantValue": "android.permission.BATTERY_STATS",
+      "category": "Power & Time",
+      "apiLevel": "16",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "description": "Permission an application must hold in order to use Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      "category": "Power & Time",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "SCHEDULE_EXACT_ALARM",
+      "description": "Allows applications to use exact alarm APIs.",
+      "protectionLevel": "signature|privileged|appop",
+      "constantValue": "android.permission.SCHEDULE_EXACT_ALARM",
+      "category": "Power & Time",
+      "apiLevel": "18",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_ALARM",
+      "description": "Allows an application to broadcast an Intent to set an alarm for the user.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.SET_ALARM",
+      "category": "Power & Time",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_TIME",
+      "description": "Allows applications to set the system time directly.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SET_TIME",
+      "category": "Power & Time",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_TIME_ZONE",
+      "description": "Allows applications to set the system time zone directly.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SET_TIME_ZONE",
+      "category": "Power & Time",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "USE_EXACT_ALARM",
+      "description": "Allows apps to use exact alarms just like with SCHEDULE_EXACT_ALARM but without needing to request this permission from the user.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.USE_EXACT_ALARM",
+      "category": "Power & Time",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "WAKE_LOCK",
+      "description": "Allows using PowerManager WakeLocks to keep processor from sleeping or screen from dimming.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.WAKE_LOCK",
+      "category": "Power & Time",
+      "apiLevel": "1",
+      "removedIn": ""
+    }
+  ],
+  "Diagnostics": [
+    {
+      "permission": "DIAGNOSTIC",
+      "description": "Allows applications to RW to diagnostic resources.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.DIAGNOSTIC",
+      "category": "Diagnostics",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "DUMP",
+      "description": "Allows an application to retrieve state dump information from system services.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.DUMP",
+      "category": "Diagnostics",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "READ_LOGS",
+      "description": "Allows an application to read the low-level system log files.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.READ_LOGS",
+      "category": "Diagnostics",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "SET_DEBUG_APP",
+      "description": "Configure an application for debugging.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.SET_DEBUG_APP",
+      "category": "Diagnostics",
+      "apiLevel": "1",
+      "removedIn": ""
+    }
+  ],
+  "Device admin": [
+    {
+      "permission": "ACCESS_BLOBS_ACROSS_USERS",
+      "description": "Allows an application to access data blobs across users.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.ACCESS_BLOBS_ACROSS_USERS",
+      "category": "Device admin",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "ACCESS_HIDDEN_PROFILES",
+      "description": "Allows applications to access profiles with android.content.pm.UserProperties#PROFILE_API_VISIBILITY_HIDDEN user property, e.g. UserManager.USER_TYPE_PROFILE_PRIVATE.",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.ACCESS_HIDDEN_PROFILES",
+      "category": "Device admin",
+      "apiLevel": "",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_DEVICE_ADMIN",
+      "description": "Must be required by device administration receiver, to ensure that only the system can interact with it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_DEVICE_ADMIN",
+      "category": "Device admin",
+      "apiLevel": "21",
+      "removedIn": ""
+    },
+    {
+      "permission": "INTERACT_ACROSS_PROFILES",
+      "description": "Allows interaction across profiles in the same profile group.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.INTERACT_ACROSS_PROFILES",
+      "category": "Device admin",
+      "apiLevel": "1",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_PROFILE_APP_STREAMING",
+      "description": "Allows application to request to be associated with a virtual device capable of streaming Android applications (AssociationRequest.DEVICE_PROFILE_APP_STREAMING) by CompanionDeviceManager.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.REQUEST_COMPANION_PROFILE_APP_STREAMING",
+      "category": "Device admin",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION",
+      "description": "Allows application to request to be associated with a vehicle head unit capable of automotive projection (AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION) by CompanionDeviceManager.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION",
+      "category": "Device admin",
+      "apiLevel": "33",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_PROFILE_COMPUTER",
+      "description": "Allows application to request to be associated with a computer to share functionality and/or data with other devices, such as notifications, photos and media (AssociationRequest.DEVICE_PROFILE_COMPUTER) by CompanionDeviceManager.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.REQUEST_COMPANION_PROFILE_COMPUTER",
+      "category": "Device admin",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_PROFILE_GLASSES",
+      "description": "Allows app to request to be associated with a device via CompanionDeviceManager as \"glasses\"",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REQUEST_COMPANION_PROFILE_GLASSES",
+      "category": "Device admin",
+      "apiLevel": "34",
+      "removedIn": ""
+    },
+    {
+      "permission": "REQUEST_COMPANION_PROFILE_WATCH",
+      "description": "Allows app to request to be associated with a device via CompanionDeviceManager as a \"watch\"",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.REQUEST_COMPANION_PROFILE_WATCH",
+      "category": "Device admin",
+      "apiLevel": "26",
+      "removedIn": ""
+    },
+    {
+      "permission": "RUN_USER_INITIATED_JOBS",
+      "description": "Allows applications to use the user-initiated jobs API. For more details see JobInfo.Builder.setUserInitiated(boolean).",
+      "protectionLevel": "normal",
+      "constantValue": "android.permission.RUN_USER_INITIATED_JOBS",
+      "category": "Device admin",
+      "apiLevel": "31",
+      "removedIn": ""
+    }
+  ],
+  "Service binding": [
+    {
+      "permission": "BIND_INCALL_SERVICE",
+      "description": "Must be required by a InCallService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_INCALL_SERVICE",
+      "category": "Service binding",
+      "apiLevel": "3",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_INPUT_METHOD",
+      "description": "Must be required by an InputMethodService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_INPUT_METHOD",
+      "category": "Service binding",
+      "apiLevel": "23",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_MIDI_DEVICE_SERVICE",
+      "description": "Must be required by an MidiDeviceService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_MIDI_DEVICE_SERVICE",
+      "category": "Service binding",
+      "apiLevel": "19",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_NFC_SERVICE",
+      "description": "Must be required by a HostApduService or OffHostApduService to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_NFC_SERVICE",
+      "category": "Service binding",
+      "apiLevel": "18",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_NOTIFICATION_LISTENER_SERVICE",
+      "description": "Must be required by an NotificationListenerService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE",
+      "category": "Service binding",
+      "apiLevel": "19",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_PRINT_SERVICE",
+      "description": "Must be required by a PrintService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_PRINT_SERVICE",
+      "category": "Service binding",
+      "apiLevel": "30",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_QUICK_ACCESS_WALLET_SERVICE",
+      "description": "Must be required by a QuickAccessWalletService to ensure that only the system can bind to it.",
+      "protectionLevel": "signature",
+      "constantValue": "android.permission.BIND_QUICK_ACCESS_WALLET_SERVICE",
+      "category": "Service binding",
+      "apiLevel": "24",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_QUICK_SETTINGS_TILE",
+      "description": "Allows an application to bind to third party quick settings tiles.",
+      "protectionLevel": "",
+      "constantValue": "android.permission.BIND_QUICK_SETTINGS_TILE",
+      "category": "Service binding",
+      "apiLevel": "11",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_REMOTEVIEWS",
+      "description": "Must be required by a RemoteViewsService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_REMOTEVIEWS",
+      "category": "Service binding",
+      "apiLevel": "24",
+      "removedIn": ""
+    },
+    {
+      "permission": "BIND_SCREENING_SERVICE",
+      "description": "Must be required by a CallScreeningService, to ensure that only the system can bind to it.",
+      "protectionLevel": "signature|privileged",
+      "constantValue": "android.permission.BIND_SCREENING_SERVICE",
+      "category": "=\"Site-Wide Custom Events\" data-label=\"Dark Code Toggle\" track-type=\"exampleCode\" track-name=\"darkCodeToggle\" aria-label=\"Dark code theme\" data-title=\"Dark code theme\">",
+      "apiLevel": "23",
+      "removedIn": ""
+    }
+  ]
+}

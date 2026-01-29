@@ -1,0 +1,446 @@
+{
+  "Bluetooth": [
+    {
+      "permission": "NSBluetoothAlwaysUsageDescription",
+      "description": "A message that tells people why the app needs access to Bluetooth.",
+      "type": "string",
+      "category": "Bluetooth"
+    },
+    {
+      "permission": "NSBluetoothPeripheralUsageDescription",
+      "description": "A message that tells people why the app is requesting the ability to connect to Bluetooth peripherals.",
+      "type": "string",
+      "category": "Bluetooth"
+    }
+  ],
+  "Calendar and reminders": [
+    {
+      "permission": "NSCalendarsFullAccessUsageDescription",
+      "description": "A message that tells people why the app is requesting access to read and write their calendar data.",
+      "type": "string",
+      "category": "Calendar and reminders"
+    },
+    {
+      "permission": "NSCalendarsWriteOnlyAccessUsageDescription",
+      "description": "A message that tells people why the app is requesting access to create calendar events.",
+      "type": "string",
+      "category": "Calendar and reminders"
+    },
+    {
+      "permission": "NSRemindersFullAccessUsageDescription",
+      "description": "A message that tells people why the app is requesting access to read and write their reminders data.",
+      "type": "string",
+      "category": "Calendar and reminders"
+    }
+  ],
+  "Camera and sound": [
+    {
+      "permission": "NSAudioCaptureUsageDescription",
+      "description": "A message that tells people why your app is requesting access to capture system audio on macOS.",
+      "type": "string",
+      "category": "Camera and sound"
+    },
+    {
+      "permission": "NSCameraUsageDescription",
+      "description": "A message that tells people why the app is requesting access to the device's camera.",
+      "type": "string",
+      "category": "Camera and sound"
+    },
+    {
+      "permission": "NSMainCameraUsageDescription",
+      "description": "A message that tells people why the app is requesting access to the device's main camera.",
+      "type": "string",
+      "category": "Camera and sound"
+    },
+    {
+      "permission": "NSMicrophoneUsageDescription",
+      "description": "A message that tells people why the app is requesting access to the device's microphone.",
+      "type": "string",
+      "category": "Camera and sound"
+    }
+  ],
+  "Contacts": [
+    {
+      "permission": "NSContactsUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their contacts.",
+      "type": "string",
+      "category": "Contacts"
+    }
+  ],
+  "Face ID": [
+    {
+      "permission": "NSFaceIDUsageDescription",
+      "description": "A message that tells people why the app is requesting the ability to authenticate with Face ID.",
+      "type": "string",
+      "category": "Face ID"
+    }
+  ],
+  "Files and folders": [
+    {
+      "permission": "NSDesktopFolderUsageDescription",
+      "description": "A message that tells people why the app needs access to their Desktop folder.",
+      "type": "string",
+      "category": "Files and folders"
+    },
+    {
+      "permission": "NSDocumentsFolderUsageDescription",
+      "description": "A message that tells people why the app needs access to their Documents folder.",
+      "type": "string",
+      "category": "Files and folders"
+    },
+    {
+      "permission": "NSDownloadsFolderUsageDescription",
+      "description": "A message that tells people why the app needs access to the user's Downloads folder.",
+      "type": "string",
+      "category": "Files and folders"
+    },
+    {
+      "permission": "NSNetworkVolumesUsageDescription",
+      "description": "A message that tells people why the app needs access to files on a network volume.",
+      "type": "string",
+      "category": "Files and folders"
+    },
+    {
+      "permission": "NSRemovableVolumesUsageDescription",
+      "description": "A message that tells people why the app needs access to files on a removable volume.",
+      "type": "string",
+      "category": "Files and folders"
+    },
+    {
+      "permission": "NSFileProviderDomainUsageDescription",
+      "description": "A message that tells people why the app needs access to files managed by a file provider.",
+      "type": "string",
+      "category": "Files and folders"
+    }
+  ],
+  "Game Center": [
+    {
+      "permission": "NSGKFriendListUsageDescription",
+      "description": "A message that tells people why the app needs access to their Game Center friends list.",
+      "type": "string",
+      "category": "Game Center"
+    }
+  ],
+  "Health": [
+    {
+      "permission": "NSHealthClinicalHealthRecordsShareUsageDescription",
+      "description": "A message to the user that explains why the app requested permission to read clinical records.",
+      "type": "string",
+      "category": "Health"
+    },
+    {
+      "permission": "NSHealthShareUsageDescription",
+      "description": "A message that explains to people why the app requests permission to read samples from the HealthKit store.",
+      "type": "string",
+      "category": "Health"
+    },
+    {
+      "permission": "NSHealthUpdateUsageDescription",
+      "description": "A message to the user that explains why the app requested permission to save samples to the HealthKit store.",
+      "type": "string",
+      "category": "Health"
+    },
+    {
+      "permission": "NSHealthRequiredReadAuthorizationTypeIdentifiers",
+      "description": "The clinical record data types that your app must get permission to read.",
+      "type": "array",
+      "category": "Health"
+    }
+  ],
+  "Home": [
+    {
+      "permission": "NSHomeKitUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their HomeKit configuration data.",
+      "type": "string",
+      "category": "Home"
+    }
+  ],
+  "Location": [
+    {
+      "permission": "NSLocationAlwaysAndWhenInUseUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their location information at all times.",
+      "type": "string",
+      "category": "Location"
+    },
+    {
+      "permission": "NSLocationUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their location information.",
+      "type": "string",
+      "category": "Location"
+    },
+    {
+      "permission": "NSLocationWhenInUseUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their location information while the app is running in the foreground.",
+      "type": "string",
+      "category": "Location"
+    },
+    {
+      "permission": "NSLocationTemporaryUsageDescriptionDictionary",
+      "description": "A collection of messages that explain why the app is requesting temporary access to their location.",
+      "type": "dictionary",
+      "category": "Location"
+    },
+    {
+      "permission": "NSLocationAlwaysUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their location at all times.",
+      "type": "string",
+      "category": "Location"
+    },
+    {
+      "permission": "NSWidgetWantsLocation",
+      "description": "A Boolean value that indicates a widget uses the user's location information.",
+      "type": "boolean",
+      "category": "Location"
+    },
+    {
+      "permission": "NSLocationDefaultAccuracyReduced",
+      "description": "A Boolean value that indicates whether the app requests reduced location accuracy by default.",
+      "type": "boolean",
+      "category": "Location"
+    }
+  ],
+  "MediaPlayer": [
+    {
+      "permission": "NSAppleMusicUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their media library.",
+      "type": "string",
+      "category": "MediaPlayer"
+    }
+  ],
+  "Messages": [
+    {
+      "permission": "NSCriticalMessagingUsageDescription",
+      "description": "A message that tells people why the app needs to send SMS messages.",
+      "type": "string",
+      "category": "Messages"
+    }
+  ],
+  "Motion": [
+    {
+      "permission": "NSMotionUsageDescription",
+      "description": "A message that tells people why the app is requesting access to the device's motion data.",
+      "type": "string",
+      "category": "Motion"
+    },
+    {
+      "permission": "NSFallDetectionUsageDescription",
+      "description": "A message to the user that explains the app's request for permission to access fall detection event data.",
+      "type": "string",
+      "category": "Motion"
+    }
+  ],
+  "Networking": [
+    {
+      "permission": "NSLocalNetworkUsageDescription",
+      "description": "A message that tells people why the app is requesting access to the local network.",
+      "type": "string",
+      "category": "Networking"
+    },
+    {
+      "permission": "NSNearbyInteractionUsageDescription",
+      "description": "A request for user permission to begin an interaction session with nearby devices.",
+      "type": "string",
+      "category": "Networking"
+    },
+    {
+      "permission": "NSNearbyInteractionAllowOnceUsageDescription",
+      "description": "A one-time request for user permission to begin an interaction session with nearby devices.",
+      "type": "string",
+      "category": "Networking"
+    }
+  ],
+  "NFC": [
+    {
+      "permission": "NFCReaderUsageDescription",
+      "description": "A message that tells people why the app is requesting access to the device's NFC hardware.",
+      "type": "string",
+      "category": "NFC"
+    }
+  ],
+  "Photos": [
+    {
+      "permission": "NSPhotoLibraryAddUsageDescription",
+      "description": "A message that tells people why the app is requesting add-only access to their photo library.",
+      "type": "string",
+      "category": "Photos"
+    },
+    {
+      "permission": "NSPhotoLibraryUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their photo library.",
+      "type": "string",
+      "category": "Photos"
+    }
+  ],
+  "Scripting": [
+    {
+      "permission": "NSAppleScriptEnabled",
+      "description": "A Boolean value indicating whether AppleScript is enabled.",
+      "type": "boolean",
+      "category": "Scripting"
+    }
+  ],
+  "Security": [
+    {
+      "permission": "NSUpdateSecurityPolicy",
+      "description": "A dictionary that identifies which apps or installer packages the operating system allows to write to the app's bundle.",
+      "type": "dictionary",
+      "category": "Security"
+    },
+    {
+      "permission": "NSAppDataUsageDescription",
+      "description": "A message that tells people why the app needs to access files in other apps' sandbox containers.",
+      "type": "string",
+      "category": "Security"
+    },
+    {
+      "permission": "NSUserTrackingUsageDescription",
+      "description": "A message that informs the user why an app is requesting permission to use data for tracking the user or the device.",
+      "type": "string",
+      "category": "Security"
+    },
+    {
+      "permission": "NSAppleEventsUsageDescription",
+      "description": "A message that tells people why the app is requesting the ability to send Apple events.",
+      "type": "string",
+      "category": "Security"
+    },
+    {
+      "permission": "NSSystemAdministrationUsageDescription",
+      "description": "A message in macOS that tells people why the app is requesting to manipulate the system configuration.",
+      "type": "string",
+      "category": "Security"
+    },
+    {
+      "permission": "ITSAppUsesNonExemptEncryption",
+      "description": "A Boolean value indicating whether the app uses encryption.",
+      "type": "boolean",
+      "category": "Security"
+    },
+    {
+      "permission": "ITSEncryptionExportComplianceCode",
+      "description": "The export compliance code provided by App Store Connect for apps that require it.",
+      "type": "string",
+      "category": "Security"
+    }
+  ],
+  "Sensors": [
+    {
+      "permission": "NSSensorKitUsageDescription",
+      "description": "A short description of the purpose of your app's research study.",
+      "type": "string",
+      "category": "Sensors"
+    },
+    {
+      "permission": "NSSensorKitUsageDetail",
+      "description": "A dictionary that includes keys for the specific information your app collects.",
+      "type": "dictionary",
+      "category": "Sensors"
+    },
+    {
+      "permission": "NSSensorKitPrivacyPolicyURL",
+      "description": "A hyperlink to a webpage that displays the privacy policy for your app's research study.",
+      "type": "string",
+      "category": "Sensors"
+    }
+  ],
+  "Siri": [
+    {
+      "permission": "NSSiriUsageDescription",
+      "description": "A message that tells people why the app is requesting to send user data to Siri.",
+      "type": "string",
+      "category": "Siri"
+    }
+  ],
+  "Speech": [
+    {
+      "permission": "NSSpeechRecognitionUsageDescription",
+      "description": "A message that tells people why the app is requesting to send user data to Apple's speech recognition servers.",
+      "type": "string",
+      "category": "Speech"
+    }
+  ],
+  "System Extensions": [
+    {
+      "permission": "NSSystemExtensionUsageDescription",
+      "description": "A message that tells people why the app is trying to install a system extension bundle.",
+      "type": "string",
+      "category": "System Extensions"
+    },
+    {
+      "permission": "OSBundleUsageDescription",
+      "description": "A message that tells people why the app is trying to install a driver extension bundle.",
+      "type": "string",
+      "category": "System Extensions"
+    }
+  ],
+  "TV": [
+    {
+      "permission": "NSVideoSubscriberAccountUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their TV provider account.",
+      "type": "string",
+      "category": "TV"
+    }
+  ],
+  "Vision": [
+    {
+      "permission": "NSWorldSensingUsageDescription",
+      "description": "A message that tells people why the app is requesting access to image tracking, plane detection, or scene reconstruction.",
+      "type": "string",
+      "category": "Vision"
+    },
+    {
+      "permission": "NSHandsTrackingUsageDescription",
+      "description": "A message that tells people why the app is requesting access to track their hand position and location.",
+      "type": "string",
+      "category": "Vision"
+    },
+    {
+      "permission": "NSAccessoryTrackingUsageDescription",
+      "description": "A message that tells a person why the app is requesting access to track accessory position and location.",
+      "type": "string",
+      "category": "Vision"
+    }
+  ],
+  "Wallet": [
+    {
+      "permission": "NSFinancialDataUsageDescription",
+      "description": "A message that tells people why the app is requesting access to financial data stored in Wallet.",
+      "type": "string",
+      "category": "Wallet"
+    },
+    {
+      "permission": "NSIdentityUsageDescription",
+      "description": "A message that tells people why the app is requesting identity information.",
+      "type": "string",
+      "category": "Wallet"
+    }
+  ],
+  "Wi-Fi": [
+    {
+      "permission": "UIRequiresPersistentWiFi",
+      "description": "A Boolean value that indicates whether the app requires a Wi-Fi connection.",
+      "type": "boolean",
+      "category": "Wi-Fi"
+    }
+  ],
+  "Deprecated": [
+    {
+      "permission": "NSCalendarsUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their calendar data.",
+      "type": "string",
+      "category": "Deprecated"
+    },
+    {
+      "permission": "NSEnterpriseMCAMUsageDescription",
+      "description": "A message that tells people why the app is requesting access to the device's main camera.",
+      "type": "string",
+      "category": "Deprecated"
+    },
+    {
+      "permission": "NSRemindersUsageDescription",
+      "description": "A message that tells people why the app is requesting access to their reminders.",
+      "type": "string",
+      "category": "Deprecated"
+    }
+  ]
+}

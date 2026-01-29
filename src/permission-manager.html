@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src {{cspSource}} https:; style-src {{cspSource}} 'unsafe-inline'; script-src {{cspSource}};">
+    <title>Permission Manager</title>
+    <style>
+        :root {
+            color-scheme: light;
+        }
+
+        body {
+            font-family: "Roboto", "Segoe UI", Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+            color: #1f2937;
+        }
+
+        h1 {
+            color: #0f172a;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        }
+
+        .toolbar input,
+        .toolbar select {
+            padding: 8px 10px;
+            font-size: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            min-width: 200px;
+            background: #f8fafc;
+        }
+
+        .toolbar button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            background: #1976d2;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 6px rgba(25, 118, 210, 0.25);
+        }
+
+        .toolbar button.secondary {
+            background: #90a4ae;
+            box-shadow: none;
+        }
+
+        .toolbar button.save-button {
+            background: #1565c0;
+            font-weight: 700;
+            padding: 10px 18px;
+        }
+
+        .toolbar button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 720px;
+        }
+
+        th,
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: top;
+            font-size: 14px;
+        }
+
+        td input,
+        td select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: #f8fafc;
+            font-size: 13px;
+        }
+
+        td textarea {
+            width: 100%;
+            min-height: 72px;
+            padding: 6px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: #f8fafc;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        th {
+            cursor: pointer;
+            background: #e3f2fd;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        th.sort-asc::after {
+            content: ' ▲';
+        }
+
+        th.sort-desc::after {
+            content: ' ▼';
+        }
+
+        .empty-state {
+            color: #777;
+            font-style: italic;
+            padding: 12px;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .status.success {
+            color: #2e7d32;
+        }
+
+        .status.error {
+            color: #c62828;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: #ffffff;
+            color: #0f172a;
+            border-radius: 10px;
+            max-width: 640px;
+            width: 100%;
+            padding: 20px;
+            box-shadow: 0 12px 48px rgba(15, 23, 42, 0.2);
+            z-index: 1001;
+        }
+
+        .modal h3 {
+            margin-top: 0;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+        }
+
+        .modal-results {
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+
+        .modal-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+        }
+
+        .modal-item:hover,
+        .modal-item.selected {
+            background: #bbdefb;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                margin: 12px;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar input,
+            .toolbar select {
+                width: 100%;
+                min-width: unset;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-bottom: 8px;">
+        <h1 style="margin:0;">Permission Manager</h1>
+        <div style="display:flex; gap:10px;">
+            <div id="androidCountChip" style="background:#e3f2fd; color:#0d47a1; padding:6px 12px; border-radius:999px; font-size:13px; font-weight:600;">Android: 0</div>
+            <div id="iosCountChip" style="background:#ede7f6; color:#4527a0; padding:6px 12px; border-radius:999px; font-size:13px; font-weight:600;">iOS: 0</div>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <input type="text" id="permissionSearch" placeholder="Search permissions or descriptions..." />
+        <select id="categoryFilter">
+            <option value="">All categories</option>
+        </select>
+        <button id="addAndroidPermissionButton" type="button">Add Android Permission</button>
+        <button id="savePermissionsButton" type="button" class="secondary save-button">Save Changes (Android + iOS)</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th data-column="permission">Permission</th>
+                    <th data-column="description">Description</th>
+                    <th data-column="constantValue">Constant Value</th>
+                    <th data-column="category">Category</th>
+                    <th data-column="apiLevel">API level</th>
+                </tr>
+            </thead>
+            <tbody id="androidPermissionTable"></tbody>
+        </table>
+    </div>
+
+    <div class="status" id="statusMessage"></div>
+
+    <div class="permission-section">
+        <h2>iOS Permissions</h2>
+        <div class="toolbar" style="margin-top: 8px;">
+            <input type="text" id="iosPermissionSearch" placeholder="Search iOS permissions or descriptions..." />
+            <select id="iosCategoryFilter">
+                <option value="">All categories</option>
+            </select>
+            <button id="addIosPermissionButton" type="button" class="secondary">Add iOS Permission</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <colgroup>
+                    <col style="width: 20%;" />
+                    <col style="width: 40%;" />
+                    <col style="width: 25%;" />
+                    <col style="width: 15%;" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Permission</th>
+                        <th>Value</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+                <tbody id="iosPermissionTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <h3 id="modalTitle">Add Permission</h3>
+            <input type="text" id="modalSearch" placeholder="Search by permission, constant value, or category" />
+            <div class="modal-results" id="modalResults"></div>
+            <div id="modalValueContainer" style="display:none; margin-top: 12px;">
+                <label for="modalValueInput" style="display:block; font-weight: 600; margin-bottom: 6px;">Value</label>
+                <input type="text" id="modalValueInput" placeholder="Enter usage description" />
+                <select id="modalValueSelect" style="display:none;">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                </select>
+                <div class="status" id="modalValueHint">Provide a usage description required by Apple.</div>
+            </div>
+            <div class="status" id="modalError"></div>
+            <div class="modal-actions">
+                <button id="modalCancel" type="button" class="secondary">Cancel</button>
+                <button id="modalAdd" type="button">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{utilsUri}}"></script>
+    <script src="{{scriptUri}}"></script>
+</body>
+
+</html>
