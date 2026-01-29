@@ -86,6 +86,67 @@ export async function createPermissionPanel(
     return panel;
 }
 
+export async function initializePermissionWebviewView(
+    webviewView: vscode.WebviewView,
+    extensionUri: vscode.Uri,
+    androidPermissions: AndroidPermission[],
+    iosPermissions: IOSPermission[],
+    androidManifestUri?: vscode.Uri,
+    iosPlistUri?: vscode.Uri,
+    iosPodfileUri?: vscode.Uri,
+    iosAppDelegateUri?: vscode.Uri
+): Promise<void> {
+    webviewView.webview.options = {
+        enableScripts: true,
+        localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src')],
+    };
+
+    webviewView.webview.html = await getWebviewContent(webviewView.webview, extensionUri);
+
+    // Cache categorized permissions for Podfile updates
+    categorizedIosPermissionsCache = await getCategorizedIOSPermissions();
+    
+    // Load services config
+    servicesConfigCache = await readJsonFile<{ services: ServiceConfig[] }>('services-config.json');
+
+    // Extract existing services from manifest/plist/appdelegate
+    const existingServices = await extractServices(
+        androidManifestUri,
+        iosPlistUri,
+        iosAppDelegateUri,
+        servicesConfigCache?.services || []
+    );
+    
+    // Cache the initial services for tracking removals
+    previousServicesCache = [...existingServices];
+
+    const payload: PermissionsPayload = {
+        type: 'permissions',
+        androidPermissions,
+        iosPermissions,
+        hasAndroidManifest: !!androidManifestUri,
+        hasIOSPlist: !!iosPlistUri,
+        hasPodfile: !!iosPodfileUri,
+        services: existingServices,
+        availableServices: servicesConfigCache?.services || []
+    };
+
+    // Create a panel-like shim so existing handlers can be reused
+    const panelLike = { webview: webviewView.webview } as unknown as vscode.WebviewPanel;
+
+    setupMessageHandler(panelLike, payload, androidManifestUri, iosPlistUri, iosPodfileUri, iosAppDelegateUri);
+    
+    // Refresh data when the sidebar becomes visible
+    webviewView.onDidChangeVisibility(async () => {
+        if (webviewView.visible) {
+            await handleRefresh(panelLike, androidManifestUri, iosPlistUri, iosPodfileUri, iosAppDelegateUri);
+        }
+    });
+    
+    // Send initial payload
+    webviewView.webview.postMessage(payload);
+}
+
 /**
  * Sets up the message handler for webview communication
  */

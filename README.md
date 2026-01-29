@@ -1,6 +1,6 @@
-# permission-manager README
+# Permission Manager VS Code Extension
 
-This is the README for your extension "permission-manager". After writing up a brief description, we recommend including the following sections.
+Permission Manager is a VS Code extension for managing Android and iOS permissions and SDK services in Flutter projects. It features a dedicated sidebar icon for quick access and a custom icon (permission-manager.svg) for easy identification.
 
 ## Features
 

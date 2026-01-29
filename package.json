@@ -11,7 +11,8 @@
   ],
   "activationEvents": [
     "onLanguage:xml",
-    "onLanguage:plist"
+    "onLanguage:plist",
+    "onView:permissionManagerView"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -20,7 +21,24 @@
         "command": "permission-manager.edit",
         "title": "Flutter Permission Manager: Edit Permissions"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "permissionManagerSidebar",
+          "title": "Permission Manager",
+          "icon": "src/media/permission-manager.svg"
+        }
+      ]
+    },
+    "views": {
+      "permissionManagerSidebar": [
+        {
+          "id": "permissionManagerView",
+          "name": "Permission Manager"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
