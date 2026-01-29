@@ -1,5 +1,5 @@
 /**
- * Permission Manager VS Code Extension
+ * Flutter Config Manager VS Code Extension
  * Entry point - handles extension activation and command registration
  */
 
@@ -8,7 +8,7 @@ import { setExtensionBaseUri } from './utils/file.js';
 import { getUsedAndroidPermissions, getUsedIOSPermissions } from './utils/extractors.js';
 import { createPermissionPanel } from './webview/index.js';
 import { discoverProjectFilesWithContent } from './services/workspace.js';
-import { PermissionManagerSidebarProvider } from './providers/sidebar.provider.js';
+import { FlutterConfigSidebarProvider } from './providers/sidebar.provider.js';
 
 // Re-export for backward compatibility and testing
 export {
@@ -33,14 +33,14 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register edit command
     const editDisposable = vscode.commands.registerCommand(
-        'permission-manager.edit',
+        'flutter-config-manager.edit',
         () => handleEditCommand(context)
     );
 
     // Register sidebar view provider
-    const sidebarProvider = new PermissionManagerSidebarProvider(context.extensionUri);
+    const sidebarProvider = new FlutterConfigSidebarProvider(context.extensionUri);
     const sidebarDisposable = vscode.window.registerWebviewViewProvider(
-        PermissionManagerSidebarProvider.viewType,
+        FlutterConfigSidebarProvider.viewType,
         sidebarProvider
     );
 
@@ -48,7 +48,7 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Handles the main edit command - opens the Permission Manager panel
+ * Handles the main edit command - opens the Flutter Config Manager panel
  */
 async function handleEditCommand(context: vscode.ExtensionContext): Promise<void> {
     const files = await discoverProjectFilesWithContent();
@@ -65,7 +65,7 @@ async function handleEditCommand(context: vscode.ExtensionContext): Promise<void
         files
     );
 
-    vscode.window.showInformationMessage('Permission Manager opened!');
+    vscode.window.showInformationMessage('Flutter Config Manager opened!');
 }
 
 /**

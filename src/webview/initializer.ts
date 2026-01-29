@@ -31,7 +31,7 @@ export type WebviewTarget =
     | { type: 'view'; view: vscode.WebviewView };
 
 /**
- * Initialize a webview (Panel or View) with permission manager content
+ * Initialize a webview (Panel or View) with Flutter config manager content
  */
 export async function initializePermissionWebview(
     target: WebviewTarget,

@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import type { IOSPermissionEntry } from '../types';
+import type { IOSPermissionEntry } from '../../types/index.js';
 
 /**
  * Extract existing permission macros from Podfile content

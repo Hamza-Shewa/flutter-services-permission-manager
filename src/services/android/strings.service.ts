@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import type { ServiceEntry, ServiceConfig } from '../types/index.js';
+import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
 
 /**
  * Gets or creates the strings.xml file URI

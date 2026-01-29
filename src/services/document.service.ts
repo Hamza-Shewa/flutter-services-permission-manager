@@ -4,11 +4,22 @@
 
 import * as vscode from 'vscode';
 import type { IOSPermissionEntry, SaveResult, ServiceEntry, ServiceConfig } from '../types/index.js';
-import { updateAndroidManifest, updateAndroidManifestWithServices, removeServicesFromAndroidManifest } from './android-manifest.service.js';
-import { updateIOSPlist, updateIOSPlistWithServices, removeServicesFromIOSPlist } from './ios-plist.service.js';
-import { updateIOSPodfile } from './ios-podfile.service.js';
-import { updateAppDelegateWithServices, removeServicesFromAppDelegate } from './ios-appdelegate.service.js';
-import { getOrCreateStringsFile, updateAndroidStringsWithServices, removeServicesFromAndroidStrings } from './android-strings.service.js';
+import {
+    updateAndroidManifest,
+    updateAndroidManifestWithServices,
+    removeServicesFromAndroidManifest,
+    getOrCreateStringsFile,
+    updateAndroidStringsWithServices,
+    removeServicesFromAndroidStrings
+} from './android/index.js';
+import {
+    updateIOSPlist,
+    updateIOSPlistWithServices,
+    removeServicesFromIOSPlist,
+    updateIOSPodfile,
+    updateAppDelegateWithServices,
+    removeServicesFromAppDelegate
+} from './ios/index.js';
 
 /**
  * Replaces entire document content with new content

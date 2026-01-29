@@ -1,41 +1,75 @@
 {
-  "name": "permission-manager",
-  "displayName": "Permission Manager",
-  "description": "",
-  "version": "0.0.1",
+  "name": "flutter-config-manager",
+  "displayName": "Flutter Config Manager",
+  "description": "Manage Flutter app permissions and service configurations for Android and iOS. Configure Facebook SDK, Google Maps, Firebase, AdMob, and more with a visual interface.",
+  "version": "1.0.0",
+  "publisher": "hamza-shewa",
+  "author": {
+    "name": "Hamza Shewa",
+    "email": "shewa.hz98@gmail.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hamza-Shewa/flutter-services-permission-manager"
+  },
+  "bugs": {
+    "url": "https://github.com/Hamza-Shewa/flutter-services-permission-manager/issues"
+  },
+  "homepage": "https://github.com/Hamza-Shewa/flutter-services-permission-manager#readme",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#0175C2",
+    "theme": "dark"
+  },
+  "keywords": [
+    "flutter",
+    "android",
+    "ios",
+    "permissions",
+    "manifest",
+    "plist",
+    "firebase",
+    "facebook",
+    "google maps",
+    "admob",
+    "configuration",
+    "mobile"
+  ],
   "engines": {
-    "vscode": "^1.108.1"
+    "vscode": "^1.80.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Programming Languages",
+    "Snippets"
   ],
   "activationEvents": [
-    "onLanguage:xml",
-    "onLanguage:plist",
-    "onView:permissionManagerView"
+    "workspaceContains:**/pubspec.yaml"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "permission-manager.edit",
-        "title": "Flutter Permission Manager: Edit Permissions"
+        "command": "flutter-config-manager.edit",
+        "title": "Flutter Config Manager: Edit Permissions & Services",
+        "icon": "$(gear)"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "permissionManagerSidebar",
-          "title": "Permission Manager",
-          "icon": "src/media/permission-manager.svg"
+          "id": "flutterConfigSidebar",
+          "title": "Flutter Config",
+          "icon": "images/sidebar-icon.svg"
         }
       ]
     },
     "views": {
-      "permissionManagerSidebar": [
+      "flutterConfigSidebar": [
         {
-          "id": "permissionManagerView",
-          "name": "Permission Manager",
+          "id": "flutterConfigView",
+          "name": "Config Manager",
           "type": "webview"
         }
       ]
@@ -47,16 +81,19 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
-    "@types/vscode": "^1.108.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "typescript-eslint": "^8.52.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "typescript-eslint": "^8.52.0"
   }
 }

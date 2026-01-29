@@ -2,7 +2,7 @@
  * Service for updating AppDelegate.swift with service configurations
  */
 
-import type { ServiceEntry, ServiceConfig } from '../types/index.js';
+import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
 
 interface AppDelegateConfig {
     import?: string;

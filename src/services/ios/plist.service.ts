@@ -2,7 +2,7 @@
  * iOS Info.plist parsing and updating service
  */
 
-import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../types/index.js';
+import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../../types/index.js';
 
 /**
  * Updates Info.plist content with new permission entries

@@ -2,5 +2,17 @@
  * Android services barrel export
  */
 
-export { normalizePermissionNames, updateAndroidManifest } from './manifest.js';
-export { updateAndroidManifestWithServices, removeServicesFromAndroidManifest, buildXmlElement } from './services.js';
+export {
+    normalizePermissionNames,
+    updateAndroidManifest,
+    updateAndroidManifestWithServices,
+    removeServicesFromAndroidManifest
+} from './manifest.service.js';
+
+export {
+    getOrCreateStringsFile,
+    updateAndroidStringsWithServices,
+    getStringFromResources,
+    hasStringResource,
+    removeServicesFromAndroidStrings
+} from './strings.service.js';

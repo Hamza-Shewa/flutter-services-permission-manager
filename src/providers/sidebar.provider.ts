@@ -1,5 +1,5 @@
 /**
- * Permission Manager Sidebar View Provider
+ * Flutter Config Manager Sidebar View Provider
  * Handles the webview in VS Code's sidebar
  */
 
@@ -8,8 +8,8 @@ import { discoverProjectFilesWithContent } from '../services/workspace.js';
 import { getUsedAndroidPermissions, getUsedIOSPermissions } from '../utils/extractors.js';
 import { initializePermissionWebview } from '../webview/initializer.js';
 
-export class PermissionManagerSidebarProvider implements vscode.WebviewViewProvider {
-    public static readonly viewType = 'permissionManagerView';
+export class FlutterConfigSidebarProvider implements vscode.WebviewViewProvider {
+    public static readonly viewType = 'flutterConfigView';
 
     private _view?: vscode.WebviewView;
 

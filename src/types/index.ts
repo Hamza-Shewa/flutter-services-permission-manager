@@ -1,5 +1,5 @@
 /**
- * Type definitions for Permission Manager extension
+ * Type definitions for Flutter Config Manager extension
  * Barrel export - re-exports all types from focused modules
  */
 

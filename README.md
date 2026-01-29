@@ -1,81 +1,58 @@
-# Permission Manager VS Code Extension
+# Flutter Config Manager VS Code Extension
 
-Permission Manager is a VS Code extension for managing Android and iOS permissions and SDK services in Flutter projects. It features a dedicated sidebar icon for quick access and a custom icon (permission-manager.svg) for easy identification.
+Flutter Config Manager is a VS Code extension for managing Android and iOS permissions and SDK service configurations in Flutter projects. It features a dedicated sidebar icon for quick access and provides a unified interface for managing both platform permissions and third-party service integrations.
 
 ## Features
 
-Permission Manager provides a dedicated webview for managing Android and iOS permissions.
+- **Permission Management**: View and manage Android and iOS permissions with categorized lists
+- **Service Configuration**: Configure popular services like Facebook SDK, Google Maps, Firebase, AdMob, and more
+- **Platform Support**: Automatically updates AndroidManifest.xml, Info.plist, strings.xml, Podfile, and AppDelegate.swift
+- **Smart Extraction**: Reads existing configurations from your project files
+- **One-Click Save**: Save all changes to all platform files with a single action
 
-- View Android permissions in a sortable table with columns for Permission, Description, Constant Value, Category, and API level.
-- Filter permissions by search term or category.
-- Add permissions via a modal search that looks up Android permissions by name, constant value, or category.
-- Save changes to AndroidManifest.xml and Info.plist with a single action.
-- Responsive layout that works well across screen sizes.
+## Supported Services
+
+| Service | Android | iOS |
+|---------|---------|-----|
+| Facebook SDK | ✅ | ✅ |
+| Google Sign-In | ✅ | ✅ |
+| Google Maps | ✅ | ✅ |
+| Firebase Cloud Messaging | ✅ | ✅ |
+| Google AdMob | ✅ | ✅ |
+| OneSignal | ✅ | - |
+| Twitter/X Login | ✅ | ✅ |
+| Apple Sign-In | - | ✅ |
+| Stripe Payments | ✅ | ✅ |
+| Deep Linking | ✅ | ✅ |
 
 ## Usage
 
-1. Run the command **Permission Manager: Edit Files File**.
-2. Review the Android permission table.
-3. Use the search box or category filter to narrow results.
-4. Click **Add Permission** to open the modal search and add a permission.
-5. Click **Save Changes** to update AndroidManifest.xml and Info.plist.
+1. Open your Flutter project in VS Code
+2. Click the **Flutter Config** icon in the Activity Bar (sidebar)
+3. Or run the command **Flutter Config Manager: Edit Permissions & Services**
+4. Configure permissions and services as needed
+5. Click **Save All Changes** to update all platform files
 
 > When saving iOS permissions, missing usage descriptions are inserted as `TODO: Provide usage description.` so you can update them manually.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- VS Code 1.108.1 or higher
+- A Flutter project with `android/` and/or `ios/` directories
 
 ## Known Issues
 
-- iOS permission updates require you to fill in usage descriptions after saving.
+- iOS permission updates require you to fill in usage descriptions after saving
+- Some services may require additional manual configuration (e.g., adding google-services.json)
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- Initial release with permission and service management
+- Support for 10 popular Flutter services
+- Automatic extraction of existing configurations
 
 ---
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
 **Enjoy!**

@@ -261,8 +261,9 @@ export async function extractServicesFromIOS(
             for (const plistEntry of serviceConfig.ios.plistEntries) {
                 if (plistEntry.type === 'string' && plistEntry.valueField) {
                     // Look for: <key>FacebookAppID</key>\n<string>value</string>
+                    const escapedKey = plistEntry.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const keyRegex = new RegExp(
-                        `<key>${plistEntry.key}</key>\\s*<string>([^<]+)</string>`,
+                        `<key>${escapedKey}</key>\\s*<string>([^<]+)</string>`,
                         'i'
                     );
                     const match = content.match(keyRegex);
@@ -277,6 +278,16 @@ export async function extractServicesFromIOS(
                         }
                         
                         extractedValues[plistEntry.valueField] = value;
+                    }
+                } else if (plistEntry.type === 'boolean') {
+                    // Check for boolean entries: <key>xxx</key>\s*<true/> or <false/>
+                    const escapedKey = plistEntry.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const boolRegex = new RegExp(
+                        `<key>${escapedKey}</key>\\s*<(true|false)/>`,
+                        'i'
+                    );
+                    if (boolRegex.test(content)) {
+                        foundService = true;
                     }
                 }
             }
@@ -310,6 +321,12 @@ export async function extractServicesFromIOS(
                                 }
                             } else if (!prefix && schemeValue.includes('.googleusercontent.apps.')) {
                                 // Google reversed client ID
+                                foundService = true;
+                                if (!extractedValues[urlScheme.valueField]) {
+                                    extractedValues[urlScheme.valueField] = schemeValue;
+                                }
+                            } else if (!prefix && urlScheme.valueField === 'scheme') {
+                                // Deep link scheme extraction (no prefix, direct scheme)
                                 foundService = true;
                                 if (!extractedValues[urlScheme.valueField]) {
                                     extractedValues[urlScheme.valueField] = schemeValue;
@@ -381,6 +398,18 @@ export async function extractServicesFromAppDelegate(
                         extractedValues['iosApiKey'] = match[1];
                         console.log(`[Services Extractor] Found Google Maps API key: ${match[1]}`);
                     }
+                } else if (appDelegateConfig.code.includes('FirebaseApp.configure')) {
+                    // Firebase detection - just check if the call exists
+                    if (content.includes('FirebaseApp.configure()')) {
+                        foundService = true;
+                        console.log('[Services Extractor] Found Firebase configuration');
+                    }
+                } else if (appDelegateConfig.code.includes('ApplicationDelegate.shared.application')) {
+                    // Facebook SDK detection
+                    if (content.includes('ApplicationDelegate.shared.application')) {
+                        foundService = true;
+                        console.log('[Services Extractor] Found Facebook SDK initialization');
+                    }
                 } else {
                     // Generic pattern matching for other services
                     const placeholderMatch = appDelegateConfig.code.match(/\{(\w+)\}/);
@@ -393,7 +422,8 @@ export async function extractServicesFromAppDelegate(
                         if (methodMatch) {
                             // Build a simple regex to find the value
                             const methodName = codeBeforePlaceholder.replace(/["']$/, '');
-                            const valueRegex = new RegExp(methodName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '["\'"]([^"\']+)["\'"]');
+                            const escapedMethod = methodName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const valueRegex = new RegExp(escapedMethod + '["\'"]([^"\']+)["\'"]');
                             const valueMatch = content.match(valueRegex);
                             
                             if (valueMatch && valueMatch[1]) {

@@ -2,7 +2,7 @@
  * Android Manifest parsing and updating service
  */
 
-import type { ServiceEntry, ServiceConfig } from '../types/index.js';
+import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
 
 /**
  * Normalizes permission names to full Android format

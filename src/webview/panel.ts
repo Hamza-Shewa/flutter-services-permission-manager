@@ -1,6 +1,6 @@
 /**
  * Webview panel creation
- * Creates the Permission Manager panel in the editor area
+ * Creates the Flutter Config Manager panel in the editor area
  */
 
 import * as vscode from 'vscode';
@@ -9,7 +9,7 @@ import type { ProjectFiles } from '../services/workspace.js';
 import { initializePermissionWebview } from './initializer.js';
 
 /**
- * Creates and manages the Permission Manager webview panel
+ * Creates and manages the Flutter Config Manager webview panel
  */
 export async function createPermissionPanel(
     extensionUri: vscode.Uri,
@@ -18,8 +18,8 @@ export async function createPermissionPanel(
     files: ProjectFiles
 ): Promise<vscode.WebviewPanel> {
     const panel = vscode.window.createWebviewPanel(
-        'permissionManager',
-        'Permission Manager',
+        'flutterConfigManager',
+        'Flutter Config Manager',
         vscode.ViewColumn.One,
         {
             enableScripts: true,

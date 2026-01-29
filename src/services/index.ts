@@ -2,10 +2,38 @@
  * Service barrel export
  */
 
-export { normalizePermissionNames, updateAndroidManifest, updateAndroidManifestWithServices, removeServicesFromAndroidManifest } from './android-manifest.service.js';
-export { updateIOSPlist, normalizePlistSpacing, updateIOSPlistWithServices, removeServicesFromIOSPlist } from './ios-plist.service.js';
-export { extractPodfileMacros, updateIOSPodfile } from './ios-podfile.service.js';
-export { updateAppDelegateWithServices, removeServicesFromAppDelegate } from './ios-appdelegate.service.js';
-export { getOrCreateStringsFile, updateAndroidStringsWithServices, getStringFromResources, hasStringResource, removeServicesFromAndroidStrings } from './android-strings.service.js';
+// Android services
+export {
+    normalizePermissionNames,
+    updateAndroidManifest,
+    updateAndroidManifestWithServices,
+    removeServicesFromAndroidManifest,
+    getOrCreateStringsFile,
+    updateAndroidStringsWithServices,
+    getStringFromResources,
+    hasStringResource,
+    removeServicesFromAndroidStrings
+} from './android/index.js';
+
+// iOS services
+export {
+    updateIOSPlist,
+    normalizePlistSpacing,
+    updateIOSPlistWithServices,
+    removeServicesFromIOSPlist,
+    extractPodfileMacros,
+    updateIOSPodfile,
+    updateAppDelegateWithServices,
+    removeServicesFromAppDelegate
+} from './ios/index.js';
+
+// Document service
 export { replaceDocumentContent, savePermissions } from './document.service.js';
-export { extractServices, extractServicesFromAndroid, extractServicesFromIOS, extractServicesFromAppDelegate } from './services-extractor.service.js';
+
+// Services extractor
+export {
+    extractServices,
+    extractServicesFromAndroid,
+    extractServicesFromIOS,
+    extractServicesFromAppDelegate
+} from './services-extractor.service.js';

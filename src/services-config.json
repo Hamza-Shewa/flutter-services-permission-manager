@@ -53,7 +53,11 @@
             "prefix": "fb",
             "valueField": "appId"
           }
-        ]
+        ],
+        "appDelegate": {
+          "import": "FBSDKCoreKit",
+          "code": "ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)"
+        }
       },
       "android": {
         "metaData": [
@@ -173,9 +177,9 @@
       "icon": "🔥",
       "fields": [
         {
-          "id": "senderId",
-          "label": "Sender ID",
-          "placeholder": "Your Firebase Sender ID",
+          "id": "channelId",
+          "label": "Notification Channel ID",
+          "placeholder": "high_importance_channel",
           "required": false
         }
       ],
@@ -187,7 +191,11 @@
             "staticValue": false
           }
         ],
-        "urlSchemes": []
+        "urlSchemes": [],
+        "appDelegate": {
+          "import": "Firebase",
+          "code": "FirebaseApp.configure()"
+        }
       },
       "android": {
         "metaData": [
@@ -415,8 +423,15 @@
             "key": "SKAdNetworkItems",
             "type": "array",
             "staticValue": [
-              { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" }
+              { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" },
+              { "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork" },
+              { "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork" }
             ]
+          },
+          {
+            "key": "NSUserTrackingUsageDescription",
+            "type": "string",
+            "staticValue": "This identifier will be used to deliver personalized ads to you."
           }
         ],
         "urlSchemes": []

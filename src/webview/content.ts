@@ -11,7 +11,7 @@ export async function getWebviewContent(
     webview: vscode.Webview,
     extensionUri: vscode.Uri
 ): Promise<string> {
-    const htmlPath = vscode.Uri.joinPath(extensionUri, 'src', 'permission-manager.html');
+    const htmlPath = vscode.Uri.joinPath(extensionUri, 'src', 'flutter-config.html');
     const rawData = await vscode.workspace.fs.readFile(htmlPath);
     const html = rawData.toString();
 
