@@ -35,7 +35,8 @@
       "permissionManagerSidebar": [
         {
           "id": "permissionManagerView",
-          "name": "Permission Manager"
+          "name": "Permission Manager",
+          "type": "webview"
         }
       ]
     }
