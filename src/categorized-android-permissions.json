@@ -3095,7 +3095,7 @@
       "description": "Must be required by a CallScreeningService, to ensure that only the system can bind to it.",
       "protectionLevel": "signature|privileged",
       "constantValue": "android.permission.BIND_SCREENING_SERVICE",
-      "category": "=\"Site-Wide Custom Events\" data-label=\"Dark Code Toggle\" track-type=\"exampleCode\" track-name=\"darkCodeToggle\" aria-label=\"Dark code theme\" data-title=\"Dark code theme\">",
+      "category": "Service binding",
       "apiLevel": "23",
       "removedIn": ""
     }

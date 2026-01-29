@@ -1,0 +1,43 @@
+{
+  "androidToIos": {
+    "android.permission.CAMERA": ["NSCameraUsageDescription", "NSMainCameraUsageDescription"],
+    "android.permission.ACCESS_FINE_LOCATION": ["NSLocationWhenInUseUsageDescription", "NSLocationAlwaysAndWhenInUseUsageDescription"],
+    "android.permission.ACCESS_COARSE_LOCATION": ["NSLocationWhenInUseUsageDescription", "NSLocationAlwaysAndWhenInUseUsageDescription"],
+    "android.permission.READ_CONTACTS": ["NSContactsUsageDescription"],
+    "android.permission.WRITE_CONTACTS": ["NSContactsUsageDescription"],
+    "android.permission.RECORD_AUDIO": ["NSMicrophoneUsageDescription"],
+    "android.permission.READ_CALENDAR": ["NSCalendarsFullAccessUsageDescription", "NSCalendarsWriteOnlyAccessUsageDescription"],
+    "android.permission.WRITE_CALENDAR": ["NSCalendarsFullAccessUsageDescription", "NSCalendarsWriteOnlyAccessUsageDescription"],
+    "android.permission.READ_EXTERNAL_STORAGE": ["NSPhotoLibraryUsageDescription"],
+    "android.permission.WRITE_EXTERNAL_STORAGE": ["NSPhotoLibraryUsageDescription"],
+    "android.permission.BLUETOOTH": ["NSBluetoothAlwaysUsageDescription", "NSBluetoothPeripheralUsageDescription"],
+    "android.permission.BLUETOOTH_ADMIN": ["NSBluetoothAlwaysUsageDescription", "NSBluetoothPeripheralUsageDescription"],
+    "android.permission.NFC": ["NFCReaderUsageDescription"],
+    "android.permission.CALL_PHONE": ["NSContactsUsageDescription"],
+    "android.permission.READ_PHONE_STATE": ["NSContactsUsageDescription"],
+    "android.permission.SEND_SMS": ["NSContactsUsageDescription"],
+    "android.permission.RECEIVE_SMS": ["NSContactsUsageDescription"],
+    "android.permission.INTERNET": ["NSAppTransportSecurity"],
+    "android.permission.ACCESS_NETWORK_STATE": ["NSAppTransportSecurity"],
+    "android.permission.ACCESS_WIFI_STATE": ["NSAppTransportSecurity"],
+    "android.permission.VIBRATE": ["NSMotionUsageDescription"],
+    "android.permission.FLASHLIGHT": ["NSCameraUsageDescription"],
+    "android.permission.WAKE_LOCK": ["NSLocationWhenInUseUsageDescription"]
+  },
+  "iosToAndroid": {
+    "NSCameraUsageDescription": ["android.permission.CAMERA"],
+    "NSMainCameraUsageDescription": ["android.permission.CAMERA"],
+    "NSLocationWhenInUseUsageDescription": ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
+    "NSLocationAlwaysAndWhenInUseUsageDescription": ["android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
+    "NSContactsUsageDescription": ["android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS"],
+    "NSMicrophoneUsageDescription": ["android.permission.RECORD_AUDIO"],
+    "NSCalendarsFullAccessUsageDescription": ["android.permission.READ_CALENDAR", "android.permission.WRITE_CALENDAR"],
+    "NSCalendarsWriteOnlyAccessUsageDescription": ["android.permission.WRITE_CALENDAR"],
+    "NSPhotoLibraryUsageDescription": ["android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"],
+    "NSBluetoothAlwaysUsageDescription": ["android.permission.BLUETOOTH", "android.permission.BLUETOOTH_ADMIN"],
+    "NSBluetoothPeripheralUsageDescription": ["android.permission.BLUETOOTH", "android.permission.BLUETOOTH_ADMIN"],
+    "NFCReaderUsageDescription": ["android.permission.NFC"],
+    "NSAppTransportSecurity": ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.ACCESS_WIFI_STATE"],
+    "NSMotionUsageDescription": ["android.permission.VIBRATE"]
+  }
+}

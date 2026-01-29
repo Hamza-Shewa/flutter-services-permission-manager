@@ -10,6 +10,7 @@ interface AndroidPermission {
     category: string;
     apiLevel: number;
     removedIn?: number | null;
+    equivalentIosPermissions?: string[];
 }
 
 interface IOSPermission {
@@ -18,6 +19,12 @@ interface IOSPermission {
     type: string;
     category: string;
     value?: string | boolean;
+    equivalentAndroidPermissions?: string[];
+}
+
+interface PermissionMapping {
+    androidToIos: Record<string, string[]>;
+    iosToAndroid: Record<string, string[]>;
 }
 
 interface IOSPermissionEntry {
@@ -52,10 +59,14 @@ async function getUsedIOSPermissions(plistContent: string): Promise<IOSPermissio
     const usedPermissions: IOSPermission[] = [];
     const allPermissions: IOSPermission[] = await getIOSPermissions();
     //same for iOS permissions in the Info.plist file, they are in the form <key>NSCameraUsageDescription</key> starting with NS
-    //so we can use a regex to extract them
+    //we can use a regex to extract them
     const stringRegex = /<key>(NS[^<]*)<\/key>\s*<string>([^<]*)<\/string>/g;
     // also support boolean type permissions since apple has boolean values and not only strings
     const boolRegex = /<key>(NS[^<]*)<\/key>\s*<(true|false)\/>/g;
+    console.log('iOS plist content length:', plistContent.length);
+    console.log('allPermissions length:', allPermissions.length);
+    console.log('string matches:', (plistContent.match(stringRegex) || []).length);
+    console.log('bool matches:', (plistContent.match(boolRegex) || []).length);
     let match;
     while ((match = stringRegex.exec(plistContent)) !== null) {
         const permissionName = match[1];
@@ -63,6 +74,8 @@ async function getUsedIOSPermissions(plistContent: string): Promise<IOSPermissio
         const permissionInfo = allPermissions.find(p => p.permission === permissionName);
         if (permissionInfo) {
             usedPermissions.push({ ...permissionInfo, value });
+        } else {
+            console.log('Permission not found in allPermissions:', permissionName);
         }
     }
     while ((match = boolRegex.exec(plistContent)) !== null) {
@@ -71,6 +84,8 @@ async function getUsedIOSPermissions(plistContent: string): Promise<IOSPermissio
         const permissionInfo = allPermissions.find(p => p.permission === permissionName);
         if (permissionInfo) {
             usedPermissions.push({ ...permissionInfo, value });
+        } else {
+            console.log('Permission not found in allPermissions:', permissionName);
         }
     }
     console.log('used iOS permissions:', usedPermissions.length);
@@ -79,19 +94,42 @@ async function getUsedIOSPermissions(plistContent: string): Promise<IOSPermissio
 
 async function getAndroidPermissions(): Promise<AndroidPermission[]> {
     const raw = await getListFromFile<AndroidPermission[] | Record<string, AndroidPermission[]>>('categorized-android-permissions.json');
-    return flattenAndroidPermissions(raw);
+    const permissions = flattenAndroidPermissions(raw);
+    const mapping = await getPermissionMapping();
+    return enrichAndroidPermissionsWithEquivalents(permissions, mapping);
 }
 
 async function getIOSPermissions(): Promise<IOSPermission[]> {
     const raw = await getListFromFile<IOSPermission[] | Record<string, IOSPermission[]>>('categorized-ios-permissions.json');
-    return flattenIOSPermissions(raw);
+    const permissions = flattenIOSPermissions(raw);
+    const mapping = await getPermissionMapping();
+    return enrichIOSPermissionsWithEquivalents(permissions, mapping);
+}
+
+async function getPermissionMapping(): Promise<PermissionMapping> {
+    return getListFromFile<PermissionMapping>('permission-mapping.json');
+}
+
+function enrichAndroidPermissionsWithEquivalents(permissions: AndroidPermission[], mapping: PermissionMapping): AndroidPermission[] {
+    return permissions.map(permission => ({
+        ...permission,
+        equivalentIosPermissions: mapping.androidToIos[permission.constantValue] || []
+    }));
+}
+
+function enrichIOSPermissionsWithEquivalents(permissions: IOSPermission[], mapping: PermissionMapping): IOSPermission[] {
+    return permissions.map(permission => ({
+        ...permission,
+        equivalentAndroidPermissions: mapping.iosToAndroid[permission.permission] || []
+    }));
 }
 
 
 async function getListFromFile<T>(filePath: string): Promise<T> {
     try {
         const currentFile = __filename;
-        const extensionFolder = vscode.Uri.file(path.dirname(currentFile));
+        const dir = path.dirname(currentFile);
+        const extensionFolder = vscode.Uri.file(dir);
         const candidatePaths: vscode.Uri[] = [];
         if (extensionBaseUri) {
             candidatePaths.push(vscode.Uri.joinPath(extensionBaseUri, 'src', filePath));
@@ -116,4 +154,4 @@ async function getListFromFile<T>(filePath: string): Promise<T> {
     }
 }
 
-export { AndroidPermission, IOSPermission, IOSPermissionEntry, getUsedAndroidPermissions, getUsedIOSPermissions, getAndroidPermissions, getIOSPermissions };
+export { AndroidPermission, IOSPermission, IOSPermissionEntry, PermissionMapping, getUsedAndroidPermissions, getUsedIOSPermissions, getAndroidPermissions, getIOSPermissions, getPermissionMapping };

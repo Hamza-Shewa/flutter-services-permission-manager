@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { AndroidPermission, IOSPermission, IOSPermissionEntry, getUsedAndroidPermissions, getUsedIOSPermissions, getAndroidPermissions, getIOSPermissions } from './utils/extractors';
+import { AndroidPermission, IOSPermission, IOSPermissionEntry, PermissionMapping, getUsedAndroidPermissions, getUsedIOSPermissions, getAndroidPermissions, getIOSPermissions } from './utils/extractors';
 
 
 let extensionBaseUri: vscode.Uri | undefined;
@@ -17,9 +17,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// detect the android-manifest.xml path in the workspace
 		// the manager ignores the debug/profile/release manifests and only uses the main one
-		const androidPermissionsUri = await vscode.workspace.findFiles('**/AndroidManifest.xml', '**/{build,profile,debug,release}/**', 1);
+		const androidPermissionsUri = await vscode.workspace.findFiles('**/app/src/main/AndroidManifest.xml', undefined, 1);
 		// detects the IOS Info.plist path in the workspace
-		const iosPermissionsUri = await vscode.workspace.findFiles('**/Info.plist', '**/build', 1);
+		const iosPermissionsUri = await vscode.workspace.findFiles('**/Runner/Info.plist', undefined, 1);
 
 		//this opens the files to read their contents and extract the permissions
 		const android_manifest = androidPermissionsUri.length > 0 ? await vscode.workspace.openTextDocument(androidPermissionsUri[0]) : null;
@@ -69,7 +69,9 @@ async function viewPanel(
 	const payload = {
 		type: 'permissions',
 		androidPermissions,
-		iosPermissions
+		iosPermissions,
+		hasAndroidManifest: !!androidManifestUri,
+		hasIOSPlist: !!iosPlistUri
 	};
 
 	panel.webview.onDidReceiveMessage(async message => {
@@ -77,6 +79,21 @@ async function viewPanel(
 			case 'ready':
 				panel.webview.postMessage(payload);
 				break;
+			case 'refresh': {
+				// Re-read the files and refresh used permissions
+				const android_manifest = androidManifestUri ? await vscode.workspace.openTextDocument(androidManifestUri) : null;
+				const ios_info_plist = iosPlistUri ? await vscode.workspace.openTextDocument(iosPlistUri) : null;
+				const usedAndroidPermissions = await getUsedAndroidPermissions(android_manifest?.getText() || '');
+				const usedIOSPermissions = await getUsedIOSPermissions(ios_info_plist?.getText() || '');
+				panel.webview.postMessage({
+					type: 'permissions',
+					androidPermissions: usedAndroidPermissions,
+					iosPermissions: usedIOSPermissions,
+					hasAndroidManifest: !!androidManifestUri,
+					hasIOSPlist: !!iosPlistUri
+				});
+				break;
+			}
 			case 'requestAllAndroidPermissions': {
 				const allAndroidPermissions = await getAndroidPermissions();
 				panel.webview.postMessage({
@@ -146,14 +163,27 @@ function updateAndroidManifest(manifestContent: string, permissionNames: string[
 	const usesPermissionsXml = normalized
 		.map(permission => `    <uses-permission android:name="${permission}" />`)
 		.join('\n');
-	const cleaned = manifestContent.replace(/\s*<uses-permission\b[^>]*android:name="[^"]+"[^>]*\/?>(?:\s*<\/uses-permission>)?\s*/g, '');
+	// Extract and preserve <queries> block before cleaning
+	const queriesMatch = manifestContent.match(/(\s*<queries>[\s\S]*?<\/queries>\s*)/);
+	// Remove only the uses-permission tags, not surrounding whitespace that could affect other elements
+	const cleaned = manifestContent.replace(/<uses-permission\b[^>]*android:name="[^"]+"[^>]*\/?>(?:\s*<\/uses-permission>)?[ \t]*\n?/g, '');
 	const manifestMatch = cleaned.match(/<manifest[^>]*>/);
 	if (!manifestMatch) {
 		return manifestContent;
 	}
 	const insertIndex = manifestMatch.index! + manifestMatch[0].length;
 	const prefix = cleaned.slice(0, insertIndex);
-	const suffix = cleaned.slice(insertIndex);
+	let suffix = cleaned.slice(insertIndex);
+	// Restore <queries> block if it was accidentally removed
+	if (queriesMatch && !suffix.includes('<queries>')) {
+		// Find the position before </manifest> to insert queries
+		const manifestCloseIndex = suffix.lastIndexOf('</manifest>');
+		if (manifestCloseIndex !== -1) {
+			suffix = suffix.slice(0, manifestCloseIndex) + queriesMatch[1] + suffix.slice(manifestCloseIndex);
+		} else {
+			suffix = `${suffix}${queriesMatch[1]}`;
+		}
+	}
 	if (!usesPermissionsXml) {
 		return `${prefix}${suffix}`;
 	}
@@ -171,19 +201,25 @@ function updateIOSPlist(plistContent: string, permissionEntries: IOSPermissionEn
 	const existingBooleanPairs = new Map<string, boolean>();
 	const stringRegex = /\s*<key>(NS[^<]*)<\/key>\s*<string>([^<]*)<\/string>\s*/g;
 	const boolRegex = /\s*<key>(NS[^<]*)<\/key>\s*<(true|false)\/>\s*/g;
-	let match;
-	while ((match = stringRegex.exec(plistContent)) !== null) {
-		existingStringPairs.set(match[1], match[2]);
-	}
-	while ((match = boolRegex.exec(plistContent)) !== null) {
-		existingBooleanPairs.set(match[1], match[2] === 'true');
-	}
 
-	let cleaned = plistContent.replace(stringRegex, '').replace(boolRegex, '');
-	const dictCloseIndex = cleaned.indexOf('</dict>');
+	// Work only on the content before the final </dict> so we never drop closing tags
+	const dictCloseIndex = plistContent.lastIndexOf('</dict>');
 	if (dictCloseIndex === -1) {
 		return plistContent;
 	}
+	const prefix = plistContent.slice(0, dictCloseIndex);
+	const suffix = plistContent.slice(dictCloseIndex); // contains </dict></plist>
+
+	let match;
+	while ((match = stringRegex.exec(prefix)) !== null) {
+		existingStringPairs.set(match[1], match[2]);
+	}
+	while ((match = boolRegex.exec(prefix)) !== null) {
+		existingBooleanPairs.set(match[1], match[2] === 'true');
+	}
+
+	const cleanedPrefix = prefix.replace(stringRegex, '').replace(boolRegex, '');
+
 	const entries = Array.from(uniqueEntries.values())
 		.map(entry => {
 			const type = entry.type?.toLowerCase();
@@ -197,11 +233,12 @@ function updateIOSPlist(plistContent: string, permissionEntries: IOSPermissionEn
 			return `\t<key>${entry.permission}</key>\n\t<string>${value}</string>`;
 		})
 		.join('\n');
+
 	if (!entries) {
-		return normalizePlistSpacing(cleaned);
+		return normalizePlistSpacing(cleanedPrefix + suffix);
 	}
-	const insertBlock = `\n${entries}`;
-	const merged = cleaned.slice(0, dictCloseIndex) + insertBlock + cleaned.slice(dictCloseIndex);
+
+	const merged = `${cleanedPrefix}\n${entries}\n${suffix}`;
 	return normalizePlistSpacing(merged);
 }
 
