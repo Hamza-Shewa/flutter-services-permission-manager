@@ -14,10 +14,11 @@ export function updateIOSPlist(plistContent: string, permissionEntries: IOSPermi
         .filter(entry => entry.permission?.trim())
         .forEach(entry => uniqueEntries.set(entry.permission.trim(), entry));
 
+    // Build a set of permission keys we're managing
+    const permissionKeys = new Set(Array.from(uniqueEntries.keys()));
+    
     const existingStringPairs = new Map<string, string>();
     const existingBooleanPairs = new Map<string, boolean>();
-    const stringRegex = /\s*<key>(NS[^<]*)<\/key>\s*<string>([^<]*)<\/string>\s*/g;
-    const boolRegex = /\s*<key>(NS[^<]*)<\/key>\s*<(true|false)\/>\s*/g;
 
     // Work only on the content before the final </dict> so we never drop closing tags
     const dictCloseIndex = plistContent.lastIndexOf('</dict>');
@@ -28,6 +29,10 @@ export function updateIOSPlist(plistContent: string, permissionEntries: IOSPermi
     const prefix = plistContent.slice(0, dictCloseIndex);
     const suffix = plistContent.slice(dictCloseIndex); // contains </dict></plist>
 
+    // Only match and extract permission keys (those ending with UsageDescription or in our set)
+    const stringRegex = /<key>(NS\w*UsageDescription)<\/key>\s*<string>([^<]*)<\/string>/g;
+    const boolRegex = /<key>(NS\w*UsageDescription)<\/key>\s*<(true|false)\/>/g;
+    
     let match;
     while ((match = stringRegex.exec(prefix)) !== null) {
         existingStringPairs.set(match[1], match[2]);
@@ -36,7 +41,23 @@ export function updateIOSPlist(plistContent: string, permissionEntries: IOSPermi
         existingBooleanPairs.set(match[1], match[2] === 'true');
     }
 
-    const cleanedPrefix = prefix.replace(stringRegex, '').replace(boolRegex, '');
+    // Only remove the permission entries we're managing, not other NS* keys
+    let cleanedPrefix = prefix;
+    for (const key of permissionKeys) {
+        // Remove existing string entry for this permission
+        const keyStringRegex = new RegExp(
+            `\\s*<key>${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</key>\\s*<string>[^<]*</string>`,
+            'g'
+        );
+        cleanedPrefix = cleanedPrefix.replace(keyStringRegex, '');
+        
+        // Remove existing boolean entry for this permission
+        const keyBoolRegex = new RegExp(
+            `\\s*<key>${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</key>\\s*<(?:true|false)/>`,
+            'g'
+        );
+        cleanedPrefix = cleanedPrefix.replace(keyBoolRegex, '');
+    }
 
     const entries = Array.from(uniqueEntries.values())
         .map(entry => {
@@ -53,22 +74,22 @@ export function updateIOSPlist(plistContent: string, permissionEntries: IOSPermi
         .join('\n');
 
     if (!entries) {
-        return normalizePlistSpacing(cleanedPrefix + suffix);
+        return cleanedPrefix + suffix;
     }
 
-    const merged = `${cleanedPrefix}\n${entries}\n${suffix}`;
-    return normalizePlistSpacing(merged);
+    // Insert entries before the closing </dict>, maintaining proper formatting
+    const trimmedPrefix = cleanedPrefix.replace(/\s+$/, '');
+    const merged = `${trimmedPrefix}\n${entries}\n${suffix}`;
+    return merged;
 }
 
 /**
  * Normalizes whitespace in plist content for consistent formatting
+ * Note: This function now does minimal changes to preserve original formatting
  */
 export function normalizePlistSpacing(plistContent: string): string {
-    let normalized = plistContent;
-    normalized = normalized.replace(/(<true\/>|<false\/>)\s*<key>/g, '$1\n\t<key>');
-    normalized = normalized.replace(/<\/string>\s*<key>/g, '</string>\n\t<key>');
-    normalized = normalized.replace(/\n{2,}/g, '\n');
-    return normalized;
+    // Only clean up excessive blank lines, preserve everything else
+    return plistContent.replace(/\n{3,}/g, '\n\n');
 }
 
 /**
@@ -89,7 +110,7 @@ export function updateIOSPlistWithServices(
         if (config.ios.plistEntries && config.ios.plistEntries.length > 0) {
             for (const entry of config.ios.plistEntries) {
                 if (entry.type === 'string' && entry.valueField) {
-                    const value = service.values[entry.valueField];
+                    const value = (service.values || {})[entry.valueField];
                     if (!value) continue;
                     
                     // Check if key already exists
@@ -149,7 +170,7 @@ export function updateIOSPlistWithServices(
         // Add/update URL schemes in existing CFBundleURLSchemes array
         if (config.ios.urlSchemes && config.ios.urlSchemes.length > 0) {
             for (const scheme of config.ios.urlSchemes) {
-                let value = service.values[scheme.valueField] || '';
+                let value = (service.values || {})[scheme.valueField] || '';
                 if (!value) continue;
                 
                 const newScheme = scheme.prefix ? scheme.prefix + value : value;

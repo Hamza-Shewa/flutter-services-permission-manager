@@ -97,7 +97,7 @@ export function updateAndroidManifestWithServices(
         // Add/update meta-data in application tag
         if (config.android.metaData && config.android.metaData.length > 0) {
             for (const meta of config.android.metaData) {
-                let value = service.values[meta.valueField] || meta.defaultValue || '';
+                let value = (service.values || {})[meta.valueField] || meta.defaultValue || '';
                 if (!value) continue;
                 
                 // Use @string reference if stringResource is defined
@@ -131,7 +131,7 @@ export function updateAndroidManifestWithServices(
         // Add queries entries
         if (config.android.queries && config.android.queries.length > 0) {
             for (const q of config.android.queries) {
-                const attrs = Object.entries(q.attributes)
+                const attrs = Object.entries(q.attributes || {})
                     .map(([k, v]) => `${k}="${v}"`)
                     .join(' ');
                 const queryXml = `<${q.tag} ${attrs} />`;
@@ -334,14 +334,14 @@ function buildXmlElement(
     indent: number
 ): string {
     const spaces = '    '.repeat(indent);
-    const attrs = Object.entries(element.attributes)
+    const attrs = Object.entries(element.attributes || {})
         .map(([k, v]) => {
             // Replace {fieldId} placeholders with actual values
             let value = v;
             const match = v.match(/\{(\w+)\}/);
             if (match) {
                 const fieldId = match[1];
-                value = v.replace(`{${fieldId}}`, values[fieldId] || '');
+                value = v.replace(`{${fieldId}}`, (values || {})[fieldId] || '');
             }
             return `${k}="${value}"`;
         })

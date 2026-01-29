@@ -36,7 +36,8 @@ export async function createPermissionPanel(
         vscode.ViewColumn.One,
         {
             enableScripts: true,
-            localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src')]
+            localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src')],
+            retainContextWhenHidden: true  // Keep webview state when tab is hidden
         }
     );
 
@@ -71,6 +72,13 @@ export async function createPermissionPanel(
     };
 
     setupMessageHandler(panel, payload, androidManifestUri, iosPlistUri, iosPodfileUri, iosAppDelegateUri);
+    
+    // Refresh data when panel becomes visible again
+    panel.onDidChangeViewState(async (e) => {
+        if (e.webviewPanel.visible) {
+            await handleRefresh(panel, androidManifestUri, iosPlistUri, iosPodfileUri, iosAppDelegateUri);
+        }
+    });
     
     // Send initial payload
     panel.webview.postMessage(payload);

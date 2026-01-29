@@ -55,7 +55,7 @@ export function updateAndroidStringsWithServices(
         if (!config?.android?.stringResources) continue;
         
         for (const stringRes of config.android.stringResources) {
-            let value = service.values[stringRes.valueField] || '';
+            let value = (service.values || {})[stringRes.valueField] || '';
             if (!value) continue;
             
             // Apply prefix if defined

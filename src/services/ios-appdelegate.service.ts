@@ -52,8 +52,9 @@ export function updateAppDelegateWithServices(
         if (appDelegateConfig.code) {
             // Replace placeholders with actual values
             let codeToInsert = appDelegateConfig.code;
-            for (const [fieldId, fieldValue] of Object.entries(service.values)) {
-                codeToInsert = codeToInsert.replace(`{${fieldId}}`, fieldValue);
+            const serviceValues = service.values || {};
+            for (const [fieldId, fieldValue] of Object.entries(serviceValues)) {
+                codeToInsert = codeToInsert.replace(`{${fieldId}}`, fieldValue || '');
             }
 
             // Check if the code pattern already exists (without the specific value)
