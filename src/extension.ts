@@ -1,303 +1,91 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
+/**
+ * Permission Manager VS Code Extension
+ * Entry point - handles extension activation and command registration
+ */
+
 import * as vscode from 'vscode';
-import { AndroidPermission, IOSPermission, IOSPermissionEntry, PermissionMapping, getUsedAndroidPermissions, getUsedIOSPermissions, getAndroidPermissions, getIOSPermissions } from './utils/extractors';
+import { setExtensionBaseUri } from './utils/file.js';
+import { getUsedAndroidPermissions, getUsedIOSPermissions } from './utils/extractors.js';
+import { createPermissionPanel } from './webview/index.js';
 
+// Re-export for backward compatibility and testing
+export {
+    updateAndroidManifest,
+    updateIOSPlist,
+    normalizePermissionNames,
+    normalizePlistSpacing
+} from './services/index.js';
 
-let extensionBaseUri: vscode.Uri | undefined;
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
-	extensionBaseUri = context.extensionUri;
+export {
+    flattenAndroidPermissions,
+    flattenIOSPermissions
+} from './utils/extractors.js';
 
+export { getExtensionBaseUri as extensionBaseUri } from './utils/file.js';
 
-	// The command has been defined in the package.json file
-	// This command launches the permission manager webview
-	const editDisposable = vscode.commands.registerCommand('permission-manager.edit', async () => {
+/**
+ * Extension activation - called when extension is first used
+ */
+export function activate(context: vscode.ExtensionContext): void {
+    setExtensionBaseUri(context.extensionUri);
 
-		// detect the android-manifest.xml path in the workspace
-		// the manager ignores the debug/profile/release manifests and only uses the main one
-		const androidPermissionsUri = await vscode.workspace.findFiles('**/app/src/main/AndroidManifest.xml', undefined, 1);
-		// detects the IOS Info.plist path in the workspace
-		const iosPermissionsUri = await vscode.workspace.findFiles('**/Runner/Info.plist', undefined, 1);
+    const editDisposable = vscode.commands.registerCommand(
+        'permission-manager.edit',
+        () => handleEditCommand(context)
+    );
 
-		//this opens the files to read their contents and extract the permissions
-		const android_manifest = androidPermissionsUri.length > 0 ? await vscode.workspace.openTextDocument(androidPermissionsUri[0]) : null;
-		const ios_info_plist = iosPermissionsUri.length > 0 ? await vscode.workspace.openTextDocument(iosPermissionsUri[0]) : null;
-
-		//get the used permissions with more details from the manifest/plist contents with helper functions defined below with an interface
-		const usedAndroidPermissions = await getUsedAndroidPermissions(android_manifest?.getText() || '');
-		const usedIOSPermissions = await getUsedIOSPermissions(ios_info_plist?.getText() || '');
-
-		viewPanel(
-			context.extensionUri,
-			usedAndroidPermissions,
-			usedIOSPermissions,
-			androidPermissionsUri[0],
-			iosPermissionsUri[0]
-		);
-		// await vscode.window.showTextDocument(permDoc, { viewColumn: vscode.ViewColumn.Beside, preview: false });
-		vscode.window.showInformationMessage('Edit command executed from Permission Manager!');
-	});
-
-	context.subscriptions.push(editDisposable);
+    context.subscriptions.push(editDisposable);
 }
 
+/**
+ * Handles the main edit command - opens the Permission Manager panel
+ */
+async function handleEditCommand(context: vscode.ExtensionContext): Promise<void> {
+    // Find platform-specific files
+    const androidManifestUris = await vscode.workspace.findFiles(
+        '**/app/src/main/AndroidManifest.xml',
+        undefined,
+        1
+    );
+    const iosPlistUris = await vscode.workspace.findFiles(
+        '**/Runner/Info.plist',
+        undefined,
+        1
+    );
+    const iosPodfileUris = await vscode.workspace.findFiles(
+        '**/ios/Podfile',
+        undefined,
+        1
+    );
 
+    // Read file contents
+    const androidDoc = androidManifestUris.length > 0
+        ? await vscode.workspace.openTextDocument(androidManifestUris[0])
+        : null;
+    const iosDoc = iosPlistUris.length > 0
+        ? await vscode.workspace.openTextDocument(iosPlistUris[0])
+        : null;
 
-async function viewPanel(
-	extensionUri: vscode.Uri,
-	androidPermissions: AndroidPermission[],
-	iosPermissions: IOSPermission[],
-	androidManifestUri?: vscode.Uri,
-	iosPlistUri?: vscode.Uri
-) {
-	// Create and show a new webview
-	const panel = vscode.window.createWebviewPanel(
-		'permissionManager', // Identifies the type of the webview. Used internally
-		'Permission Manager', // Title of the panel displayed to the user
-		vscode.ViewColumn.One, // Editor column to show the new webview panel in.
-		{
-			enableScripts: true,
-			localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src')]
-		} // Webview options. More on these later.
-	);
+    // Extract current permissions
+    const usedAndroidPermissions = await getUsedAndroidPermissions(androidDoc?.getText() || '');
+    const usedIOSPermissions = await getUsedIOSPermissions(iosDoc?.getText() || '');
 
-	// And set its HTML content
-	panel.webview.html = await getWebviewContent(panel.webview, extensionUri);
+    // Create the webview panel
+    await createPermissionPanel(
+        context.extensionUri,
+        usedAndroidPermissions,
+        usedIOSPermissions,
+        androidManifestUris[0],
+        iosPlistUris[0],
+        iosPodfileUris[0]
+    );
 
-	const payload = {
-		type: 'permissions',
-		androidPermissions,
-		iosPermissions,
-		hasAndroidManifest: !!androidManifestUri,
-		hasIOSPlist: !!iosPlistUri
-	};
-
-	panel.webview.onDidReceiveMessage(async message => {
-		switch (message?.type) {
-			case 'ready':
-				panel.webview.postMessage(payload);
-				break;
-			case 'refresh': {
-				// Re-read the files and refresh used permissions
-				const android_manifest = androidManifestUri ? await vscode.workspace.openTextDocument(androidManifestUri) : null;
-				const ios_info_plist = iosPlistUri ? await vscode.workspace.openTextDocument(iosPlistUri) : null;
-				const usedAndroidPermissions = await getUsedAndroidPermissions(android_manifest?.getText() || '');
-				const usedIOSPermissions = await getUsedIOSPermissions(ios_info_plist?.getText() || '');
-				panel.webview.postMessage({
-					type: 'permissions',
-					androidPermissions: usedAndroidPermissions,
-					iosPermissions: usedIOSPermissions,
-					hasAndroidManifest: !!androidManifestUri,
-					hasIOSPlist: !!iosPlistUri
-				});
-				break;
-			}
-			case 'requestAllAndroidPermissions': {
-				const allAndroidPermissions = await getAndroidPermissions();
-				panel.webview.postMessage({
-					type: 'allAndroidPermissions',
-					permissions: allAndroidPermissions
-				});
-				break;
-			}
-			case 'requestAllIOSPermissions': {
-				const allIOSPermissions = await getIOSPermissions();
-				panel.webview.postMessage({
-					type: 'allIOSPermissions',
-					permissions: allIOSPermissions
-				});
-				break;
-			}
-			case 'savePermissions': {
-				const androidList: string[] = Array.isArray(message?.androidPermissions) ? message.androidPermissions : [];
-				const iosList: IOSPermissionEntry[] = Array.isArray(message?.iosPermissions) ? message.iosPermissions : [];
-				const result = await savePermissions(androidList, iosList, androidManifestUri, iosPlistUri);
-				panel.webview.postMessage({ type: 'saveResult', ...result });
-				break;
-			}
-			default:
-				break;
-		}
-	});
-
-	panel.webview.postMessage(payload);
+    vscode.window.showInformationMessage('Edit command executed from Permission Manager!');
 }
 
-async function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
-	const htmlPath = vscode.Uri.joinPath(extensionUri, 'src', 'permission-manager.html');
-	const rawData = await vscode.workspace.fs.readFile(htmlPath);
-	const html = rawData.toString();
-
-	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'src', 'webview.js'));
-	const utilsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'src', 'webview-utils.js'));
-	const cspSource = webview.cspSource;
-
-	return html
-		.replace(/\{\{cspSource\}\}/g, cspSource)
-		.replace(/\{\{scriptUri\}\}/g, scriptUri.toString())
-		.replace(/\{\{utilsUri\}\}/g, utilsUri.toString());
+/**
+ * Extension deactivation - cleanup if needed
+ */
+export function deactivate(): void {
+    // Cleanup resources if needed
 }
-
-
-function normalizePermissionNames(permissionNames: string[]): string[] {
-	const seen = new Set<string>();
-	const result: string[] = [];
-	for (const entry of permissionNames) {
-		const trimmed = entry?.trim();
-		if (!trimmed) {
-			continue;
-		}
-		const normalized = trimmed.startsWith('android.permission.') ? trimmed : `android.permission.${trimmed}`;
-		if (!seen.has(normalized)) {
-			seen.add(normalized);
-			result.push(normalized);
-		}
-	}
-	return result;
-}
-
-function updateAndroidManifest(manifestContent: string, permissionNames: string[]): string {
-	const normalized = normalizePermissionNames(permissionNames);
-	const usesPermissionsXml = normalized
-		.map(permission => `    <uses-permission android:name="${permission}" />`)
-		.join('\n');
-	// Extract and preserve <queries> block before cleaning
-	const queriesMatch = manifestContent.match(/(\s*<queries>[\s\S]*?<\/queries>\s*)/);
-	// Remove only the uses-permission tags, not surrounding whitespace that could affect other elements
-	const cleaned = manifestContent.replace(/<uses-permission\b[^>]*android:name="[^"]+"[^>]*\/?>(?:\s*<\/uses-permission>)?[ \t]*\n?/g, '');
-	const manifestMatch = cleaned.match(/<manifest[^>]*>/);
-	if (!manifestMatch) {
-		return manifestContent;
-	}
-	const insertIndex = manifestMatch.index! + manifestMatch[0].length;
-	const prefix = cleaned.slice(0, insertIndex);
-	let suffix = cleaned.slice(insertIndex);
-	// Restore <queries> block if it was accidentally removed
-	if (queriesMatch && !suffix.includes('<queries>')) {
-		// Find the position before </manifest> to insert queries
-		const manifestCloseIndex = suffix.lastIndexOf('</manifest>');
-		if (manifestCloseIndex !== -1) {
-			suffix = suffix.slice(0, manifestCloseIndex) + queriesMatch[1] + suffix.slice(manifestCloseIndex);
-		} else {
-			suffix = `${suffix}${queriesMatch[1]}`;
-		}
-	}
-	if (!usesPermissionsXml) {
-		return `${prefix}${suffix}`;
-	}
-	const insertBlock = `\n${usesPermissionsXml}`;
-	return `${prefix}${insertBlock}${suffix}`;
-}
-
-function updateIOSPlist(plistContent: string, permissionEntries: IOSPermissionEntry[]): string {
-	const uniqueEntries = new Map<string, IOSPermissionEntry>();
-	permissionEntries
-		.filter(entry => entry.permission?.trim())
-		.forEach(entry => uniqueEntries.set(entry.permission.trim(), entry));
-
-	const existingStringPairs = new Map<string, string>();
-	const existingBooleanPairs = new Map<string, boolean>();
-	const stringRegex = /\s*<key>(NS[^<]*)<\/key>\s*<string>([^<]*)<\/string>\s*/g;
-	const boolRegex = /\s*<key>(NS[^<]*)<\/key>\s*<(true|false)\/>\s*/g;
-
-	// Work only on the content before the final </dict> so we never drop closing tags
-	const dictCloseIndex = plistContent.lastIndexOf('</dict>');
-	if (dictCloseIndex === -1) {
-		return plistContent;
-	}
-	const prefix = plistContent.slice(0, dictCloseIndex);
-	const suffix = plistContent.slice(dictCloseIndex); // contains </dict></plist>
-
-	let match;
-	while ((match = stringRegex.exec(prefix)) !== null) {
-		existingStringPairs.set(match[1], match[2]);
-	}
-	while ((match = boolRegex.exec(prefix)) !== null) {
-		existingBooleanPairs.set(match[1], match[2] === 'true');
-	}
-
-	const cleanedPrefix = prefix.replace(stringRegex, '').replace(boolRegex, '');
-
-	const entries = Array.from(uniqueEntries.values())
-		.map(entry => {
-			const type = entry.type?.toLowerCase();
-			if (type === 'boolean') {
-				const value = entry.value ?? existingBooleanPairs.get(entry.permission) ?? false;
-				return `\t<key>${entry.permission}</key>\n\t<${value ? 'true' : 'false'}/>`;
-			}
-			const value = typeof entry.value === 'string' && entry.value.trim().length > 0
-				? entry.value
-				: existingStringPairs.get(entry.permission) ?? 'TODO: Provide usage description.';
-			return `\t<key>${entry.permission}</key>\n\t<string>${value}</string>`;
-		})
-		.join('\n');
-
-	if (!entries) {
-		return normalizePlistSpacing(cleanedPrefix + suffix);
-	}
-
-	const merged = `${cleanedPrefix}\n${entries}\n${suffix}`;
-	return normalizePlistSpacing(merged);
-}
-
-function normalizePlistSpacing(plistContent: string): string {
-	let normalized = plistContent;
-	normalized = normalized.replace(/(<true\/>|<false\/>)\s*<key>/g, '$1\n\t<key>');
-	normalized = normalized.replace(/<\/string>\s*<key>/g, '</string>\n\t<key>');
-	normalized = normalized.replace(/\n{2,}/g, '\n');
-	return normalized;
-}
-
-async function replaceDocumentContent(uri: vscode.Uri, content: string): Promise<void> {
-	const document = await vscode.workspace.openTextDocument(uri);
-	const lastLine = document.lineAt(document.lineCount - 1);
-	const fullRange = new vscode.Range(0, 0, document.lineCount - 1, lastLine.text.length);
-	const edit = new vscode.WorkspaceEdit();
-	edit.replace(uri, fullRange, content);
-	await vscode.workspace.applyEdit(edit);
-	await document.save();
-}
-
-async function savePermissions(
-	androidPermissions: string[],
-	iosPermissions: IOSPermissionEntry[],
-	androidManifestUri?: vscode.Uri,
-	iosPlistUri?: vscode.Uri
-): Promise<{ success: boolean; message: string }> {
-	try {
-		if (!androidManifestUri && !iosPlistUri) {
-			return { success: false, message: 'No AndroidManifest.xml or Info.plist was found to update.' };
-		}
-		if (androidManifestUri) {
-			const doc = await vscode.workspace.openTextDocument(androidManifestUri);
-			const updated = updateAndroidManifest(doc.getText(), androidPermissions);
-			await replaceDocumentContent(androidManifestUri, updated);
-		}
-		if (iosPlistUri) {
-			const doc = await vscode.workspace.openTextDocument(iosPlistUri);
-			const updated = updateIOSPlist(doc.getText(), iosPermissions);
-			await replaceDocumentContent(iosPlistUri, updated);
-		}
-		return { success: true, message: 'Permissions saved successfully.' };
-	} catch (error) {
-		return { success: false, message: `Failed to save permissions: ${error}` };
-	}
-}
-function flattenAndroidPermissions(raw: AndroidPermission[] | Record<string, AndroidPermission[]>): AndroidPermission[] {
-	if (Array.isArray(raw)) {
-		return raw;
-	}
-	return Object.values(raw).flat();
-}
-
-function flattenIOSPermissions(raw: IOSPermission[] | Record<string, IOSPermission[]>): IOSPermission[] {
-	if (Array.isArray(raw)) {
-		return raw;
-	}
-	return Object.values(raw).flat();
-}
-
-export { updateAndroidManifest, updateIOSPlist, normalizePermissionNames, flattenAndroidPermissions, flattenIOSPermissions, normalizePlistSpacing, extensionBaseUri };
-export function deactivate() { }

@@ -4,13 +4,15 @@
       "permission": "NSBluetoothAlwaysUsageDescription",
       "description": "A message that tells people why the app needs access to Bluetooth.",
       "type": "string",
-      "category": "Bluetooth"
+      "category": "Bluetooth",
+      "podfileMacro": "PERMISSION_BLUETOOTH"
     },
     {
       "permission": "NSBluetoothPeripheralUsageDescription",
       "description": "A message that tells people why the app is requesting the ability to connect to Bluetooth peripherals.",
       "type": "string",
-      "category": "Bluetooth"
+      "category": "Bluetooth",
+      "podfileMacro": "PERMISSION_BLUETOOTH"
     }
   ],
   "Calendar and reminders": [
@@ -18,19 +20,22 @@
       "permission": "NSCalendarsFullAccessUsageDescription",
       "description": "A message that tells people why the app is requesting access to read and write their calendar data.",
       "type": "string",
-      "category": "Calendar and reminders"
+      "category": "Calendar and reminders",
+      "podfileMacro": "PERMISSION_CALENDARS"
     },
     {
       "permission": "NSCalendarsWriteOnlyAccessUsageDescription",
       "description": "A message that tells people why the app is requesting access to create calendar events.",
       "type": "string",
-      "category": "Calendar and reminders"
+      "category": "Calendar and reminders",
+      "podfileMacro": "PERMISSION_CALENDARS"
     },
     {
       "permission": "NSRemindersFullAccessUsageDescription",
       "description": "A message that tells people why the app is requesting access to read and write their reminders data.",
       "type": "string",
-      "category": "Calendar and reminders"
+      "category": "Calendar and reminders",
+      "podfileMacro": "PERMISSION_REMINDERS"
     }
   ],
   "Camera and sound": [
@@ -38,25 +43,29 @@
       "permission": "NSAudioCaptureUsageDescription",
       "description": "A message that tells people why your app is requesting access to capture system audio on macOS.",
       "type": "string",
-      "category": "Camera and sound"
+      "category": "Camera and sound",
+      "podfileMacro": "PERMISSION_MICROPHONE"
     },
     {
       "permission": "NSCameraUsageDescription",
       "description": "A message that tells people why the app is requesting access to the device's camera.",
       "type": "string",
-      "category": "Camera and sound"
+      "category": "Camera and sound",
+      "podfileMacro": "PERMISSION_CAMERA"
     },
     {
       "permission": "NSMainCameraUsageDescription",
       "description": "A message that tells people why the app is requesting access to the device's main camera.",
       "type": "string",
-      "category": "Camera and sound"
+      "category": "Camera and sound",
+      "podfileMacro": "PERMISSION_CAMERA"
     },
     {
       "permission": "NSMicrophoneUsageDescription",
       "description": "A message that tells people why the app is requesting access to the device's microphone.",
       "type": "string",
-      "category": "Camera and sound"
+      "category": "Camera and sound",
+      "podfileMacro": "PERMISSION_MICROPHONE"
     }
   ],
   "Contacts": [
@@ -64,7 +73,8 @@
       "permission": "NSContactsUsageDescription",
       "description": "A message that tells people why the app is requesting access to their contacts.",
       "type": "string",
-      "category": "Contacts"
+      "category": "Contacts",
+      "podfileMacro": "PERMISSION_CONTACTS"
     }
   ],
   "Face ID": [
@@ -160,43 +170,50 @@
       "permission": "NSLocationAlwaysAndWhenInUseUsageDescription",
       "description": "A message that tells people why the app is requesting access to their location information at all times.",
       "type": "string",
-      "category": "Location"
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION"
     },
     {
       "permission": "NSLocationUsageDescription",
       "description": "A message that tells people why the app is requesting access to their location information.",
       "type": "string",
-      "category": "Location"
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION"
     },
     {
       "permission": "NSLocationWhenInUseUsageDescription",
       "description": "A message that tells people why the app is requesting access to their location information while the app is running in the foreground.",
       "type": "string",
-      "category": "Location"
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION_WHENINUSE"
     },
     {
       "permission": "NSLocationTemporaryUsageDescriptionDictionary",
       "description": "A collection of messages that explain why the app is requesting temporary access to their location.",
       "type": "dictionary",
-      "category": "Location"
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION"
     },
     {
       "permission": "NSLocationAlwaysUsageDescription",
       "description": "A message that tells people why the app is requesting access to their location at all times.",
       "type": "string",
-      "category": "Location"
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION"
     },
     {
       "permission": "NSWidgetWantsLocation",
       "description": "A Boolean value that indicates a widget uses the user's location information.",
       "type": "boolean",
-      "category": "Location"
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION"
     },
     {
       "permission": "NSLocationDefaultAccuracyReduced",
       "description": "A Boolean value that indicates whether the app requests reduced location accuracy by default.",
       "type": "boolean",
-      "category": "Location"
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION"
     }
   ],
   "MediaPlayer": [
@@ -204,7 +221,8 @@
       "permission": "NSAppleMusicUsageDescription",
       "description": "A message that tells people why the app is requesting access to their media library.",
       "type": "string",
-      "category": "MediaPlayer"
+      "category": "MediaPlayer",
+      "podfileMacro": "PERMISSION_MEDIA_LIBRARY"
     }
   ],
   "Messages": [
@@ -220,13 +238,15 @@
       "permission": "NSMotionUsageDescription",
       "description": "A message that tells people why the app is requesting access to the device's motion data.",
       "type": "string",
-      "category": "Motion"
+      "category": "Motion",
+      "podfileMacro": "PERMISSION_SENSORS"
     },
     {
       "permission": "NSFallDetectionUsageDescription",
       "description": "A message to the user that explains the app's request for permission to access fall detection event data.",
       "type": "string",
-      "category": "Motion"
+      "category": "Motion",
+      "podfileMacro": "PERMISSION_SENSORS"
     }
   ],
   "Networking": [
@@ -257,18 +277,29 @@
       "category": "NFC"
     }
   ],
+  "Notifications": [
+    {
+      "permission": "NSUserNotificationsUsageDescription",
+      "description": "A message that tells people why the app is requesting permission to send notifications.",
+      "type": "string",
+      "category": "Notifications",
+      "podfileMacro": "PERMISSION_NOTIFICATIONS"
+    }
+  ],
   "Photos": [
     {
       "permission": "NSPhotoLibraryAddUsageDescription",
       "description": "A message that tells people why the app is requesting add-only access to their photo library.",
       "type": "string",
-      "category": "Photos"
+      "category": "Photos",
+      "podfileMacro": "PERMISSION_PHOTOS"
     },
     {
       "permission": "NSPhotoLibraryUsageDescription",
       "description": "A message that tells people why the app is requesting access to their photo library.",
       "type": "string",
-      "category": "Photos"
+      "category": "Photos",
+      "podfileMacro": "PERMISSION_PHOTOS"
     }
   ],
   "Scripting": [
@@ -296,7 +327,8 @@
       "permission": "NSUserTrackingUsageDescription",
       "description": "A message that informs the user why an app is requesting permission to use data for tracking the user or the device.",
       "type": "string",
-      "category": "Security"
+      "category": "Security",
+      "podfileMacro": "PERMISSION_APP_TRACKING_TRANSPARENCY"
     },
     {
       "permission": "NSAppleEventsUsageDescription",
@@ -328,19 +360,22 @@
       "permission": "NSSensorKitUsageDescription",
       "description": "A short description of the purpose of your app's research study.",
       "type": "string",
-      "category": "Sensors"
+      "category": "Sensors",
+      "podfileMacro": "PERMISSION_SENSORS"
     },
     {
       "permission": "NSSensorKitUsageDetail",
       "description": "A dictionary that includes keys for the specific information your app collects.",
       "type": "dictionary",
-      "category": "Sensors"
+      "category": "Sensors",
+      "podfileMacro": "PERMISSION_SENSORS"
     },
     {
       "permission": "NSSensorKitPrivacyPolicyURL",
       "description": "A hyperlink to a webpage that displays the privacy policy for your app's research study.",
       "type": "string",
-      "category": "Sensors"
+      "category": "Sensors",
+      "podfileMacro": "PERMISSION_SENSORS"
     }
   ],
   "Siri": [
@@ -348,7 +383,8 @@
       "permission": "NSSiriUsageDescription",
       "description": "A message that tells people why the app is requesting to send user data to Siri.",
       "type": "string",
-      "category": "Siri"
+      "category": "Siri",
+      "podfileMacro": "PERMISSION_SPEECH_RECOGNIZER"
     }
   ],
   "Speech": [
@@ -356,7 +392,8 @@
       "permission": "NSSpeechRecognitionUsageDescription",
       "description": "A message that tells people why the app is requesting to send user data to Apple's speech recognition servers.",
       "type": "string",
-      "category": "Speech"
+      "category": "Speech",
+      "podfileMacro": "PERMISSION_SPEECH_RECOGNIZER"
     }
   ],
   "System Extensions": [
@@ -428,7 +465,8 @@
       "permission": "NSCalendarsUsageDescription",
       "description": "A message that tells people why the app is requesting access to their calendar data.",
       "type": "string",
-      "category": "Deprecated"
+      "category": "Deprecated",
+      "podfileMacro": "PERMISSION_CALENDARS"
     },
     {
       "permission": "NSEnterpriseMCAMUsageDescription",
@@ -440,7 +478,8 @@
       "permission": "NSRemindersUsageDescription",
       "description": "A message that tells people why the app is requesting access to their reminders.",
       "type": "string",
-      "category": "Deprecated"
+      "category": "Deprecated",
+      "podfileMacro": "PERMISSION_REMINDERS"
     }
   ]
 }

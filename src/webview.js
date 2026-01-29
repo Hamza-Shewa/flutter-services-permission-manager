@@ -12,6 +12,7 @@
     const iosCategoryFilter = document.getElementById('iosCategoryFilter');
     const saveButton = document.getElementById('savePermissionsButton');
     const statusMessage = document.getElementById('statusMessage');
+    const toastContainer = document.getElementById('toastContainer');
     const refreshButton = document.getElementById('refreshButton');
 
     const modalBackdrop = document.getElementById('modalBackdrop');
@@ -66,7 +67,61 @@
         equivalentPermissions: []
     };
 
+    /**
+     * Shows an animated toast notification
+     * @param {string} message - The message to display
+     * @param {'success' | 'error' | 'info'} type - The type of toast
+     * @param {number} duration - How long to show the toast (ms)
+     */
+    function showToast(message, type = 'info', duration = 4000) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            success: '✓',
+            error: '✕',
+            info: 'ℹ'
+        };
+        
+        toast.innerHTML = `
+            <div class="toast-icon">${icons[type] || icons.info}</div>
+            <div class="toast-content">${message}</div>
+            <button class="toast-close" aria-label="Close">×</button>
+            <div class="toast-progress" style="animation-duration: ${duration}ms;"></div>
+        `;
+        
+        const closeBtn = toast.querySelector('.toast-close');
+        closeBtn.addEventListener('click', () => dismissToast(toast));
+        
+        toastContainer.appendChild(toast);
+        
+        // Auto dismiss after duration
+        setTimeout(() => dismissToast(toast), duration);
+        
+        return toast;
+    }
+    
+    /**
+     * Dismisses a toast with animation
+     */
+    function dismissToast(toast) {
+        if (!toast || toast.classList.contains('hiding')) return;
+        
+        toast.classList.add('hiding');
+        toast.addEventListener('animationend', () => {
+            toast.remove();
+        });
+    }
+
+    // Legacy setStatus function - now uses toast
     function setStatus(message, type) {
+        if (!message) return;
+        
+        // Map old types to toast types
+        const toastType = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+        showToast(message, toastType);
+        
+        // Also update hidden status element for compatibility
         statusMessage.textContent = message || '';
         statusMessage.className = `status ${type || ''}`.trim();
     }
@@ -252,7 +307,21 @@
         const sourceList = isIos ? state.allIosPermissions : state.allAndroidPermissions;
         const categories = Array.from(new Set(sourceList.map(permission => permission.category).filter(Boolean))).sort();
         
-        modalCategoryTabs.innerHTML = '<button class="category-tab active" data-category="">All</button>';
+        modalCategoryTabs.innerHTML = '';
+        
+        // Create "All" tab
+        const allTab = document.createElement('button');
+        allTab.className = 'category-tab active';
+        allTab.dataset.category = '';
+        allTab.textContent = 'All';
+        allTab.addEventListener('click', () => {
+            modalCategoryTabs.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+            allTab.classList.add('active');
+            state.modalCategory = '';
+            renderModalResults();
+        });
+        modalCategoryTabs.appendChild(allTab);
+        
         categories.forEach(category => {
             const tab = document.createElement('button');
             tab.className = 'category-tab';
@@ -435,13 +504,15 @@
                 value = modalValueSelect.value === 'true';
             } else {
                 value = modalValueInput.value.trim();
-                if (!value) {
-                    throw new Error('Enter a usage description for this permission.');
+                if (!value || value === 'TODO: Provide usage description.') {
+                    throw new Error('Please provide a valid usage description for this iOS permission.');
                 }
             }
             state.iosPermissions = [...state.iosPermissions, { ...selected, value }];
+            showToast(`iOS permission "${selected.permission}" added successfully`, 'success');
         } else {
             state.androidPermissions = [...state.androidPermissions, selected];
+            showToast(`Android permission "${selected.permission}" added successfully`, 'success');
         }
     }
 
@@ -494,55 +565,9 @@
                 if (iosPermission && (iosPermission.type || '').toLowerCase() !== 'boolean') {
                     valueInput = document.createElement('input');
                     valueInput.type = 'text';
-                    valueInput.placeholder = 'Usage description';
+                    valueInput.placeholder = 'Usage description (required)';
                     valueInput.className = 'equivalent-value-input';
-                }
-            }
-            
-            suggestionDiv.appendChild(checkbox);
-            suggestionDiv.appendChild(label);
-            if (valueInput) {
-                suggestionDiv.appendChild(valueInput);
-            }
-            
-            crossPlatformSuggestions.appendChild(suggestionDiv);
-        });
-        
-        crossPlatformModalBackdrop.style.display = 'flex';
-    }
-    
-    function showCrossPlatformModalInternal(selected, equivalents, isSourceIos) {
-        
-        crossPlatformModalTitle.textContent = `Add ${isSourceIos ? 'Android' : 'iOS'} Equivalents`;
-        crossPlatformModalMessage.textContent = `The ${isSourceIos ? 'iOS' : 'Android'} permission "${selected.permission || selected.constantValue}" has equivalent permissions on the other platform. Would you like to add them?`;
-        
-        crossPlatformSuggestions.innerHTML = '';
-        
-        equivalents.forEach((equivalent, index) => {
-            const suggestionDiv = document.createElement('div');
-            suggestionDiv.className = 'cross-platform-suggestion';
-            suggestionDiv.dataset.permissionName = equivalent; // Store permission name
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `equivalent-${index}`;
-            checkbox.checked = true; // Default to checked
-            
-            const label = document.createElement('label');
-            label.htmlFor = `equivalent-${index}`;
-            label.textContent = equivalent;
-            
-            // For iOS permissions, add value input if needed
-            let valueInput = null;
-            if (isSourceIos) { // Adding Android equivalents, so no value input needed
-                // Android permissions don't need values
-            } else { // Adding iOS equivalents, may need values
-                const iosPermission = state.allIosPermissions.find(p => p.permission === equivalent);
-                if (iosPermission && (iosPermission.type || '').toLowerCase() !== 'boolean') {
-                    valueInput = document.createElement('input');
-                    valueInput.type = 'text';
-                    valueInput.placeholder = 'Usage description';
-                    valueInput.className = 'equivalent-value-input';
+                    valueInput.required = true;
                 }
             }
             
@@ -561,6 +586,8 @@
     function addCrossPlatformPermissions() {
         const suggestions = crossPlatformSuggestions.querySelectorAll('.cross-platform-suggestion');
         const isSourceIos = state.crossPlatformMode === 'ios-to-android';
+        let addedCount = 0;
+        const errors = [];
         
         suggestions.forEach((suggestion) => {
             const checkbox = suggestion.querySelector('input[type="checkbox"]');
@@ -578,6 +605,7 @@
                             p.constantValue === permissionName || p.permission === permissionName);
                         if (androidPermission) {
                             state.androidPermissions = [...state.androidPermissions, androidPermission];
+                            addedCount++;
                         }
                     }
                 } else {
@@ -594,17 +622,29 @@
                             if (type === 'boolean') {
                                 value = true; // Default to true for cross-platform adds
                             } else {
-                                value = valueInput ? valueInput.value.trim() : 'TODO: Provide usage description.';
-                                if (!value) {
-                                    value = 'TODO: Provide usage description.';
+                                value = valueInput ? valueInput.value.trim() : '';
+                                if (!value || value === 'TODO: Provide usage description.') {
+                                    errors.push(permissionName);
+                                    return; // Skip this permission
                                 }
                             }
                             state.iosPermissions = [...state.iosPermissions, { ...iosPermission, value }];
+                            addedCount++;
                         }
                     }
                 }
             }
         });
+        
+        if (errors.length > 0) {
+            showToast(`Please provide usage descriptions for: ${errors.join(', ')}`, 'error', 5000);
+            return; // Don't close modal
+        }
+        
+        if (addedCount > 0) {
+            const platform = isSourceIos ? 'Android' : 'iOS';
+            showToast(`${addedCount} ${platform} equivalent permission${addedCount > 1 ? 's' : ''} added`, 'success');
+        }
         
         closeCrossPlatformModal();
         try {
@@ -612,8 +652,7 @@
             closeModal();
             updateView();
         } catch (error) {
-            crossPlatformModalError.textContent = error.message;
-            crossPlatformModalError.className = 'status error';
+            showToast(error.message, 'error');
             return; // Don't close modal if there's an error
         }
         closeModal();
@@ -638,15 +677,22 @@
 
         const equivalents = targetPlatform === 'ios' ? permission.equivalentIosPermissions : permission.equivalentAndroidPermissions;
         if (!equivalents || equivalents.length === 0) {
+            showToast('No equivalent permissions found for this permission.', 'info');
             return;
         }
         const equivalentPermissions = equivalents.map(name => sourceList.find(p => p.permission === name || p.constantValue === name)).filter(Boolean);
         
-        // Compute available permissions
+        // Compute available permissions (not already added)
         const availablePermissions = equivalentPermissions.filter(perm => {
             const isAlreadyAdded = targetPlatform === 'ios' ? state.iosPermissions.some(p => p.permission === perm.permission) : state.androidPermissions.some(p => p.permission === perm.permission);
             return !isAlreadyAdded;
         });
+        
+        // Check if all equivalents are already added
+        if (availablePermissions.length === 0) {
+            showToast('All equivalent permissions are already added.', 'info');
+            return;
+        }
         
         const categories = Array.from(new Set(availablePermissions.map(p => p.category).filter(Boolean))).sort();
         
@@ -730,8 +776,8 @@
                     const valueInput = document.createElement('input');
                     valueInput.type = 'text';
                     valueInput.className = 'equivalent-value-input';
-                    valueInput.placeholder = 'Usage description';
-                    valueInput.value = 'TODO: Provide usage description.';
+                    valueInput.placeholder = 'Usage description (required)';
+                    valueInput.required = true;
                     // Ensure interacting with the value marks the permission as selected
                     valueInput.addEventListener('focus', () => { checkbox.checked = true; });
                     valueInput.addEventListener('input', () => { checkbox.checked = true; });
@@ -752,6 +798,7 @@
         const suggestions = equivalentSuggestions.querySelectorAll('.cross-platform-suggestion');
         const targetPlatform = equivalentModalTitle.textContent.includes('iOS') ? 'ios' : 'android';
         let addedCount = 0;
+        const errors = [];
         
         suggestions.forEach((suggestion) => {
             const checkbox = suggestion.querySelector('input[type="checkbox"]');
@@ -772,9 +819,10 @@
                             if (type === 'boolean') {
                                 value = true; // Default to true for equivalent adds
                             } else {
-                                value = valueInput ? valueInput.value.trim() : 'TODO: Provide usage description.';
-                                if (!value) {
-                                    value = 'TODO: Provide usage description.';
+                                value = valueInput ? valueInput.value.trim() : '';
+                                if (!value || value === 'TODO: Provide usage description.') {
+                                    errors.push(permissionName);
+                                    return; // Skip this permission
                                 }
                             }
                             state.iosPermissions = [...state.iosPermissions, { ...iosPermission, value }];
@@ -799,10 +847,15 @@
             }
         });
         
+        if (errors.length > 0) {
+            showToast(`Please provide usage descriptions for: ${errors.join(', ')}`, 'error', 5000);
+            return; // Don't close modal
+        }
+        
         if (addedCount > 0) {
-            setStatus(`${addedCount} ${targetPlatform === 'ios' ? 'iOS' : 'Android'} permissions added.`, 'success');
+            showToast(`${addedCount} ${targetPlatform === 'ios' ? 'iOS' : 'Android'} permission${addedCount > 1 ? 's' : ''} added successfully`, 'success');
         } else {
-            setStatus('No permissions were selected to add.', 'error');
+            showToast('No permissions were selected to add.', 'error');
         }
         
         closeEquivalentModal();
@@ -871,11 +924,15 @@
         vscode.postMessage({ type: 'requestAllIOSPermissions' });
     });
 
-    saveButton.addEventListener('click', handleSave);
-
-    refreshButton.addEventListener('click', () => {
-        vscode.postMessage({ type: 'refresh' });
-    });
+    console.log('[PermissionManager] Initializing...');
+    if (saveButton) {
+        saveButton.addEventListener('click', handleSave);
+    }
+    if (refreshButton) {
+        refreshButton.addEventListener('click', () => {
+            vscode.postMessage({ type: 'refresh' });
+        });
+    }
 
     modalCancel.addEventListener('click', closeModal);
     modalAdd.addEventListener('click', addSelectedPermission);
@@ -885,15 +942,32 @@
     });
 
     crossPlatformModalSkip.addEventListener('click', () => {
+        // Validate the permission first before closing anything
+        const isIos = state.modalMode === 'ios';
+        
+        if (isIos) {
+            const selected = state.modalSelection;
+            const type = (selected?.type || '').toLowerCase();
+            if (type !== 'boolean') {
+                const value = modalValueInput.value.trim();
+                if (!value || value === 'TODO: Provide usage description.') {
+                    // Just close the cross-platform modal and show error, keep main modal open
+                    closeCrossPlatformModal();
+                    showToast('Please provide a valid usage description for this iOS permission.', 'error');
+                    modalValueInput.focus();
+                    return;
+                }
+            }
+        }
+        
         closeCrossPlatformModal();
         try {
-            addPermissionDirectly(state.modalSelection, state.modalMode === 'ios');
+            addPermissionDirectly(state.modalSelection, isIos);
             closeModal();
             updateView();
         } catch (error) {
-            // If there's an error, show it in the main modal
-            closeModal();
-            setStatus(error.message, 'error');
+            // If there's an error, show it but keep the main modal open
+            showToast(error.message, 'error');
         }
     });
     
@@ -917,6 +991,7 @@
                 break;
             case 'allAndroidPermissions':
                 state.allAndroidPermissions = message.permissions || [];
+                renderModalCategoryTabs();
                 renderModalResults();
                 // Check if we have a pending cross-platform modal
                 if (state.pendingCrossPlatformModal && state.pendingCrossPlatformModal.isSourceIos) {
@@ -933,6 +1008,7 @@
                 break;
             case 'allIOSPermissions':
                 state.allIosPermissions = message.permissions || [];
+                renderModalCategoryTabs();
                 renderModalResults();
                 // Check if we have a pending cross-platform modal
                 if (state.pendingCrossPlatformModal && !state.pendingCrossPlatformModal.isSourceIos) {
