@@ -112,7 +112,21 @@ export async function savePermissions(
 
         if (iosPlistUri) {
             const doc = await vscode.workspace.openTextDocument(iosPlistUri);
-            let updated = updateIOSPlist(doc.getText(), iosPermissions);
+            
+            // Build set of all known iOS permission keys for proper deletion
+            let allKnownKeys: Set<string> | undefined;
+            if (categorizedIosPermissions) {
+                allKnownKeys = new Set<string>();
+                for (const permissions of Object.values(categorizedIosPermissions)) {
+                    for (const p of permissions) {
+                        if (p.permission) {
+                            allKnownKeys.add(p.permission);
+                        }
+                    }
+                }
+            }
+            
+            let updated = updateIOSPlist(doc.getText(), iosPermissions, allKnownKeys);
             
             // Remove services that were deleted
             if (removedServiceIds.length > 0 && servicesConfig) {

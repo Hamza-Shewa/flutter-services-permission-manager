@@ -7,14 +7,22 @@ import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../../type
 /**
  * Updates Info.plist content with new permission entries
  * Preserves existing structure and closing tags
+ * @param plistContent - The current plist content
+ * @param permissionEntries - The permissions to keep/update
+ * @param allKnownKeys - Optional set of all known permission keys; if provided, any key in this set
+ *                       but NOT in permissionEntries will be removed from the plist
  */
-export function updateIOSPlist(plistContent: string, permissionEntries: IOSPermissionEntry[]): string {
+export function updateIOSPlist(
+    plistContent: string,
+    permissionEntries: IOSPermissionEntry[],
+    allKnownKeys?: Set<string>
+): string {
     const uniqueEntries = new Map<string, IOSPermissionEntry>();
     permissionEntries
         .filter(entry => entry.permission?.trim())
         .forEach(entry => uniqueEntries.set(entry.permission.trim(), entry));
 
-    // Build a set of permission keys we're managing
+    // Build a set of permission keys we're keeping
     const permissionKeys = new Set(Array.from(uniqueEntries.keys()));
     
     const existingStringPairs = new Map<string, string>();
@@ -29,7 +37,7 @@ export function updateIOSPlist(plistContent: string, permissionEntries: IOSPermi
     const prefix = plistContent.slice(0, dictCloseIndex);
     const suffix = plistContent.slice(dictCloseIndex); // contains </dict></plist>
 
-    // Only match and extract permission keys (those ending with UsageDescription or in our set)
+    // Extract existing permission values for potential re-use
     const stringRegex = /<key>(NS\w*UsageDescription)<\/key>\s*<string>([^<]*)<\/string>/g;
     const boolRegex = /<key>(NS\w*UsageDescription)<\/key>\s*<(true|false)\/>/g;
     
@@ -41,9 +49,30 @@ export function updateIOSPlist(plistContent: string, permissionEntries: IOSPermi
         existingBooleanPairs.set(match[1], match[2] === 'true');
     }
 
-    // Only remove the permission entries we're managing, not other NS* keys
+    // Build the set of keys to remove:
+    // 1. All keys from allKnownKeys (if provided) - for explicit permission management
+    // 2. All existing NS*UsageDescription keys found in the plist - for generic cleanup
+    // 3. All keys we're about to re-add (permissionKeys)
+    const keysToRemove = new Set<string>(permissionKeys);
+    
+    // Add all known keys from config
+    if (allKnownKeys) {
+        for (const key of allKnownKeys) {
+            keysToRemove.add(key);
+        }
+    }
+    
+    // Also add any existing NS*UsageDescription keys found in the plist
+    for (const key of existingStringPairs.keys()) {
+        keysToRemove.add(key);
+    }
+    for (const key of existingBooleanPairs.keys()) {
+        keysToRemove.add(key);
+    }
+
+    // Remove all permission keys (they'll be re-added if still in permissionEntries)
     let cleanedPrefix = prefix;
-    for (const key of permissionKeys) {
+    for (const key of keysToRemove) {
         // Remove existing string entry for this permission
         const keyStringRegex = new RegExp(
             `\\s*<key>${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</key>\\s*<string>[^<]*</string>`,
