@@ -23,10 +23,12 @@ export async function createPermissionPanel(
         vscode.ViewColumn.One,
         {
             enableScripts: true,
-            localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src')],
+            localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src'), vscode.Uri.joinPath(extensionUri, 'images')],
             retainContextWhenHidden: true
         }
     );
+
+    panel.iconPath = vscode.Uri.joinPath(extensionUri, 'images', 'flutter-config.png');
 
     await initializePermissionWebview(
         { type: 'panel', panel },
