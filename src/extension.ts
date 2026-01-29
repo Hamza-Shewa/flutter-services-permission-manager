@@ -57,6 +57,11 @@ async function handleEditCommand(context: vscode.ExtensionContext): Promise<void
         undefined,
         1
     );
+    const iosAppDelegateUris = await vscode.workspace.findFiles(
+        '**/Runner/AppDelegate.swift',
+        undefined,
+        1
+    );
 
     // Read file contents
     const androidDoc = androidManifestUris.length > 0
@@ -77,7 +82,8 @@ async function handleEditCommand(context: vscode.ExtensionContext): Promise<void
         usedIOSPermissions,
         androidManifestUris[0],
         iosPlistUris[0],
-        iosPodfileUris[0]
+        iosPodfileUris[0],
+        iosAppDelegateUris[0]
     );
 
     vscode.window.showInformationMessage('Edit command executed from Permission Manager!');

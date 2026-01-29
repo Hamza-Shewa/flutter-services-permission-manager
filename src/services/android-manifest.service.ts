@@ -2,6 +2,8 @@
  * Android Manifest parsing and updating service
  */
 
+import type { ServiceEntry, ServiceConfig } from '../types/index.js';
+
 /**
  * Normalizes permission names to full Android format
  */
@@ -76,4 +78,282 @@ export function updateAndroidManifest(manifestContent: string, permissionNames: 
 
     const insertBlock = `\n${usesPermissionsXml}`;
     return `${prefix}${insertBlock}${suffix}`;
+}
+
+/**
+ * Updates AndroidManifest.xml with service configurations (e.g., Facebook SDK)
+ */
+export function updateAndroidManifestWithServices(
+    manifestContent: string,
+    services: ServiceEntry[],
+    servicesConfig: ServiceConfig[]
+): string {
+    let result = manifestContent;
+    
+    for (const service of services) {
+        const config = servicesConfig.find(c => c.id === service.id);
+        if (!config?.android) continue;
+        
+        // Add/update meta-data in application tag
+        if (config.android.metaData && config.android.metaData.length > 0) {
+            for (const meta of config.android.metaData) {
+                let value = service.values[meta.valueField] || meta.defaultValue || '';
+                if (!value) continue;
+                
+                // Use @string reference if stringResource is defined
+                const androidValue = meta.stringResource 
+                    ? `@string/${meta.stringResource}`
+                    : (meta.prefix ? meta.prefix + value : value);
+                
+                // Check if meta-data already exists
+                const existingMetaRegex = new RegExp(
+                    `<meta-data[^>]*android:name="${meta.name.replace(/\./g, '\\.')}"[^>]*/?>`,
+                    'i'
+                );
+                const existingMatch = result.match(existingMetaRegex);
+                
+                if (existingMatch) {
+                    // Update existing meta-data value
+                    const updatedMeta = `<meta-data android:name="${meta.name}" android:value="${androidValue}" />`;
+                    result = result.replace(existingMetaRegex, updatedMeta);
+                } else {
+                    // Insert after <application ...>
+                    const metaDataXml = `\n        <meta-data android:name="${meta.name}" android:value="${androidValue}" />`;
+                    const appMatch = result.match(/<application[^>]*>/);
+                    if (appMatch) {
+                        const insertPos = appMatch.index! + appMatch[0].length;
+                        result = result.slice(0, insertPos) + metaDataXml + result.slice(insertPos);
+                    }
+                }
+            }
+        }
+        
+        // Add queries entries
+        if (config.android.queries && config.android.queries.length > 0) {
+            for (const q of config.android.queries) {
+                const attrs = Object.entries(q.attributes)
+                    .map(([k, v]) => `${k}="${v}"`)
+                    .join(' ');
+                const queryXml = `<${q.tag} ${attrs} />`;
+                
+                // Check if this query already exists
+                const attrToCheck = q.attributes['android:authorities'] || q.attributes['android:name'] || '';
+                if (attrToCheck && result.includes(attrToCheck)) {
+                    continue;
+                }
+                
+                // Check if queries block exists
+                const queriesMatch = result.match(/<queries>([\s\S]*?)<\/queries>/);
+                if (queriesMatch) {
+                    // Add to existing queries block
+                    const queriesEnd = result.indexOf('</queries>');
+                    result = result.slice(0, queriesEnd) + `        ${queryXml}\n    ` + result.slice(queriesEnd);
+                } else {
+                    // Create queries block after permissions, before application
+                    const appStart = result.indexOf('<application');
+                    if (appStart !== -1) {
+                        const queriesBlock = `\n    <queries>\n        ${queryXml}\n    </queries>\n`;
+                        result = result.slice(0, appStart) + queriesBlock + result.slice(appStart);
+                    }
+                }
+            }
+        }
+        
+        // Add application data (activities, etc.)
+        if (config.android.applicationData && config.android.applicationData.length > 0) {
+            for (const appData of config.android.applicationData) {
+                // Check if activity already exists
+                const activityName = appData.attributes['android:name'];
+                if (activityName && result.includes(`android:name="${activityName}"`)) {
+                    continue;
+                }
+                
+                let elementXml = buildXmlElement(appData, service.values, 2);
+                
+                // Insert before </application>
+                const appEndMatch = result.match(/<\/application>/);
+                if (appEndMatch) {
+                    const insertPos = appEndMatch.index!;
+                    result = result.slice(0, insertPos) + elementXml + '\n    ' + result.slice(insertPos);
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * Removes service entries from AndroidManifest.xml
+ */
+export function removeServicesFromAndroidManifest(
+    manifestContent: string,
+    removedServiceIds: string[],
+    servicesConfig: ServiceConfig[]
+): string {
+    let result = manifestContent;
+    
+    for (const serviceId of removedServiceIds) {
+        const config = servicesConfig.find(c => c.id === serviceId);
+        if (!config?.android) continue;
+        
+        // Remove meta-data entries
+        if (config.android.metaData) {
+            for (const meta of config.android.metaData) {
+                const metaRegex = new RegExp(
+                    `\\s*<meta-data[^>]*android:name="${meta.name.replace(/\./g, '\\.')}"[^>]*/?>`,
+                    'gi'
+                );
+                result = result.replace(metaRegex, '');
+            }
+        }
+        
+        // Remove queries entries
+        if (config.android.queries) {
+            for (const q of config.android.queries) {
+                const attrToCheck = q.attributes['android:authorities'] || q.attributes['android:name'] || '';
+                if (attrToCheck) {
+                    const queryRegex = new RegExp(
+                        `\\s*<${q.tag}[^>]*${attrToCheck.replace(/\./g, '\\.')}[^>]*/?>`,
+                        'gi'
+                    );
+                    result = result.replace(queryRegex, '');
+                }
+            }
+        }
+        
+        // Remove application data (activities)
+        if (config.android.applicationData) {
+            for (const appData of config.android.applicationData) {
+                const activityName = appData.attributes['android:name'];
+                if (activityName) {
+                    // Find the element by searching for the tag with the specific android:name
+                    const searchPattern = `android:name="${activityName}"`;
+                    let searchPos = 0;
+                    
+                    while (searchPos < result.length) {
+                        const namePos = result.indexOf(searchPattern, searchPos);
+                        if (namePos === -1) break;
+                        
+                        // Find the start of this tag (go backwards to find <activity or <tag)
+                        let tagStart = namePos;
+                        while (tagStart > 0 && result[tagStart] !== '<') {
+                            tagStart--;
+                        }
+                        
+                        // Verify this is the right tag type
+                        const tagCheck = result.slice(tagStart, tagStart + appData.tag.length + 2);
+                        if (!tagCheck.startsWith(`<${appData.tag}`)) {
+                            searchPos = namePos + 1;
+                            continue;
+                        }
+                        
+                        // Find the end of this element
+                        // First check if it's self-closing by finding > or />
+                        let pos = namePos + searchPattern.length;
+                        let foundSelfClose = false;
+                        let tagEnd = -1;
+                        
+                        while (pos < result.length) {
+                            if (result[pos] === '>' && result[pos - 1] === '/') {
+                                // Self-closing tag
+                                tagEnd = pos + 1;
+                                foundSelfClose = true;
+                                break;
+                            } else if (result[pos] === '>' && result[pos - 1] !== '/') {
+                                // Opening tag - need to find closing tag
+                                break;
+                            }
+                            pos++;
+                        }
+                        
+                        if (!foundSelfClose && pos < result.length) {
+                            // Find matching closing tag
+                            const closingTag = `</${appData.tag}>`;
+                            let depth = 1;
+                            pos++; // Move past the >
+                            
+                            while (pos < result.length && depth > 0) {
+                                const nextOpen = result.indexOf(`<${appData.tag}`, pos);
+                                const nextClose = result.indexOf(closingTag, pos);
+                                
+                                if (nextClose === -1) break;
+                                
+                                if (nextOpen !== -1 && nextOpen < nextClose) {
+                                    // Check if it's a self-closing nested tag
+                                    const closeAngle = result.indexOf('>', nextOpen);
+                                    if (closeAngle !== -1 && result[closeAngle - 1] !== '/') {
+                                        depth++;
+                                    }
+                                    pos = closeAngle + 1;
+                                } else {
+                                    depth--;
+                                    if (depth === 0) {
+                                        tagEnd = nextClose + closingTag.length;
+                                    }
+                                    pos = nextClose + closingTag.length;
+                                }
+                            }
+                        }
+                        
+                        if (tagEnd !== -1) {
+                            // Also remove leading whitespace
+                            while (tagStart > 0 && (result[tagStart - 1] === ' ' || result[tagStart - 1] === '\t')) {
+                                tagStart--;
+                            }
+                            if (tagStart > 0 && result[tagStart - 1] === '\n') {
+                                tagStart--;
+                            }
+                            
+                            result = result.slice(0, tagStart) + result.slice(tagEnd);
+                            // Don't increment searchPos since we removed content
+                        } else {
+                            searchPos = namePos + 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Clean up empty queries block
+    result = result.replace(/<queries>\s*<\/queries>/gi, '');
+    
+    // Clean up multiple blank lines
+    result = result.replace(/\n{3,}/g, '\n\n');
+    
+    return result;
+}
+
+/**
+ * Builds an XML element string from config
+ */
+function buildXmlElement(
+    element: { tag: string; attributes: Record<string, string>; children?: unknown[] },
+    values: Record<string, string>,
+    indent: number
+): string {
+    const spaces = '    '.repeat(indent);
+    const attrs = Object.entries(element.attributes)
+        .map(([k, v]) => {
+            // Replace {fieldId} placeholders with actual values
+            let value = v;
+            const match = v.match(/\{(\w+)\}/);
+            if (match) {
+                const fieldId = match[1];
+                value = v.replace(`{${fieldId}}`, values[fieldId] || '');
+            }
+            return `${k}="${value}"`;
+        })
+        .join(' ');
+    
+    if (!element.children || element.children.length === 0) {
+        return `${spaces}<${element.tag} ${attrs} />`;
+    }
+    
+    const childrenXml = (element.children as { tag: string; attributes: Record<string, string>; children?: unknown[] }[])
+        .map(child => buildXmlElement(child, values, indent + 1))
+        .join('\n');
+    
+    return `${spaces}<${element.tag} ${attrs}>\n${childrenXml}\n${spaces}</${element.tag}>`;
 }

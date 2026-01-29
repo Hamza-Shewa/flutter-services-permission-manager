@@ -44,6 +44,20 @@
     const equivalentModalCancel = document.getElementById('equivalentModalCancel');
     const equivalentModalAdd = document.getElementById('equivalentModalAdd');
 
+    // Service modal elements
+    const addServiceButton = document.getElementById('addServiceButton');
+    const servicesContainer = document.getElementById('servicesContainer');
+    const serviceSearch = document.getElementById('serviceSearch');
+    const serviceModalBackdrop = document.getElementById('serviceModalBackdrop');
+    const serviceModalTitle = document.getElementById('serviceModalTitle');
+    const serviceModalContent = document.getElementById('serviceModalContent');
+    const serviceModalError = document.getElementById('serviceModalError');
+    const serviceModalCancel = document.getElementById('serviceModalCancel');
+    const serviceModalSave = document.getElementById('serviceModalSave');
+    const addServiceModalBackdrop = document.getElementById('addServiceModalBackdrop');
+    const addServiceList = document.getElementById('addServiceList');
+    const addServiceModalCancel = document.getElementById('addServiceModalCancel');
+
     const state = {
         androidPermissions: [],
         iosPermissions: [],
@@ -64,7 +78,12 @@
         crossPlatformMode: null,
         pendingCrossPlatformModal: null,
         pendingEquivalentModal: null,
-        equivalentPermissions: []
+        equivalentPermissions: [],
+        // Services state
+        services: [],
+        availableServices: [],
+        currentEditingService: null,
+        serviceSearch: ''
     };
 
     /**
@@ -862,7 +881,226 @@
         updateView();
     }
 
+    // ==================== Services Functions ====================
+
+    function renderServices() {
+        if (!servicesContainer) return;
+        
+        // Filter services based on search
+        const searchTerm = state.serviceSearch.toLowerCase();
+        const filteredServices = state.services.filter(service => {
+            const config = state.availableServices.find(s => s.id === service.id);
+            if (!config) return false;
+            
+            // Match by service name, description, or values
+            const matchesName = config.name.toLowerCase().includes(searchTerm);
+            const matchesDesc = config.description.toLowerCase().includes(searchTerm);
+            const matchesValues = Object.values(service.values).some(v => 
+                String(v).toLowerCase().includes(searchTerm)
+            );
+            
+            return matchesName || matchesDesc || matchesValues;
+        });
+        
+        if (state.services.length === 0) {
+            servicesContainer.innerHTML = `
+                <div class="empty-services">
+                    <div class="empty-services-icon">🔌</div>
+                    <p>No services configured yet.</p>
+                    <p style="font-size: 13px; margin-top: 8px;">Click "Add Service" to configure Facebook, Google, or other SDK integrations.</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (filteredServices.length === 0 && searchTerm) {
+            servicesContainer.innerHTML = `
+                <div class="empty-services">
+                    <div class="empty-services-icon">🔍</div>
+                    <p>No services match "${state.serviceSearch}"</p>
+                </div>
+            `;
+            return;
+        }
+
+        servicesContainer.innerHTML = filteredServices.map(service => {
+            const config = state.availableServices.find(s => s.id === service.id);
+            if (!config) return '';
+            
+            return `
+                <div class="service-card" data-service-id="${service.id}">
+                    <div class="service-card-header">
+                        <div class="service-card-icon">${config.icon}</div>
+                        <div>
+                            <div class="service-card-title">${config.name}</div>
+                            <div class="service-card-status">✓ Configured</div>
+                        </div>
+                    </div>
+                    <div class="service-card-fields">
+                        ${config.fields.map(field => `
+                            <div class="service-field">
+                                <span class="service-field-label">${field.label}</span>
+                                <span class="service-field-value" title="${service.values[field.id] || '-'}">${service.values[field.id] || '-'}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="service-card-actions">
+                        <button type="button" class="btn-secondary edit-service-btn" data-service-id="${service.id}">✏️ Edit</button>
+                        <button type="button" class="delete-button remove-service-btn" data-service-id="${service.id}">🗑️ Remove</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add event listeners
+        servicesContainer.querySelectorAll('.edit-service-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const serviceId = btn.dataset.serviceId;
+                const service = state.services.find(s => s.id === serviceId);
+                if (service) {
+                    openServiceModal(serviceId, service.values);
+                }
+            });
+        });
+
+        servicesContainer.querySelectorAll('.remove-service-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const serviceId = btn.dataset.serviceId;
+                if (!serviceId) return;
+                
+                const config = state.availableServices.find(s => s.id === serviceId);
+                const serviceName = config ? config.name : serviceId;
+                
+                if (state.services.find(s => s.id === serviceId)) {
+                    state.services = state.services.filter(s => s.id !== serviceId);
+                    renderServices();
+                    showToast(`${serviceName} removed. Save changes to apply.`, 'info');
+                }
+            };
+        });
+    }
+
+    function openAddServiceModal() {
+        if (!addServiceModalBackdrop || !addServiceList) return;
+        
+        const configuredIds = state.services.map(s => s.id);
+        
+        addServiceList.innerHTML = state.availableServices.map(service => {
+            const isConfigured = configuredIds.includes(service.id);
+            return `
+                <div class="service-list-item ${isConfigured ? 'disabled' : ''}" data-service-id="${service.id}" ${isConfigured ? 'title="Already configured"' : ''}>
+                    <span class="service-icon">${service.icon}</span>
+                    <div class="service-info">
+                        <div class="service-name">${service.name}${isConfigured ? ' (Configured)' : ''}</div>
+                        <div class="service-desc">${service.description}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        addServiceList.querySelectorAll('.service-list-item:not(.disabled)').forEach(item => {
+            item.addEventListener('click', () => {
+                closeAddServiceModal();
+                openServiceModal(item.dataset.serviceId, {});
+            });
+        });
+
+        addServiceModalBackdrop.style.display = 'flex';
+    }
+
+    function closeAddServiceModal() {
+        if (addServiceModalBackdrop) {
+            addServiceModalBackdrop.style.display = 'none';
+        }
+    }
+
+    function openServiceModal(serviceId, existingValues = {}) {
+        const config = state.availableServices.find(s => s.id === serviceId);
+        if (!config || !serviceModalBackdrop) return;
+
+        state.currentEditingService = serviceId;
+        serviceModalTitle.textContent = `Configure ${config.name}`;
+
+        // Escape HTML attribute values
+        const escapeAttr = (str) => String(str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+        serviceModalContent.innerHTML = `
+            <div class="service-form">
+                ${config.fields.map(field => `
+                    <div class="form-group">
+                        <label for="service-field-${field.id}">${field.label}${field.required ? ' *' : ''}</label>
+                        <input 
+                            type="text" 
+                            id="service-field-${field.id}" 
+                            data-field-id="${field.id}"
+                            placeholder="${escapeAttr(field.placeholder)}"
+                            value="${escapeAttr(existingValues[field.id])}"
+                            ${field.required ? 'required' : ''}
+                        />
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        serviceModalBackdrop.style.display = 'flex';
+        
+        // Focus first input
+        const firstInput = serviceModalContent.querySelector('input');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+    }
+
+    function closeServiceModal() {
+        if (serviceModalBackdrop) {
+            serviceModalBackdrop.style.display = 'none';
+        }
+        state.currentEditingService = null;
+    }
+
+    function saveService() {
+        const config = state.availableServices.find(s => s.id === state.currentEditingService);
+        if (!config) return;
+
+        const values = {};
+        let hasError = false;
+
+        config.fields.forEach(field => {
+            const input = document.getElementById(`service-field-${field.id}`);
+            const value = input ? input.value.trim() : '';
+            
+            if (field.required && !value) {
+                hasError = true;
+                input.style.borderColor = 'var(--danger)';
+            } else {
+                input.style.borderColor = '';
+                values[field.id] = value;
+            }
+        });
+
+        if (hasError) {
+            showToast('Please fill in all required fields.', 'error');
+            return;
+        }
+
+        // Update or add service
+        const existingIndex = state.services.findIndex(s => s.id === state.currentEditingService);
+        if (existingIndex >= 0) {
+            state.services[existingIndex].values = values;
+        } else {
+            state.services.push({ id: state.currentEditingService, values });
+        }
+
+        closeServiceModal();
+        renderServices();
+        showToast(`${config.name} configured successfully. Save changes to apply.`, 'success');
+    }
+
     function handleSave() {
+        console.log('[PermissionManager] handleSave called');
+        console.log('[PermissionManager] Services to save:', JSON.stringify(state.services));
         const androidPermissions = utils.dedupePermissions(state.androidPermissions)
             .map(permission => permission.constantValue || permission.permission)
             .filter(Boolean);
@@ -873,11 +1111,13 @@
                 type: permission.type
             }))
             .filter(entry => entry.permission);
+        console.log('[PermissionManager] Posting savePermissions message');
         setStatus('Saving permissions...', '');
         vscode.postMessage({
             type: 'savePermissions',
             androidPermissions,
-            iosPermissions
+            iosPermissions,
+            services: state.services
         });
     }
 
@@ -924,9 +1164,39 @@
         vscode.postMessage({ type: 'requestAllIOSPermissions' });
     });
 
+    // Service event listeners
+    if (addServiceButton) {
+        addServiceButton.addEventListener('click', () => {
+            vscode.postMessage({ type: 'requestServices' });
+            openAddServiceModal();
+        });
+    }
+    if (serviceSearch) {
+        serviceSearch.addEventListener('input', event => {
+            state.serviceSearch = event.target.value;
+            renderServices();
+        });
+    }
+    if (serviceModalCancel) {
+        serviceModalCancel.addEventListener('click', closeServiceModal);
+    }
+    if (serviceModalSave) {
+        serviceModalSave.addEventListener('click', saveService);
+    }
+    if (addServiceModalCancel) {
+        addServiceModalCancel.addEventListener('click', closeAddServiceModal);
+    }
+
     console.log('[PermissionManager] Initializing...');
+    console.log('[PermissionManager] saveButton element:', saveButton);
     if (saveButton) {
-        saveButton.addEventListener('click', handleSave);
+        console.log('[PermissionManager] Adding click listener to save button');
+        saveButton.addEventListener('click', () => {
+            console.log('[PermissionManager] Save button clicked!');
+            handleSave();
+        });
+    } else {
+        console.error('[PermissionManager] saveButton not found!');
     }
     if (refreshButton) {
         refreshButton.addEventListener('click', () => {
@@ -987,7 +1257,10 @@
                 state.iosPermissions = message.iosPermissions || [];
                 state.hasAndroidManifest = message.hasAndroidManifest || false;
                 state.hasIOSPlist = message.hasIOSPlist || false;
+                state.services = message.services || [];
+                state.availableServices = message.availableServices || state.availableServices || [];
                 updateView();
+                renderServices();
                 break;
             case 'allAndroidPermissions':
                 state.allAndroidPermissions = message.permissions || [];
@@ -1022,6 +1295,10 @@
                     state.pendingEquivalentModal = null;
                     showEquivalentModal(permission, targetPlatform);
                 }
+                break;
+            case 'servicesConfig':
+                state.availableServices = message.services || [];
+                renderServices();
                 break;
             case 'saveResult':
                 setStatus(message.message || '', message.success ? 'success' : 'error');

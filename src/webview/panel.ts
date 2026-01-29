@@ -3,13 +3,20 @@
  */
 
 import * as vscode from 'vscode';
-import type { AndroidPermission, IOSPermission, IOSPermissionEntry, PermissionsPayload, WebviewMessage } from '../types/index.js';
+import type { AndroidPermission, IOSPermission, IOSPermissionEntry, PermissionsPayload, WebviewMessage, ServiceEntry, ServiceConfig } from '../types/index.js';
 import { getUsedAndroidPermissions, getUsedIOSPermissions, getAndroidPermissions, getIOSPermissions, getCategorizedIOSPermissions } from '../utils/extractors.js';
-import { savePermissions } from '../services/index.js';
+import { savePermissions, extractServices } from '../services/index.js';
 import { getWebviewContent } from './content.js';
+import { readJsonFile } from '../utils/file.js';
 
 // Cached categorized iOS permissions for Podfile updates
 let categorizedIosPermissionsCache: Record<string, { permission: string; podfileMacro?: string }[]> | null = null;
+
+// Cached services config
+let servicesConfigCache: { services: ServiceConfig[] } | null = null;
+
+// Track previously saved services to detect removals
+let previousServicesCache: ServiceEntry[] = [];
 
 /**
  * Creates and manages the Permission Manager webview panel
@@ -20,7 +27,8 @@ export async function createPermissionPanel(
     iosPermissions: IOSPermission[],
     androidManifestUri?: vscode.Uri,
     iosPlistUri?: vscode.Uri,
-    iosPodfileUri?: vscode.Uri
+    iosPodfileUri?: vscode.Uri,
+    iosAppDelegateUri?: vscode.Uri
 ): Promise<vscode.WebviewPanel> {
     const panel = vscode.window.createWebviewPanel(
         'permissionManager',
@@ -36,6 +44,20 @@ export async function createPermissionPanel(
 
     // Cache categorized permissions for Podfile updates
     categorizedIosPermissionsCache = await getCategorizedIOSPermissions();
+    
+    // Load services config
+    servicesConfigCache = await readJsonFile<{ services: ServiceConfig[] }>('services-config.json');
+
+    // Extract existing services from manifest/plist/appdelegate
+    const existingServices = await extractServices(
+        androidManifestUri,
+        iosPlistUri,
+        iosAppDelegateUri,
+        servicesConfigCache?.services || []
+    );
+    
+    // Cache the initial services for tracking removals
+    previousServicesCache = [...existingServices];
 
     const payload: PermissionsPayload = {
         type: 'permissions',
@@ -43,10 +65,12 @@ export async function createPermissionPanel(
         iosPermissions,
         hasAndroidManifest: !!androidManifestUri,
         hasIOSPlist: !!iosPlistUri,
-        hasPodfile: !!iosPodfileUri
+        hasPodfile: !!iosPodfileUri,
+        services: existingServices,
+        availableServices: servicesConfigCache?.services || []
     };
 
-    setupMessageHandler(panel, payload, androidManifestUri, iosPlistUri, iosPodfileUri);
+    setupMessageHandler(panel, payload, androidManifestUri, iosPlistUri, iosPodfileUri, iosAppDelegateUri);
     
     // Send initial payload
     panel.webview.postMessage(payload);
@@ -62,7 +86,8 @@ function setupMessageHandler(
     initialPayload: PermissionsPayload,
     androidManifestUri?: vscode.Uri,
     iosPlistUri?: vscode.Uri,
-    iosPodfileUri?: vscode.Uri
+    iosPodfileUri?: vscode.Uri,
+    iosAppDelegateUri?: vscode.Uri
 ): void {
     panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
         switch (message.type) {
@@ -71,7 +96,7 @@ function setupMessageHandler(
                 break;
 
             case 'refresh':
-                await handleRefresh(panel, androidManifestUri, iosPlistUri, iosPodfileUri);
+                await handleRefresh(panel, androidManifestUri, iosPlistUri, iosPodfileUri, iosAppDelegateUri);
                 break;
 
             case 'requestAllAndroidPermissions':
@@ -82,8 +107,12 @@ function setupMessageHandler(
                 await handleRequestAllIOS(panel);
                 break;
 
+            case 'requestServices':
+                handleRequestServices(panel);
+                break;
+
             case 'savePermissions':
-                await handleSave(panel, message, androidManifestUri, iosPlistUri, iosPodfileUri);
+                await handleSave(panel, message, androidManifestUri, iosPlistUri, iosPodfileUri, iosAppDelegateUri);
                 break;
         }
     });
@@ -93,7 +122,8 @@ async function handleRefresh(
     panel: vscode.WebviewPanel,
     androidManifestUri?: vscode.Uri,
     iosPlistUri?: vscode.Uri,
-    iosPodfileUri?: vscode.Uri
+    iosPodfileUri?: vscode.Uri,
+    iosAppDelegateUri?: vscode.Uri
 ): Promise<void> {
     const androidDoc = androidManifestUri
         ? await vscode.workspace.openTextDocument(androidManifestUri)
@@ -105,13 +135,26 @@ async function handleRefresh(
     const usedAndroidPermissions = await getUsedAndroidPermissions(androidDoc?.getText() || '');
     const usedIOSPermissions = await getUsedIOSPermissions(iosDoc?.getText() || '');
 
+    // Extract existing services
+    const existingServices = await extractServices(
+        androidManifestUri,
+        iosPlistUri,
+        iosAppDelegateUri,
+        servicesConfigCache?.services || []
+    );
+    
+    // Update the cache on refresh
+    previousServicesCache = [...existingServices];
+
     panel.webview.postMessage({
         type: 'permissions',
         androidPermissions: usedAndroidPermissions,
         iosPermissions: usedIOSPermissions,
         hasAndroidManifest: !!androidManifestUri,
         hasIOSPlist: !!iosPlistUri,
-        hasPodfile: !!iosPodfileUri
+        hasPodfile: !!iosPodfileUri,
+        services: existingServices,
+        availableServices: servicesConfigCache?.services || []
     });
 }
 
@@ -131,23 +174,42 @@ async function handleRequestAllIOS(panel: vscode.WebviewPanel): Promise<void> {
     });
 }
 
+function handleRequestServices(panel: vscode.WebviewPanel): void {
+    panel.webview.postMessage({
+        type: 'servicesConfig',
+        services: servicesConfigCache?.services || []
+    });
+}
+
 async function handleSave(
     panel: vscode.WebviewPanel,
-    message: { androidPermissions: string[]; iosPermissions: IOSPermissionEntry[] },
+    message: { androidPermissions: string[]; iosPermissions: IOSPermissionEntry[]; services?: ServiceEntry[] },
     androidManifestUri?: vscode.Uri,
     iosPlistUri?: vscode.Uri,
-    iosPodfileUri?: vscode.Uri
+    iosPodfileUri?: vscode.Uri,
+    iosAppDelegateUri?: vscode.Uri
 ): Promise<void> {
     const androidList = Array.isArray(message.androidPermissions) ? message.androidPermissions : [];
     const iosList = Array.isArray(message.iosPermissions) ? message.iosPermissions : [];
+    const servicesList = Array.isArray(message.services) ? message.services : [];
     
     const result = await savePermissions(
         androidList, 
         iosList, 
         androidManifestUri, 
         iosPlistUri, 
-        iosPodfileUri, 
-        categorizedIosPermissionsCache || undefined
+        iosPodfileUri,
+        iosAppDelegateUri,
+        categorizedIosPermissionsCache || undefined,
+        servicesList,
+        servicesConfigCache?.services || [],
+        previousServicesCache
     );
+    
+    // Update the previous services cache after successful save
+    if (result.success) {
+        previousServicesCache = [...servicesList];
+    }
+    
     panel.webview.postMessage({ type: 'saveResult', ...result });
 }

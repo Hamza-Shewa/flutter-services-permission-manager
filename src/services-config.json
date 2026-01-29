@@ -1,0 +1,487 @@
+{
+  "services": [
+    {
+      "id": "facebook",
+      "name": "Facebook SDK",
+      "description": "Facebook Login, Share, and Analytics",
+      "icon": "📘",
+      "fields": [
+        {
+          "id": "appId",
+          "label": "App ID",
+          "placeholder": "Your Facebook App ID (e.g., 1234567890)",
+          "required": true
+        },
+        {
+          "id": "clientToken",
+          "label": "Client Token",
+          "placeholder": "Your Facebook Client Token",
+          "required": true
+        },
+        {
+          "id": "displayName",
+          "label": "Display Name",
+          "placeholder": "Your App Display Name",
+          "required": true
+        }
+      ],
+      "ios": {
+        "plistEntries": [
+          {
+            "key": "FacebookAppID",
+            "valueField": "appId",
+            "type": "string"
+          },
+          {
+            "key": "FacebookClientToken",
+            "valueField": "clientToken",
+            "type": "string"
+          },
+          {
+            "key": "FacebookDisplayName",
+            "valueField": "displayName",
+            "type": "string"
+          },
+          {
+            "key": "LSApplicationQueriesSchemes",
+            "type": "array",
+            "staticValue": ["fbapi", "fb-messenger-share-api", "fbauth2", "fbshareextension"]
+          }
+        ],
+        "urlSchemes": [
+          {
+            "prefix": "fb",
+            "valueField": "appId"
+          }
+        ]
+      },
+      "android": {
+        "metaData": [
+          {
+            "name": "com.facebook.sdk.ApplicationId",
+            "valueField": "appId",
+            "stringResource": "facebook_app_id"
+          },
+          {
+            "name": "com.facebook.sdk.ClientToken",
+            "valueField": "clientToken",
+            "stringResource": "facebook_client_token"
+          }
+        ],
+        "stringResources": [
+          {
+            "name": "facebook_app_id",
+            "valueField": "appId"
+          },
+          {
+            "name": "facebook_client_token",
+            "valueField": "clientToken"
+          },
+          {
+            "name": "fb_login_protocol_scheme",
+            "valueField": "appId",
+            "prefix": "fb"
+          }
+        ],
+        "queries": [
+          {
+            "tag": "provider",
+            "attributes": {
+              "android:authorities": "com.facebook.katana.provider.PlatformProvider"
+            }
+          }
+        ],
+        "applicationData": [
+          {
+            "tag": "activity",
+            "attributes": {
+              "android:name": "com.facebook.FacebookActivity",
+              "android:configChanges": "keyboard|keyboardHidden|screenLayout|screenSize|orientation",
+              "android:label": "@string/app_name"
+            }
+          },
+          {
+            "tag": "activity",
+            "attributes": {
+              "android:name": "com.facebook.CustomTabActivity",
+              "android:exported": "true"
+            },
+            "children": [
+              {
+                "tag": "intent-filter",
+                "children": [
+                  { "tag": "action", "attributes": { "android:name": "android.intent.action.VIEW" } },
+                  { "tag": "category", "attributes": { "android:name": "android.intent.category.DEFAULT" } },
+                  { "tag": "category", "attributes": { "android:name": "android.intent.category.BROWSABLE" } },
+                  { "tag": "data", "attributes": { "android:scheme": "@string/fb_login_protocol_scheme" } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "google_signin",
+      "name": "Google Sign-In",
+      "description": "Google authentication for iOS and Android",
+      "icon": "🔴",
+      "fields": [
+        {
+          "id": "iosClientId",
+          "label": "iOS Client ID",
+          "placeholder": "xxx.apps.googleusercontent.com",
+          "required": true
+        },
+        {
+          "id": "iosReversedClientId",
+          "label": "iOS Reversed Client ID",
+          "placeholder": "com.googleusercontent.apps.xxx",
+          "required": true
+        },
+        {
+          "id": "serverClientId",
+          "label": "Server/Web Client ID (optional)",
+          "placeholder": "xxx.apps.googleusercontent.com",
+          "required": false
+        }
+      ],
+      "ios": {
+        "plistEntries": [
+          {
+            "key": "GIDClientID",
+            "valueField": "iosClientId",
+            "type": "string"
+          }
+        ],
+        "urlSchemes": [
+          {
+            "valueField": "iosReversedClientId"
+          }
+        ]
+      },
+      "android": {
+        "metaData": [],
+        "queries": [],
+        "applicationData": []
+      }
+    },
+    {
+      "id": "firebase",
+      "name": "Firebase Cloud Messaging",
+      "description": "Push notifications via Firebase",
+      "icon": "🔥",
+      "fields": [
+        {
+          "id": "senderId",
+          "label": "Sender ID",
+          "placeholder": "Your Firebase Sender ID",
+          "required": false
+        }
+      ],
+      "ios": {
+        "plistEntries": [
+          {
+            "key": "FirebaseAppDelegateProxyEnabled",
+            "type": "boolean",
+            "staticValue": false
+          }
+        ],
+        "urlSchemes": []
+      },
+      "android": {
+        "metaData": [
+          {
+            "name": "com.google.firebase.messaging.default_notification_channel_id",
+            "valueField": "channelId",
+            "defaultValue": "high_importance_channel"
+          }
+        ],
+        "queries": [],
+        "applicationData": []
+      }
+    },
+    {
+      "id": "onesignal",
+      "name": "OneSignal",
+      "description": "Push notifications via OneSignal",
+      "icon": "🔔",
+      "fields": [
+        {
+          "id": "appId",
+          "label": "OneSignal App ID",
+          "placeholder": "Your OneSignal App ID (UUID)",
+          "required": true
+        }
+      ],
+      "ios": {
+        "plistEntries": [],
+        "urlSchemes": []
+      },
+      "android": {
+        "metaData": [
+          {
+            "name": "onesignal_app_id",
+            "valueField": "appId"
+          },
+          {
+            "name": "onesignal_google_project_number",
+            "valueField": "senderId",
+            "defaultValue": "REMOTE"
+          }
+        ],
+        "queries": [],
+        "applicationData": []
+      }
+    },
+    {
+      "id": "twitter",
+      "name": "Twitter/X Login",
+      "description": "Twitter authentication integration",
+      "icon": "🐦",
+      "fields": [
+        {
+          "id": "consumerKey",
+          "label": "Consumer Key (API Key)",
+          "placeholder": "Your Twitter API Key",
+          "required": true
+        },
+        {
+          "id": "consumerSecret",
+          "label": "Consumer Secret",
+          "placeholder": "Your Twitter API Secret",
+          "required": true
+        }
+      ],
+      "ios": {
+        "plistEntries": [
+          {
+            "key": "LSApplicationQueriesSchemes",
+            "type": "array",
+            "staticValue": ["twitter", "twitterauth"]
+          }
+        ],
+        "urlSchemes": [
+          {
+            "prefix": "twitterkit-",
+            "valueField": "consumerKey"
+          }
+        ]
+      },
+      "android": {
+        "metaData": [],
+        "queries": [
+          {
+            "tag": "package",
+            "attributes": {
+              "android:name": "com.twitter.android"
+            }
+          }
+        ],
+        "applicationData": []
+      }
+    },
+    {
+      "id": "apple_signin",
+      "name": "Apple Sign-In",
+      "description": "Sign in with Apple (iOS 13+)",
+      "icon": "🍎",
+      "fields": [
+        {
+          "id": "serviceId",
+          "label": "Service ID",
+          "placeholder": "Your Apple Service ID",
+          "required": true
+        }
+      ],
+      "ios": {
+        "plistEntries": [],
+        "urlSchemes": [],
+        "entitlements": [
+          {
+            "key": "com.apple.developer.applesignin",
+            "type": "array",
+            "staticValue": ["Default"]
+          }
+        ]
+      },
+      "android": {
+        "metaData": [],
+        "queries": [],
+        "applicationData": []
+      }
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe Payments",
+      "description": "Stripe payment processing",
+      "icon": "💳",
+      "fields": [
+        {
+          "id": "publishableKey",
+          "label": "Publishable Key",
+          "placeholder": "pk_live_xxx or pk_test_xxx",
+          "required": true
+        },
+        {
+          "id": "merchantId",
+          "label": "Merchant ID (Apple Pay)",
+          "placeholder": "merchant.com.yourcompany",
+          "required": false
+        }
+      ],
+      "ios": {
+        "plistEntries": [],
+        "urlSchemes": []
+      },
+      "android": {
+        "metaData": [],
+        "queries": [],
+        "applicationData": []
+      }
+    },
+    {
+      "id": "maps",
+      "name": "Google Maps",
+      "description": "Google Maps SDK (iOS: AppDelegate.swift, Android: AndroidManifest.xml)",
+      "icon": "🗺️",
+      "fields": [
+        {
+          "id": "iosApiKey",
+          "label": "iOS API Key",
+          "placeholder": "AIzaSy... (configured in AppDelegate.swift)",
+          "required": false
+        },
+        {
+          "id": "androidApiKey",
+          "label": "Android API Key",
+          "placeholder": "AIzaSy... (configured in AndroidManifest.xml)",
+          "required": true
+        }
+      ],
+      "ios": {
+        "plistEntries": [],
+        "urlSchemes": [],
+        "appDelegate": {
+          "import": "GoogleMaps",
+          "code": "GMSServices.provideAPIKey(\"{iosApiKey}\")"
+        }
+      },
+      "android": {
+        "metaData": [
+          {
+            "name": "com.google.android.geo.API_KEY",
+            "valueField": "androidApiKey",
+            "stringResource": "google_maps_api_key"
+          }
+        ],
+        "stringResources": [
+          {
+            "name": "google_maps_api_key",
+            "valueField": "androidApiKey"
+          }
+        ],
+        "queries": [],
+        "applicationData": []
+      }
+    },
+    {
+      "id": "admob",
+      "name": "Google AdMob",
+      "description": "Mobile advertising with AdMob",
+      "icon": "📺",
+      "fields": [
+        {
+          "id": "iosAppId",
+          "label": "iOS App ID",
+          "placeholder": "ca-app-pub-xxx~xxx",
+          "required": true
+        },
+        {
+          "id": "androidAppId",
+          "label": "Android App ID",
+          "placeholder": "ca-app-pub-xxx~xxx",
+          "required": true
+        }
+      ],
+      "ios": {
+        "plistEntries": [
+          {
+            "key": "GADApplicationIdentifier",
+            "valueField": "iosAppId",
+            "type": "string"
+          },
+          {
+            "key": "SKAdNetworkItems",
+            "type": "array",
+            "staticValue": [
+              { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" }
+            ]
+          }
+        ],
+        "urlSchemes": []
+      },
+      "android": {
+        "metaData": [
+          {
+            "name": "com.google.android.gms.ads.APPLICATION_ID",
+            "valueField": "androidAppId",
+            "stringResource": "admob_app_id"
+          }
+        ],
+        "stringResources": [
+          {
+            "name": "admob_app_id",
+            "valueField": "androidAppId"
+          }
+        ],
+        "queries": [],
+        "applicationData": []
+      }
+    },
+    {
+      "id": "deeplink",
+      "name": "Deep Linking",
+      "description": "Custom URL scheme for deep links",
+      "icon": "🔗",
+      "fields": [
+        {
+          "id": "scheme",
+          "label": "URL Scheme",
+          "placeholder": "myapp (without ://)",
+          "required": true
+        },
+        {
+          "id": "host",
+          "label": "Host (Android)",
+          "placeholder": "open or leave empty",
+          "required": false
+        }
+      ],
+      "ios": {
+        "plistEntries": [],
+        "urlSchemes": [
+          {
+            "valueField": "scheme"
+          }
+        ]
+      },
+      "android": {
+        "metaData": [],
+        "queries": [],
+        "applicationData": [],
+        "mainActivityIntentFilters": [
+          {
+            "tag": "intent-filter",
+            "children": [
+              { "tag": "action", "attributes": { "android:name": "android.intent.action.VIEW" } },
+              { "tag": "category", "attributes": { "android:name": "android.intent.category.DEFAULT" } },
+              { "tag": "category", "attributes": { "android:name": "android.intent.category.BROWSABLE" } },
+              { "tag": "data", "attributes": { "android:scheme": "{scheme}", "android:host": "{host}" } }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

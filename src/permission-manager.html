@@ -62,9 +62,14 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 16px;
-            margin-bottom: 24px;
-            padding-bottom: 20px;
+            padding: 16px 24px;
             border-bottom: 1px solid var(--border-default);
+            position: sticky;
+            top: 0;
+            background: var(--bg-primary);
+            z-index: 100;
+            margin: -24px -24px 24px -24px;
+            width: calc(100% + 48px);
         }
 
         .header-left {
@@ -426,11 +431,11 @@
         /* Toast Notifications */
         .toast-container {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
             z-index: 9999;
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse;
             gap: 10px;
             pointer-events: none;
         }
@@ -570,6 +575,269 @@
         @keyframes toastProgress {
             from { width: 100%; }
             to { width: 0%; }
+        }
+
+        /* Services Section */
+        .section.services {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(139, 92, 246, 0.05) 100%);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .section.services .section-header h2 {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section.services .toolbar input {
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .section.services .toolbar input:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+
+        .section.services .btn-primary {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+        }
+
+        .section.services .btn-primary:hover {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            padding: 16px 0;
+        }
+
+        .service-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            transition: var(--transition-fast);
+        }
+
+        .service-card:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1);
+        }
+
+        .service-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-default);
+        }
+
+        .service-card-icon {
+            font-size: 24px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(139, 92, 246, 0.15);
+            border-radius: var(--radius-md);
+        }
+
+        .service-card-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+
+        .service-card-status {
+            font-size: 12px;
+            color: #22c55e;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .service-card-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .service-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-default);
+        }
+
+        .service-field-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .service-field-value {
+            color: var(--text-primary);
+            font-family: 'Consolas', 'Monaco', monospace;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background: rgba(139, 92, 246, 0.1);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+        }
+
+        .service-card-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-default);
+        }
+
+        .service-card-actions button {
+            flex: 1;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .service-card-actions .edit-service-btn {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.3);
+            color: #a78bfa;
+        }
+
+        .service-card-actions .edit-service-btn:hover {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+
+        .service-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .service-list-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .service-list-item:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .service-list-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .service-list-item .service-icon {
+            font-size: 28px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(139, 92, 246, 0.15);
+            border-radius: var(--radius-md);
+        }
+
+        .service-list-item .service-info {
+            flex: 1;
+        }
+
+        .service-list-item .service-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .service-list-item .service-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .service-modal .service-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .service-modal .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .service-modal .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .service-modal .form-group input {
+            padding: 12px 14px;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+        }
+
+        .service-modal .form-group input:focus {
+            outline: none;
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .empty-services {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            border: 1px dashed var(--border-default);
+        }
+
+        .empty-services-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .empty-services p {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .empty-services p:first-of-type {
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         /* Legacy status - hidden but kept for compatibility */
@@ -834,6 +1102,9 @@
             .header {
                 flex-direction: column;
                 align-items: flex-start;
+                margin: -16px -16px 16px -16px;
+                width: calc(100% + 32px);
+                padding: 12px 16px;
             }
 
             .toolbar {
@@ -963,6 +1234,40 @@
             </table>
         </div>
     </section>
+
+    <section class="section services">
+        <div class="section-header">
+            <h2>🔌 Services</h2>
+        </div>
+        <div class="toolbar">
+            <input type="text" id="serviceSearch" placeholder="Search configured services..." />
+            <button id="addServiceButton" type="button" class="btn-primary">+ Add Service</button>
+        </div>
+        <div id="servicesContainer" class="services-grid"></div>
+    </section>
+
+    <div class="modal-backdrop" id="serviceModalBackdrop" style="display: none;">
+        <div class="modal service-modal" role="dialog" aria-modal="true" aria-labelledby="serviceModalTitle">
+            <h3 id="serviceModalTitle">Configure Service</h3>
+            <div id="serviceModalContent"></div>
+            <div class="status" id="serviceModalError"></div>
+            <div class="modal-actions">
+                <button id="serviceModalCancel" type="button" class="btn-secondary">Cancel</button>
+                <button id="serviceModalSave" type="button" class="btn-primary">Save Service</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="addServiceModalBackdrop" style="display: none;">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addServiceModalTitle">
+            <h3 id="addServiceModalTitle">Add Service</h3>
+            <p style="color: var(--text-secondary); margin: 0 0 16px;">Select a service to configure:</p>
+            <div id="addServiceList" class="service-list"></div>
+            <div class="modal-actions">
+                <button id="addServiceModalCancel" type="button" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <div class="modal-backdrop" id="modalBackdrop">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">

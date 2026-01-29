@@ -45,13 +45,41 @@ export interface SaveResult {
     message: string;
 }
 
+/** Configured service entry */
+export interface ServiceEntry {
+    id: string;
+    values: Record<string, string>;
+}
+
+/** Service configuration from services-config.json */
+export interface ServiceConfig {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    fields: { id: string; label: string; placeholder?: string; required?: boolean }[];
+    ios: {
+        plistEntries: { key: string; valueField?: string; type: string; staticValue?: unknown; prefix?: string }[];
+        urlSchemes?: { prefix?: string; valueField: string }[];
+        entitlements?: { key: string; type: string; staticValue?: unknown }[];
+    };
+    android: {
+        metaData: { name: string; valueField: string; prefix?: string; stringResource?: string; defaultValue?: string }[];
+        stringResources?: { name: string; valueField: string; prefix?: string }[];
+        queries: { tag: string; attributes: Record<string, string> }[];
+        applicationData: { tag: string; attributes: Record<string, string>; children?: unknown[] }[];
+        mainActivityIntentFilters?: { tag: string; children?: unknown[] }[];
+    };
+}
+
 /** Webview message types */
 export type WebviewMessage =
     | { type: 'ready' }
     | { type: 'refresh' }
     | { type: 'requestAllAndroidPermissions' }
     | { type: 'requestAllIOSPermissions' }
-    | { type: 'savePermissions'; androidPermissions: string[]; iosPermissions: IOSPermissionEntry[] };
+    | { type: 'requestServices' }
+    | { type: 'savePermissions'; androidPermissions: string[]; iosPermissions: IOSPermissionEntry[]; services?: ServiceEntry[] };
 
 /** Extension to webview payload */
 export interface PermissionsPayload {
@@ -61,4 +89,6 @@ export interface PermissionsPayload {
     hasAndroidManifest: boolean;
     hasIOSPlist: boolean;
     hasPodfile: boolean;
+    services: ServiceEntry[];
+    availableServices: ServiceConfig[];
 }

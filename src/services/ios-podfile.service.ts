@@ -26,7 +26,6 @@ export function extractPodfileMacros(content: string): string[] {
 function findGccBlock(content: string): { start: number; end: number } | null {
     const searchStr = "config.build_settings['GCC_PREPROCESSOR_DEFINITIONS']";
     const gccStart = content.indexOf(searchStr);
-    console.log('[Podfile] Searching for GCC block, found at:', gccStart);
     
     if (gccStart === -1) {
         return null;
@@ -35,7 +34,6 @@ function findGccBlock(content: string): { start: number; end: number } | null {
     // Find the ||= [ pattern AFTER the property accessor
     const afterAccessor = gccStart + searchStr.length;
     const assignPattern = content.indexOf('[', afterAccessor);
-    console.log('[Podfile] Array opening bracket at:', assignPattern);
     
     if (assignPattern === -1) {
         return null;
@@ -68,8 +66,6 @@ function findGccBlock(content: string): { start: number; end: number } | null {
         }
         pos++;
     }
-    
-    console.log('[Podfile] Block end at:', pos, 'depth:', depth);
     
     if (depth !== 0) {
         return null;

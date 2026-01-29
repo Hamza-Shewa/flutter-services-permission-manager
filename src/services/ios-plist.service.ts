@@ -2,7 +2,7 @@
  * iOS Info.plist parsing and updating service
  */
 
-import type { IOSPermissionEntry } from '../types/index.js';
+import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../types/index.js';
 
 /**
  * Updates Info.plist content with new permission entries
@@ -69,4 +69,215 @@ export function normalizePlistSpacing(plistContent: string): string {
     normalized = normalized.replace(/<\/string>\s*<key>/g, '</string>\n\t<key>');
     normalized = normalized.replace(/\n{2,}/g, '\n');
     return normalized;
+}
+
+/**
+ * Updates Info.plist with service configurations (e.g., Facebook SDK)
+ */
+export function updateIOSPlistWithServices(
+    plistContent: string,
+    services: ServiceEntry[],
+    servicesConfig: ServiceConfig[]
+): string {
+    let result = plistContent;
+    
+    for (const service of services) {
+        const config = servicesConfig.find(c => c.id === service.id);
+        if (!config?.ios) continue;
+        
+        // Add/update plist entries
+        if (config.ios.plistEntries && config.ios.plistEntries.length > 0) {
+            for (const entry of config.ios.plistEntries) {
+                if (entry.type === 'string' && entry.valueField) {
+                    const value = service.values[entry.valueField];
+                    if (!value) continue;
+                    
+                    // Check if key already exists
+                    const existingKeyRegex = new RegExp(
+                        `<key>${entry.key}</key>\\s*<string>[^<]*</string>`,
+                        'i'
+                    );
+                    
+                    if (existingKeyRegex.test(result)) {
+                        // Update existing value
+                        result = result.replace(
+                            existingKeyRegex,
+                            `<key>${entry.key}</key>\n\t<string>${value}</string>`
+                        );
+                    } else {
+                        // Add new entry before last </dict>
+                        const entryXml = `\t<key>${entry.key}</key>\n\t<string>${value}</string>\n`;
+                        const dictEnd = result.lastIndexOf('</dict>');
+                        if (dictEnd !== -1) {
+                            result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
+                        }
+                    }
+                } else if (entry.type === 'boolean' && 'staticValue' in entry) {
+                    // Skip if already exists
+                    if (result.includes(`<key>${entry.key}</key>`)) continue;
+                    
+                    const boolValue = entry.staticValue ? 'true' : 'false';
+                    const entryXml = `\t<key>${entry.key}</key>\n\t<${boolValue}/>\n`;
+                    const dictEnd = result.lastIndexOf('</dict>');
+                    if (dictEnd !== -1) {
+                        result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
+                    }
+                } else if (entry.type === 'array' && entry.staticValue) {
+                    // Skip if already exists
+                    if (result.includes(`<key>${entry.key}</key>`)) continue;
+                    
+                    const arrayItems = (entry.staticValue as unknown[]).map(v => {
+                        if (typeof v === 'string') {
+                            return `\t\t<string>${v}</string>`;
+                        } else if (typeof v === 'object' && v !== null) {
+                            const dictEntries = Object.entries(v).map(([key, val]) => 
+                                `\t\t\t<key>${key}</key>\n\t\t\t<string>${val}</string>`
+                            ).join('\n');
+                            return `\t\t<dict>\n${dictEntries}\n\t\t</dict>`;
+                        }
+                        return '';
+                    }).join('\n');
+                    const entryXml = `\t<key>${entry.key}</key>\n\t<array>\n${arrayItems}\n\t</array>\n`;
+                    const dictEnd = result.lastIndexOf('</dict>');
+                    if (dictEnd !== -1) {
+                        result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
+                    }
+                }
+            }
+        }
+        
+        // Add/update URL schemes in existing CFBundleURLSchemes array
+        if (config.ios.urlSchemes && config.ios.urlSchemes.length > 0) {
+            for (const scheme of config.ios.urlSchemes) {
+                let value = service.values[scheme.valueField] || '';
+                if (!value) continue;
+                
+                const newScheme = scheme.prefix ? scheme.prefix + value : value;
+                
+                // Find existing CFBundleURLSchemes array
+                const urlSchemesRegex = /<key>CFBundleURLSchemes<\/key>\s*<array>([\s\S]*?)<\/array>/;
+                const urlSchemesMatch = result.match(urlSchemesRegex);
+                
+                if (urlSchemesMatch) {
+                    const existingSchemes = urlSchemesMatch[1];
+                    
+                    // Check if this exact scheme already exists
+                    if (existingSchemes.includes(`<string>${newScheme}</string>`)) {
+                        continue; // Already exists with same value
+                    }
+                    
+                    // Check if there's an existing scheme with this prefix that needs updating
+                    if (scheme.prefix) {
+                        const prefixPattern = new RegExp(
+                            `<string>${scheme.prefix}[^<]+</string>`,
+                            'g'
+                        );
+                        const prefixMatch = existingSchemes.match(prefixPattern);
+                        
+                        if (prefixMatch && prefixMatch.length > 0) {
+                            // Replace the first matching scheme with the new value
+                            result = result.replace(
+                                prefixMatch[0],
+                                `<string>${newScheme}</string>`
+                            );
+                            continue;
+                        }
+                    }
+                    
+                    // No existing scheme with prefix - add new scheme
+                    const schemasArrayEnd = result.indexOf('</array>', urlSchemesMatch.index!);
+                    const schemeToAdd = `\t\t\t\t<string>${newScheme}</string>\n\t\t\t`;
+                    result = result.slice(0, schemasArrayEnd) + schemeToAdd + result.slice(schemasArrayEnd);
+                } else if (result.includes('<key>CFBundleURLTypes</key>')) {
+                    // CFBundleURLTypes exists but no CFBundleURLSchemes found - look for first dict
+                    const urlTypesMatch = result.match(/<key>CFBundleURLTypes<\/key>\s*<array>\s*<dict>/);
+                    if (urlTypesMatch) {
+                        const firstDictEnd = result.indexOf('</dict>', urlTypesMatch.index! + urlTypesMatch[0].length);
+                        const schemesXml = `\t\t\t<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>${newScheme}</string>\n\t\t\t</array>\n\t\t`;
+                        result = result.slice(0, firstDictEnd) + schemesXml + result.slice(firstDictEnd);
+                    }
+                } else {
+                    // No CFBundleURLTypes - create it
+                    const urlTypesXml = `\t<key>CFBundleURLTypes</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>CFBundleTypeRole</key>\n\t\t\t<string>Editor</string>\n\t\t\t<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>${newScheme}</string>\n\t\t\t</array>\n\t\t</dict>\n\t</array>\n`;
+                    const dictEnd = result.lastIndexOf('</dict>');
+                    if (dictEnd !== -1) {
+                        result = result.slice(0, dictEnd) + urlTypesXml + result.slice(dictEnd);
+                    }
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * Removes service entries from Info.plist
+ */
+export function removeServicesFromIOSPlist(
+    plistContent: string,
+    removedServiceIds: string[],
+    servicesConfig: ServiceConfig[]
+): string {
+    let result = plistContent;
+    
+    // Keys that should NOT be removed as they may be shared across services
+    const protectedKeys = ['LSApplicationQueriesSchemes'];
+    
+    for (const serviceId of removedServiceIds) {
+        const config = servicesConfig.find(c => c.id === serviceId);
+        if (!config?.ios) continue;
+        
+        // Remove plist entries
+        if (config.ios.plistEntries) {
+            for (const entry of config.ios.plistEntries) {
+                // Skip protected keys
+                if (protectedKeys.includes(entry.key)) continue;
+                
+                // Remove string entries: <key>xxx</key>\n\t<string>yyy</string>
+                if (entry.type === 'string') {
+                    const stringRegex = new RegExp(
+                        `\\s*<key>${entry.key}</key>\\s*<string>[^<]*</string>`,
+                        'gi'
+                    );
+                    result = result.replace(stringRegex, '');
+                }
+                // Remove boolean entries: <key>xxx</key>\n\t<true/> or <false/>
+                else if (entry.type === 'boolean') {
+                    const boolRegex = new RegExp(
+                        `\\s*<key>${entry.key}</key>\\s*<(?:true|false)/>`,
+                        'gi'
+                    );
+                    result = result.replace(boolRegex, '');
+                }
+                // Remove array entries (but not protected ones)
+                else if (entry.type === 'array') {
+                    const arrayRegex = new RegExp(
+                        `\\s*<key>${entry.key}</key>\\s*<array>[\\s\\S]*?</array>`,
+                        'gi'
+                    );
+                    result = result.replace(arrayRegex, '');
+                }
+            }
+        }
+        
+        // Remove URL schemes with prefixes
+        if (config.ios.urlSchemes) {
+            for (const scheme of config.ios.urlSchemes) {
+                if (scheme.prefix) {
+                    // Remove schemes that start with this prefix
+                    const schemeRegex = new RegExp(
+                        `\\s*<string>${scheme.prefix}[^<]+</string>`,
+                        'gi'
+                    );
+                    result = result.replace(schemeRegex, '');
+                }
+            }
+        }
+    }
+    
+    // Clean up multiple blank lines
+    result = result.replace(/\n{3,}/g, '\n\n');
+    
+    return result;
 }
