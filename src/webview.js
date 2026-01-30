@@ -35,6 +35,7 @@
     const crossPlatformModalError = document.getElementById('crossPlatformModalError');
     const crossPlatformModalSkip = document.getElementById('crossPlatformModalSkip');
     const crossPlatformModalAdd = document.getElementById('crossPlatformModalAdd');
+    const syncPermissionsButton = document.getElementById('syncPermissionsButton');
 
     const equivalentModalBackdrop = document.getElementById('equivalentModalBackdrop');
     const equivalentModalTitle = document.getElementById('equivalentModalTitle');
@@ -43,6 +44,11 @@
     const equivalentModalError = document.getElementById('equivalentModalError');
     const equivalentModalCancel = document.getElementById('equivalentModalCancel');
     const equivalentModalAdd = document.getElementById('equivalentModalAdd');
+    const syncModalBackdrop = document.getElementById('syncModalBackdrop');
+    const syncModalList = document.getElementById('syncModalList');
+    const syncModalError = document.getElementById('syncModalError');
+    const syncModalCancel = document.getElementById('syncModalCancel');
+    const syncModalConfirm = document.getElementById('syncModalConfirm');
 
     // Service modal elements
     const addServiceButton = document.getElementById('addServiceButton');
@@ -57,6 +63,8 @@
     const addServiceModalBackdrop = document.getElementById('addServiceModalBackdrop');
     const addServiceList = document.getElementById('addServiceList');
     const addServiceModalCancel = document.getElementById('addServiceModalCancel');
+
+    let pendingRefreshTimeout = null;
 
     const state = {
         androidPermissions: [],
@@ -83,8 +91,19 @@
         services: [],
         availableServices: [],
         currentEditingService: null,
-        serviceSearch: ''
+        serviceSearch: '',
+        pendingSyncModal: false
     };
+
+    function scheduleRefresh() {
+        if (pendingRefreshTimeout) {
+            clearTimeout(pendingRefreshTimeout);
+        }
+        pendingRefreshTimeout = setTimeout(() => {
+            vscode.postMessage({ type: 'refresh' });
+            pendingRefreshTimeout = null;
+        }, 200);
+    }
 
     /**
      * Shows an animated toast notification
@@ -376,6 +395,242 @@
         updateCounts();
     }
 
+    function findAndroidEquivalent(iosPermissionName) {
+        return state.allAndroidPermissions.find(p =>
+            (p.constantValue && utils.normalizeText(p.constantValue) === utils.normalizeText(iosPermissionName)) ||
+            utils.normalizeText(p.permission) === utils.normalizeText(iosPermissionName)
+        );
+    }
+
+    function findIOSEquivalent(androidPermissionName) {
+        return state.allIosPermissions.find(p =>
+            utils.normalizeText(p.permission) === utils.normalizeText(androidPermissionName)
+        );
+    }
+
+    function buildSyncItems() {
+        const items = [];
+        const missing = [];
+
+        state.iosPermissions.forEach(iosPerm => {
+            const equivalents = iosPerm.equivalentAndroidPermissions || [];
+            equivalents.forEach(eq => {
+                const androidPerm = findAndroidEquivalent(eq);
+                if (!androidPerm) {
+                    missing.push(`Missing Android equivalent for ${iosPerm.permission}: ${eq}`);
+                    return;
+                }
+                const exists = state.androidPermissions.some(p =>
+                    utils.normalizeText(p.constantValue || p.permission) === utils.normalizeText(androidPerm.constantValue || androidPerm.permission)
+                );
+                if (!exists) {
+                    items.push({
+                        sourcePlatform: 'ios',
+                        targetPlatform: 'android',
+                        sourceName: iosPerm.permission,
+                        target: androidPerm
+                    });
+                }
+            });
+        });
+
+        state.androidPermissions.forEach(androidPerm => {
+            const equivalents = androidPerm.equivalentIosPermissions || [];
+            equivalents.forEach(eq => {
+                const iosPerm = findIOSEquivalent(eq);
+                if (!iosPerm) {
+                    missing.push(`Missing iOS equivalent for ${androidPerm.permission}: ${eq}`);
+                    return;
+                }
+                const exists = state.iosPermissions.some(p =>
+                    utils.normalizeText(p.permission) === utils.normalizeText(iosPerm.permission)
+                );
+                if (!exists) {
+                    items.push({
+                        sourcePlatform: 'android',
+                        targetPlatform: 'ios',
+                        sourceName: androidPerm.permission,
+                        target: iosPerm
+                    });
+                }
+            });
+        });
+
+        return { items, missing };
+    }
+
+    function renderSyncModal() {
+        syncModalList.innerHTML = '';
+        syncModalError.textContent = '';
+
+        const { items, missing } = buildSyncItems();
+
+        if (missing.length > 0) {
+            syncModalError.textContent = missing.join(' | ');
+            syncModalError.className = 'status error';
+        } else {
+            syncModalError.textContent = '';
+            syncModalError.className = 'status';
+        }
+
+        if (items.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.textContent = 'No new equivalents to sync.';
+            syncModalList.appendChild(empty);
+            return;
+        }
+
+        items.forEach((item, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'cross-platform-suggestion';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `sync-item-${index}`;
+            checkbox.checked = true;
+            checkbox.dataset.index = String(index);
+
+            const label = document.createElement('label');
+            label.htmlFor = `sync-item-${index}`;
+            label.textContent = `${item.sourcePlatform === 'ios' ? 'iOS' : 'Android'} "${item.sourceName}" → ${item.targetPlatform === 'ios' ? 'iOS' : 'Android'} "${item.target.permission || item.target.constantValue}"`;
+
+            const row = document.createElement('div');
+            row.className = 'suggestion-row';
+            row.appendChild(checkbox);
+            row.appendChild(label);
+            wrapper.appendChild(row);
+
+            if (item.targetPlatform === 'ios') {
+                const type = (item.target.type || '').toLowerCase();
+                if (type !== 'boolean') {
+                    const valueInput = document.createElement('input');
+                    valueInput.type = 'text';
+                    valueInput.placeholder = 'Usage description (required)';
+                    valueInput.className = 'equivalent-value-input';
+                    valueInput.required = true;
+                    valueInput.dataset.index = String(index);
+                    valueInput.addEventListener('focus', () => { checkbox.checked = true; });
+                    valueInput.addEventListener('input', () => { checkbox.checked = true; });
+                    wrapper.appendChild(valueInput);
+                }
+            }
+
+            syncModalList.appendChild(wrapper);
+        });
+
+        syncModalBackdrop.style.display = 'flex';
+    }
+
+    function closeSyncModal() {
+        syncModalBackdrop.style.display = 'none';
+        syncModalList.innerHTML = '';
+        syncModalError.textContent = '';
+    }
+
+    function confirmSync() {
+        const { items } = buildSyncItems();
+        if (items.length === 0) {
+            closeSyncModal();
+            showToast('No equivalents to sync.', 'info');
+            return;
+        }
+
+        const suggestions = syncModalList.querySelectorAll('.cross-platform-suggestion');
+        let addedCount = 0;
+        const errors = [];
+        const skippedExisting = [];
+
+        suggestions.forEach((suggestion, idx) => {
+            const checkbox = suggestion.querySelector('input[type="checkbox"]');
+            if (!checkbox || !checkbox.checked) {
+                return;
+            }
+            const itemIndex = Number(checkbox.dataset.index ?? idx);
+            const item = items[itemIndex];
+            if (!item) {
+                return;
+            }
+
+            if (item.targetPlatform === 'android') {
+                const exists = state.androidPermissions.some(p =>
+                    utils.normalizeText(p.constantValue || p.permission) === utils.normalizeText(item.target.constantValue || item.target.permission)
+                );
+                if (!exists) {
+                    state.androidPermissions = [...state.androidPermissions, item.target];
+                    addedCount++;
+                } else {
+                    skippedExisting.push(item.target.permission || item.target.constantValue || 'Android permission');
+                }
+            } else {
+                const exists = state.iosPermissions.some(p =>
+                    utils.normalizeText(p.permission) === utils.normalizeText(item.target.permission)
+                );
+                if (!exists) {
+                    const input = suggestion.querySelector('.equivalent-value-input');
+                    const type = (item.target.type || '').toLowerCase();
+                    let value = type === 'boolean' ? true : '';
+                    if (type !== 'boolean') {
+                        value = input ? input.value.trim() : '';
+                        if (!value || value === 'TODO: Provide usage description.') {
+                            errors.push(`Usage description required for ${item.target.permission}`);
+                            return;
+                        }
+                    }
+                    state.iosPermissions = [...state.iosPermissions, { ...item.target, value }];
+                    addedCount++;
+                } else {
+                    skippedExisting.push(item.target.permission || 'iOS permission');
+                }
+            }
+        });
+
+        if (errors.length > 0) {
+            syncModalError.textContent = errors.join(' | ');
+            syncModalError.className = 'status error';
+            return;
+        }
+
+        closeSyncModal();
+        updateView();
+
+        if (addedCount > 0) {
+            showToast(`Synced ${addedCount} equivalent permission${addedCount > 1 ? 's' : ''}.`, 'success');
+        } else {
+            showToast('No permissions were added.', 'info');
+        }
+
+        if (skippedExisting.length > 0) {
+            showToast(`Skipped existing: ${skippedExisting.join(', ')}`, 'info', 5000);
+        }
+    }
+
+    function syncEquivalents() {
+        // Ensure all permissions are loaded, queue modal until both arrive
+        if (state.allAndroidPermissions.length === 0) {
+            state.pendingSyncModal = true;
+            vscode.postMessage({ type: 'requestAllAndroidPermissions' });
+        }
+        if (state.allIosPermissions.length === 0) {
+            state.pendingSyncModal = true;
+            vscode.postMessage({ type: 'requestAllIOSPermissions' });
+        }
+
+        if (state.allAndroidPermissions.length > 0 && state.allIosPermissions.length > 0) {
+            state.pendingSyncModal = false;
+            renderSyncModal();
+        } else {
+            showToast('Loading permissions, please try again in a moment.', 'info');
+        }
+    }
+
+    function tryOpenPendingSyncModal() {
+        if (state.pendingSyncModal && state.allAndroidPermissions.length > 0 && state.allIosPermissions.length > 0) {
+            state.pendingSyncModal = false;
+            renderSyncModal();
+        }
+    }
+
     function updateCounts() {
         const androidCount = utils.dedupePermissions(state.androidPermissions).length;
         const iosCount = state.iosPermissions ? state.iosPermissions.length : 0;
@@ -502,6 +757,7 @@
         } catch (error) {
             modalError.textContent = error.message;
             modalError.className = 'status error';
+            showToast(error.message, 'error');
         }
     }
 
@@ -1203,6 +1459,9 @@
             vscode.postMessage({ type: 'refresh' });
         });
     }
+    if (syncPermissionsButton) {
+        syncPermissionsButton.addEventListener('click', syncEquivalents);
+    }
 
     modalCancel.addEventListener('click', closeModal);
     modalAdd.addEventListener('click', addSelectedPermission);
@@ -1245,6 +1504,17 @@
 
     equivalentModalCancel.addEventListener('click', closeEquivalentModal);
     equivalentModalAdd.addEventListener('click', addEquivalentPermissions);
+    if (syncModalCancel) {
+        syncModalCancel.addEventListener('click', closeSyncModal);
+    }
+    if (syncModalConfirm) {
+        syncModalConfirm.addEventListener('click', confirmSync);
+    }
+
+    // Auto-refresh when the webview regains focus to pick up file changes
+    window.addEventListener('focus', () => {
+        scheduleRefresh();
+    });
 
     window.addEventListener('message', event => {
         const message = event.data;
@@ -1266,6 +1536,7 @@
                 state.allAndroidPermissions = message.permissions || [];
                 renderModalCategoryTabs();
                 renderModalResults();
+                tryOpenPendingSyncModal();
                 // Check if we have a pending cross-platform modal
                 if (state.pendingCrossPlatformModal && state.pendingCrossPlatformModal.isSourceIos) {
                     const { selected, equivalents, isSourceIos } = state.pendingCrossPlatformModal;
@@ -1283,6 +1554,7 @@
                 state.allIosPermissions = message.permissions || [];
                 renderModalCategoryTabs();
                 renderModalResults();
+                tryOpenPendingSyncModal();
                 // Check if we have a pending cross-platform modal
                 if (state.pendingCrossPlatformModal && !state.pendingCrossPlatformModal.isSourceIos) {
                     const { selected, equivalents, isSourceIos } = state.pendingCrossPlatformModal;

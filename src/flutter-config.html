@@ -906,7 +906,7 @@
             color: var(--text-primary);
             border: 1px solid var(--border-default);
             border-radius: var(--radius-lg);
-            max-width: 640px;
+            max-width: 820px;
             width: 100%;
             padding: 24px;
             box-shadow: var(--shadow-lg);
@@ -1039,8 +1039,8 @@
         /* Cross-platform suggestion */
         .cross-platform-suggestion {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            gap: 10px;
             padding: 12px;
             border: 1px solid var(--border-default);
             border-radius: var(--radius-md);
@@ -1063,8 +1063,7 @@
             cursor: pointer;
         }
 
-        .suggestion-content {
-            flex: 0 1 250px;
+        .cross-platform-suggestion .suggestion-row {
             display: flex;
             align-items: center;
             gap: 10px;
@@ -1083,10 +1082,10 @@
         }
 
         .equivalent-value-input {
-            flex: 1;
-            padding: 8px 10px;
+            width: 100%;
+            padding: 10px 12px;
             border: 1px solid var(--border-default);
-            border-radius: var(--radius-sm);
+            border-radius: var(--radius-md);
             background: var(--bg-secondary);
             color: var(--text-primary);
             font-size: 13px;
@@ -1169,6 +1168,7 @@
                 <div id="iosCountChip" class="chip ios">iOS: 0</div>
             </div>
             <button id="refreshButton" type="button" class="btn-secondary">↻ Refresh</button>
+            <button id="syncPermissionsButton" type="button" class="btn-secondary">🔄 Sync Equivalents</button>
             <button id="savePermissionsButton" type="button" class="btn-save">💾 Save All Changes</button>
         </div>
     </header>
@@ -1323,6 +1323,21 @@
             <div class="modal-actions">
                 <button id="equivalentModalCancel" type="button" class="btn-secondary">Cancel</button>
                 <button id="equivalentModalAdd" type="button" class="btn-primary">Add Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="syncModalBackdrop" style="display: none;">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="syncModalTitle">
+            <h3 id="syncModalTitle">Sync Equivalent Permissions</h3>
+            <p id="syncModalMessage" style="color: var(--text-secondary); margin: 0 0 12px;">
+                Select which equivalents to add. Provide iOS usage descriptions where required, then confirm to apply.
+            </p>
+            <div id="syncModalList" style="max-height: 320px; overflow-y: auto; margin-bottom: 12px;"></div>
+            <div class="status" id="syncModalError"></div>
+            <div class="modal-actions">
+                <button id="syncModalCancel" type="button" class="btn-secondary">Cancel</button>
+                <button id="syncModalConfirm" type="button" class="btn-primary">Confirm Sync</button>
             </div>
         </div>
     </div>
