@@ -2,7 +2,7 @@
   "name": "flutter-config-manager",
   "displayName": "Flutter Config Manager",
   "description": "Manage Flutter app permissions and service configurations for Android and iOS. Configure Facebook SDK, Google Maps, Firebase, AdMob, and more with a visual interface.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "hamza-shewa",
   "author": {
     "name": "Hamza Shewa",
@@ -73,7 +73,8 @@
         {
           "id": "flutterConfigView",
           "name": "Config Manager",
-          "type": "webview"
+          "type": "webview",
+          "icon": "src/media/flutter-config.svg"
         }
       ]
     }
