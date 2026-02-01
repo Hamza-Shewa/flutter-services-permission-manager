@@ -2007,13 +2007,13 @@
   const themeToggleButton = document.createElement("button");
   themeToggleButton.id = "themeToggleButton";
   themeToggleButton.type = "button";
-  themeToggleButton.className = "btn-secondary";
+  themeToggleButton.className = "btn-toggle btn-secondary";
   themeToggleButton.textContent = "🌙"; // default shows moon for dark theme
 
   // Insert theme toggle into header-right if available
   const headerRight = document.querySelector('.header-right');
   if (headerRight) {
-    headerRight.insertBefore(themeToggleButton, headerRight.firstChild);
+    headerRight.appendChild(themeToggleButton);
   }
 
   // Default to dark theme (no data-theme attr). If user has saved preference, apply it.

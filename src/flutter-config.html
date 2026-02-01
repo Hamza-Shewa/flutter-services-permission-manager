@@ -11,63 +11,65 @@
     <style>
       :root {
         color-scheme: dark;
-        --bg-primary: #0d1117;
-        --bg-secondary: #161b22;
-        --bg-tertiary: #21262d;
-        --bg-elevated: #1c2128;
-        --border-default: #30363d;
-        --border-muted: #21262d;
-        --text-primary: #e6edf3;
-        --text-secondary: #8b949e;
-        --text-muted: #6e7681;
-        --android-accent: #3ddc84;
-        --android-accent-dim: rgba(61, 220, 132, 0.15);
-        --android-glow: rgba(61, 220, 132, 0.4);
-        --ios-accent: #0a84ff;
-        --ios-accent-dim: rgba(10, 132, 255, 0.15);
-        --ios-glow: rgba(10, 132, 255, 0.4);
-        --macos-accent: #bf5af2;
-        --macos-accent-dim: rgba(191, 90, 242, 0.15);
-        --macos-glow: rgba(191, 90, 242, 0.4);
-        --danger: #f85149;
-        --danger-dim: rgba(248, 81, 73, 0.15);
-        --success: #3ddc84;
-        --warning: #d29922;
-        --radius-sm: 6px;
-        --radius-md: 10px;
-        --radius-lg: 14px;
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-        --transition-fast: 0.15s ease;
-        --transition-normal: 0.25s ease;
+        --accent: #1976d2;
+        --accent-dim: rgba(25, 118, 210, 0.08);
+        --bg-primary: #121212;
+        --bg-secondary: #1e1e1e;
+        --bg-tertiary: #171717;
+        --bg-elevated: #1c1c1c;
+        --border-default: #272727;
+        --border-muted: #2b2b2b;
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0bec5;
+        --text-muted: #90a4ae;
+        --android-accent: #43a047;
+        --android-accent-dim: rgba(67,160,71,0.12);
+        --android-glow: rgba(67,160,71,0);
+        --ios-accent: #1976d2;
+        --ios-accent-dim: rgba(25,118,210,0.12);
+        --ios-glow: rgba(25,118,210,0);
+        --macos-accent: #9c27b0;
+        --macos-accent-dim: rgba(156,39,176,0.12);
+        --macos-glow: rgba(156,39,176,0);
+        --danger: #d32f2f;
+        --danger-dim: rgba(211,47,47,0.08);
+        --success: #2e7d32;
+        --warning: #f57c00;
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-lg: 8px;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
+        --transition-fast: 0.12s ease;
+        --transition-normal: 0.2s ease;
       }
 
       /* Light theme overrides (opt-in) */
       :root[data-theme="light"] {
         color-scheme: light;
         --bg-primary: #ffffff;
-        --bg-secondary: #f6f8fa;
+        --bg-secondary: #fafafa;
         --bg-tertiary: #ffffff;
-        --bg-elevated: #f3f4f6;
-        --border-default: #e1e4e8;
-        --border-muted: #e9eef3;
+        --bg-elevated: #f5f5f5;
+        --border-default: #e0e0e0;
+        --border-muted: #f0f0f0;
         --text-primary: #0b1117;
-        --text-secondary: #57606a;
+        --text-secondary: #455a64;
         --text-muted: #6b7280;
-        --android-accent: #0f9d58;
-        --android-accent-dim: rgba(15, 157, 88, 0.12);
-        --android-glow: rgba(15, 157, 88, 0.15);
-        --ios-accent: #006eed;
-        --ios-accent-dim: rgba(0, 110, 237, 0.12);
-        --ios-glow: rgba(0, 110, 237, 0.15);
-        --macos-accent: #7a3fe3;
-        --macos-accent-dim: rgba(122, 63, 227, 0.12);
-        --macos-glow: rgba(122, 63, 227, 0.15);
-        --danger: #c92a2a;
-        --danger-dim: rgba(201, 42, 42, 0.12);
-        --success: #0f9d58;
-        --warning: #b45309;
+        --android-accent: #43a047;
+        --android-accent-dim: rgba(67,160,71,0.12);
+        --android-glow: rgba(67,160,71,0.12);
+        --ios-accent: #1976d2;
+        --ios-accent-dim: rgba(25,118,210,0.12);
+        --ios-glow: rgba(25,118,210,0.12);
+        --macos-accent: #9c27b0;
+        --macos-accent-dim: rgba(156,39,176,0.12);
+        --macos-glow: rgba(156,39,176,0.12);
+        --danger: #d32f2f;
+        --danger-dim: rgba(211,47,47,0.12);
+        --success: #2e7d32;
+        --warning: #f57c00;
       }
 
       /* Remove hover/focus highlights on buttons */
@@ -92,17 +94,7 @@
         color: var(--text-primary);
         line-height: 1.5;
         min-height: 100vh;
-        background-image:
-          radial-gradient(
-            ellipse 80% 50% at 50% -20%,
-            rgba(61, 220, 132, 0.08),
-            transparent
-          ),
-          radial-gradient(
-            ellipse 60% 40% at 100% 100%,
-            rgba(10, 132, 255, 0.06),
-            transparent
-          );
+        background-image: none;
       }
 
       /* Header */
@@ -137,19 +129,14 @@
       .logo-icon {
         width: 42px;
         height: 42px;
-        background: linear-gradient(
-          135deg,
-          var(--android-accent),
-          var(--ios-accent)
-        );
+        background: var(--bg-elevated);
+        color: var(--text-primary);
         border-radius: var(--radius-md);
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 20px;
-        box-shadow:
-          0 4px 16px rgba(61, 220, 132, 0.25),
-          0 4px 16px rgba(10, 132, 255, 0.25);
+        border: 1px solid var(--border-default);
       }
 
       h1 {
@@ -157,14 +144,7 @@
         font-size: 1.5rem;
         font-weight: 700;
         letter-spacing: -0.02em;
-        background: linear-gradient(
-          135deg,
-          var(--text-primary),
-          var(--text-secondary)
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: var(--text-primary);
       }
 
       .header-right {
@@ -205,7 +185,7 @@
 
       .chip.android::before {
         background: var(--android-accent);
-        box-shadow: 0 0 8px var(--android-glow);
+        box-shadow: none;
       }
 
       .chip.ios {
@@ -216,7 +196,7 @@
 
       .chip.ios::before {
         background: var(--ios-accent);
-        box-shadow: 0 0 8px var(--ios-glow);
+        box-shadow: none;
       }
 
       .chip.macos {
@@ -227,7 +207,7 @@
 
       .chip.macos::before {
         background: var(--macos-accent);
-        box-shadow: 0 0 8px var(--macos-glow);
+        box-shadow: none;
       }
 
       /* Section */
@@ -260,17 +240,17 @@
 
       .section.android .section-header h2::before {
         background: var(--android-accent);
-        box-shadow: 0 0 12px var(--android-glow);
+        box-shadow: none;
       }
 
       .section.ios .section-header h2::before {
         background: var(--ios-accent);
-        box-shadow: 0 0 12px var(--ios-glow);
+        box-shadow: none;
       }
 
       .section.macos .section-header h2::before {
         background: var(--macos-accent);
-        box-shadow: 0 0 12px var(--macos-glow);
+        box-shadow: none;
       }
 
       /* Toolbar */
@@ -343,31 +323,37 @@
         transition: var(--transition-fast);
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
+      }
+
+      /* Header buttons - slightly larger and clearer (Material feel) */
+      .header-right button {
+        font-size: 14px;
+        padding: 10px 18px;
+        border-radius: 8px;
       }
 
       .btn-primary {
         background: var(--android-accent);
-        color: var(--bg-primary);
-        box-shadow: 0 2px 8px var(--android-glow);
+        color: #fff;
+        box-shadow: var(--shadow-sm);
       }
 
       .btn-primary:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 16px var(--android-glow);
+        box-shadow: var(--shadow-md);
       }
 
       .btn-primary.ios {
         background: var(--ios-accent);
-        box-shadow: 0 2px 8px var(--ios-glow);
+        box-shadow: var(--shadow-sm);
       }
 
       .btn-primary.ios:hover {
-        box-shadow: 0 4px 16px var(--ios-glow);
+        box-shadow: var(--shadow-md);
       }
 
       .btn-secondary {
-        background: var(--bg-tertiary);
+        background: transparent;
         color: var(--text-primary);
         border: 1px solid var(--border-default);
       }
@@ -378,24 +364,32 @@
       }
 
       .btn-save {
-        background: linear-gradient(
-          135deg,
-          var(--android-accent),
-          var(--ios-accent)
-        );
-        color: var(--bg-primary);
+        background: var(--accent);
+        color: #fff;
         font-weight: 700;
         padding: 12px 20px;
-        box-shadow:
-          0 4px 16px rgba(61, 220, 132, 0.2),
-          0 4px 16px rgba(10, 132, 255, 0.2);
+        box-shadow: var(--shadow-md);
+        border-radius: 10px;
       }
 
       .btn-save:hover {
-        transform: translateY(-1px);
-        box-shadow:
-          0 6px 24px rgba(61, 220, 132, 0.3),
-          0 6px 24px rgba(10, 132, 255, 0.3);
+        box-shadow: var(--shadow-lg) !important;
+      }
+
+      .btn-toggle {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+        border: 1px solid var(--border-default);
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 15px;
+      }
+
+      /* Allow header buttons to show subtle hover even if global highlights removed */
+      .header-right button:hover,
+      .header-right button:focus {
+        box-shadow: var(--shadow-md) !important;
+        background: var(--bg-elevated) !important;
       }
 
       button:disabled {
@@ -590,11 +584,7 @@
 
       .toast.success {
         border-color: rgba(61, 220, 132, 0.4);
-        background: linear-gradient(
-          135deg,
-          rgba(61, 220, 132, 0.15),
-          var(--bg-secondary)
-        );
+        background: var(--bg-secondary);
       }
 
       .toast.success .toast-icon {
@@ -605,11 +595,7 @@
 
       .toast.error {
         border-color: rgba(248, 81, 73, 0.4);
-        background: linear-gradient(
-          135deg,
-          rgba(248, 81, 73, 0.15),
-          var(--bg-secondary)
-        );
+        background: var(--bg-secondary);
       }
 
       .toast.error .toast-icon {
@@ -620,11 +606,7 @@
 
       .toast.info {
         border-color: rgba(10, 132, 255, 0.4);
-        background: linear-gradient(
-          135deg,
-          rgba(10, 132, 255, 0.15),
-          var(--bg-secondary)
-        );
+        background: var(--bg-secondary);
       }
 
       .toast.info .toast-icon {
@@ -687,24 +669,17 @@
 
       /* Services Section */
       .section.services {
-        background: linear-gradient(
-          180deg,
-          var(--bg-secondary) 0%,
-          rgba(139, 92, 246, 0.05) 100%
-        );
-        border-color: rgba(139, 92, 246, 0.3);
+        background: var(--bg-secondary);
+        border-color: var(--border-default);
         border-radius: var(--radius-lg);
-        box-shadow: 0 2px 12px rgba(139, 92, 246, 0.07);
+        box-shadow: var(--shadow-sm);
         padding-top: 18px;
         padding-left: 18px;
         padding-right: 18px;
       }
 
       .section.services .section-header h2 {
-        background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: var(--text-primary);
         font-size: 1.3rem;
       }
 
@@ -718,11 +693,12 @@
       }
 
       .section.services .btn-primary {
-        background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+        background: var(--macos-accent);
+        color: var(--bg-primary);
       }
 
       .section.services .btn-primary:hover {
-        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        background: var(--macos-accent);
       }
 
       .services-grid {
@@ -741,8 +717,8 @@
       }
 
       .service-card:hover {
-        border-color: rgba(139, 92, 246, 0.5);
-        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1);
+        border-color: var(--border-default);
+        box-shadow: var(--shadow-md);
       }
 
       .service-card-header {
@@ -761,7 +737,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(139, 92, 246, 0.15);
+        background: var(--bg-elevated);
         border-radius: var(--radius-md);
       }
 
@@ -810,7 +786,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        background: rgba(139, 92, 246, 0.1);
+        background: var(--bg-secondary);
         padding: 2px 8px;
         border-radius: var(--radius-sm);
       }
@@ -861,8 +837,8 @@
       }
 
       .service-list-item:hover {
-        border-color: rgba(139, 92, 246, 0.5);
-        background: rgba(139, 92, 246, 0.1);
+        border-color: var(--border-default);
+        background: var(--bg-elevated);
       }
 
       .service-list-item.disabled {
@@ -928,8 +904,8 @@
 
       .service-modal .form-group input:focus {
         outline: none;
-        border-color: rgba(139, 92, 246, 0.5);
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        border-color: var(--border-default);
+        box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
       }
 
       .empty-services {
@@ -965,30 +941,22 @@
 
       /* Action Buttons */
       .equivalent-button {
-        background: linear-gradient(
-          135deg,
-          rgba(61, 220, 132, 0.2),
-          rgba(10, 132, 255, 0.2)
-        );
-        color: var(--text-primary);
-        border: 1px solid rgba(61, 220, 132, 0.3);
-        border-radius: var(--radius-sm);
-        padding: 4px 10px;
-        font-size: 11px;
-        font-weight: 600;
+        background: var(--accent);
+        color: #ffffff;
+        border: none;
+        border-radius: var(--radius-md);
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 700;
         cursor: pointer;
         margin-left: 10px;
+        box-shadow: var(--shadow-sm);
         transition: var(--transition-fast);
       }
 
       .equivalent-button:hover {
-        background: linear-gradient(
-          135deg,
-          rgba(61, 220, 132, 0.3),
-          rgba(10, 132, 255, 0.3)
-        );
-        border-color: var(--android-accent);
-        transform: translateY(-1px);
+        filter: brightness(0.95);
+        box-shadow: var(--shadow-md);
       }
 
       .delete-button {
@@ -1288,14 +1256,14 @@
           <div id="iosCountChip" class="chip ios">iOS: 0</div>
           <div id="macosCountChip" class="chip macos">macOS: 0</div>
         </div>
-        <button id="refreshButton" type="button" class="btn-secondary">
-          ↻ Refresh
+        <button id="savePermissionsButton" type="button" class="btn-save">
+          💾 Save All Changes
         </button>
         <button id="syncPermissionsButton" type="button" class="btn-secondary">
           🔄 Sync Equivalents
         </button>
-        <button id="savePermissionsButton" type="button" class="btn-save">
-          💾 Save All Changes
+        <button id="refreshButton" type="button" class="btn-secondary">
+          ↻ Refresh
         </button>
       </div>
     </header>
