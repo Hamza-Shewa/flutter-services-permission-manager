@@ -2002,6 +2002,55 @@
 
   console.log("[PermissionManager] Initializing...");
   console.log("[PermissionManager] saveButton element:", saveButton);
+
+  // Theme toggle button
+  const themeToggleButton = document.createElement("button");
+  themeToggleButton.id = "themeToggleButton";
+  themeToggleButton.type = "button";
+  themeToggleButton.className = "btn-secondary";
+  themeToggleButton.textContent = "🌙"; // default shows moon for dark theme
+
+  // Insert theme toggle into header-right if available
+  const headerRight = document.querySelector('.header-right');
+  if (headerRight) {
+    headerRight.insertBefore(themeToggleButton, headerRight.firstChild);
+  }
+
+  // Default to dark theme (no data-theme attr). If user has saved preference, apply it.
+  (function loadTheme() {
+    try {
+      const saved = localStorage.getItem('permissionManagerTheme');
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        themeToggleButton.textContent = '☀️';
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+        themeToggleButton.textContent = '🌙';
+      }
+    } catch (e) {
+      // ignore
+    }
+  })();
+
+  function toggleTheme() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggleButton.textContent = '🌙';
+      try {
+        localStorage.setItem('permissionManagerTheme', 'dark');
+      } catch (e) {}
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeToggleButton.textContent = '☀️';
+      try {
+        localStorage.setItem('permissionManagerTheme', 'light');
+      } catch (e) {}
+    }
+  }
+
+  themeToggleButton.addEventListener('click', toggleTheme);
+
   if (saveButton) {
     console.log("[PermissionManager] Adding click listener to save button");
     saveButton.addEventListener("click", () => {

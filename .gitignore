@@ -4,3 +4,7 @@ node_modules
 .vscode-test/
 *.vsix
 *.vsix
+.vscode/
+.vscode-test/
+.github/
+.env

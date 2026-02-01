@@ -43,6 +43,42 @@
         --transition-normal: 0.25s ease;
       }
 
+      /* Light theme overrides (opt-in) */
+      :root[data-theme="light"] {
+        color-scheme: light;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f6f8fa;
+        --bg-tertiary: #ffffff;
+        --bg-elevated: #f3f4f6;
+        --border-default: #e1e4e8;
+        --border-muted: #e9eef3;
+        --text-primary: #0b1117;
+        --text-secondary: #57606a;
+        --text-muted: #6b7280;
+        --android-accent: #0f9d58;
+        --android-accent-dim: rgba(15, 157, 88, 0.12);
+        --android-glow: rgba(15, 157, 88, 0.15);
+        --ios-accent: #006eed;
+        --ios-accent-dim: rgba(0, 110, 237, 0.12);
+        --ios-glow: rgba(0, 110, 237, 0.15);
+        --macos-accent: #7a3fe3;
+        --macos-accent-dim: rgba(122, 63, 227, 0.12);
+        --macos-glow: rgba(122, 63, 227, 0.15);
+        --danger: #c92a2a;
+        --danger-dim: rgba(201, 42, 42, 0.12);
+        --success: #0f9d58;
+        --warning: #b45309;
+      }
+
+      /* Remove hover/focus highlights on buttons */
+      button:hover,
+      button:focus,
+      button:active {
+        transform: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+      }
+
       * {
         box-sizing: border-box;
       }
