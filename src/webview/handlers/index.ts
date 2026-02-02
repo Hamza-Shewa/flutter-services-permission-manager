@@ -58,8 +58,11 @@ export async function handleRefresh(
   const servicesConfig = getServicesConfigCache();
   const existingServices = await extractServices(
     files.androidManifestUri,
+    files.androidMainActivityUri,
     files.iosPlistUri,
     files.iosAppDelegateUri,
+    files.iosEntitlementsUri,
+    files.iosPbxprojUri,
     servicesConfig ?? [],
   );
 
@@ -131,6 +134,7 @@ export async function handleSave(
     files.iosPlistUri,
     files.iosPodfileUri,
     files.iosAppDelegateUri,
+    files.iosEntitlementsUri,
     getCategorizedIosPermissionsCache() ?? undefined,
     services,
     getServicesConfigCache() ?? [],

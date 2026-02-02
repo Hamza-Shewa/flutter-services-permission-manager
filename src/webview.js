@@ -1799,8 +1799,53 @@
     serviceModalContent.innerHTML = `
             <div class="service-form">
                 ${config.fields
-                  .map(
-                    (field) => `
+                  .map((field) => {
+                    const fieldType = field.type || "text";
+                    if (fieldType === "list") {
+                      const rawValue = existingValues[field.id] || "";
+                      const items = String(rawValue)
+                        .split(/[,;\n]+/)
+                        .map((value) => value.trim())
+                        .filter(Boolean);
+                      const listItems = items.length > 0 ? items : [""];
+
+                      return `
+                    <div class="form-group" data-field-type="list" data-field-id="${field.id}">
+                        <label>${field.label}${field.required ? " *" : ""}</label>
+                        <div class="service-list-inputs" data-list-id="${field.id}">
+                            ${listItems
+                              .map(
+                                (value) => `
+                                <div class="service-list-input-row">
+                                    <input
+                                        type="text"
+                                        data-field-id="${field.id}"
+                                        placeholder="${escapeAttr(field.placeholder)}"
+                                        value="${escapeAttr(value)}"
+                                    />
+                                    <button type="button" class="btn-secondary btn-small remove-list-item" data-field-id="${field.id}">−</button>
+                                </div>
+                            `,
+                              )
+                              .join("")}
+                        </div>
+                        <button type="button" class="btn-secondary btn-small add-list-item" data-field-id="${field.id}">+ Add</button>
+                    </div>
+                  `;
+                    }
+
+                    if (fieldType === "toggle") {
+                      const rawValue = String(existingValues[field.id] || "false").toLowerCase();
+                      const isEnabled = rawValue === "true";
+                      return `
+                    <div class="form-group" data-field-type="toggle" data-field-id="${field.id}">
+                        <label>${field.label}${field.required ? " *" : ""}</label>
+                        <button type="button" class="btn-secondary toggle-button" data-field-id="${field.id}" data-value="${isEnabled}">${isEnabled ? "true" : "false"}</button>
+                    </div>
+                  `;
+                    }
+
+                    return `
                     <div class="form-group">
                         <label for="service-field-${field.id}">${field.label}${field.required ? " *" : ""}</label>
                         <input 
@@ -1812,13 +1857,67 @@
                             ${field.required ? "required" : ""}
                         />
                     </div>
-                `,
-                  )
+                  `;
+                  })
                   .join("")}
             </div>
         `;
 
     serviceModalBackdrop.style.display = "flex";
+
+    serviceModalContent
+      .querySelectorAll(".add-list-item")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const fieldId = button.dataset.fieldId;
+          const container = serviceModalContent.querySelector(
+            `.service-list-inputs[data-list-id="${fieldId}"]`,
+          );
+          if (!container) return;
+          const row = document.createElement("div");
+          row.className = "service-list-input-row";
+          row.innerHTML = `
+                <input type="text" data-field-id="${fieldId}" placeholder="${escapeAttr(
+                  config.fields.find((f) => f.id === fieldId)?.placeholder,
+                )}" />
+                <button type="button" class="btn-secondary btn-small remove-list-item" data-field-id="${fieldId}">−</button>
+            `;
+          container.appendChild(row);
+          const input = row.querySelector("input");
+          if (input) input.focus();
+        });
+      });
+
+    serviceModalContent
+      .querySelectorAll(".service-list-inputs")
+      .forEach((container) => {
+        container.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!target || !target.classList.contains("remove-list-item")) return;
+          const row = target.closest(".service-list-input-row");
+          if (!row) return;
+          const listInputs = container.querySelectorAll(
+            ".service-list-input-row",
+          );
+          if (listInputs.length <= 1) {
+            const input = row.querySelector("input");
+            if (input) input.value = "";
+            return;
+          }
+          row.remove();
+        });
+      });
+
+    serviceModalContent
+      .querySelectorAll(".toggle-button")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const currentValue = button.dataset.value === "true";
+          const nextValue = !currentValue;
+          button.dataset.value = String(nextValue);
+          button.textContent = nextValue ? "true" : "false";
+        });
+      });
 
     // Focus first input
     const firstInput = serviceModalContent.querySelector("input");
@@ -1844,6 +1943,39 @@
     let hasError = false;
 
     config.fields.forEach((field) => {
+      const fieldType = field.type || "text";
+
+      if (fieldType === "list") {
+        const inputs = serviceModalContent.querySelectorAll(
+          `input[data-field-id="${field.id}"]`,
+        );
+        const items = Array.from(inputs)
+          .map((input) => input.value.trim())
+          .filter(Boolean);
+        const value = items.join(", ");
+        const container = serviceModalContent.querySelector(
+          `.form-group[data-field-id="${field.id}"]`,
+        );
+
+        if (field.required && items.length === 0) {
+          hasError = true;
+          if (container) container.style.borderColor = "var(--danger)";
+        } else {
+          if (container) container.style.borderColor = "";
+          values[field.id] = value;
+        }
+        return;
+      }
+
+      if (fieldType === "toggle") {
+        const button = serviceModalContent.querySelector(
+          `.toggle-button[data-field-id="${field.id}"]`,
+        );
+        const value = button?.dataset.value === "true" ? "true" : "false";
+        values[field.id] = value;
+        return;
+      }
+
       const input = document.getElementById(`service-field-${field.id}`);
       const value = input ? input.value.trim() : "";
 

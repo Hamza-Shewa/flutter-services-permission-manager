@@ -6,6 +6,53 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import type { ServiceEntry, ServiceConfig } from '../types/index.js';
 
+function joinDomains(domains: string[]): string {
+    return Array.from(new Set(domains)).join(', ');
+}
+
+function joinUnique(values: string[]): string {
+    return Array.from(new Set(values)).join(', ');
+}
+
+function extractApplinkIntents(content: string): { hosts: string[]; schemes: string[] } {
+    const intentRegex = /<intent-filter[^>]*>([\s\S]*?)<\/intent-filter>/gi;
+    const hosts: string[] = [];
+    const schemes: string[] = [];
+
+    let intentMatch: RegExpExecArray | null;
+    while ((intentMatch = intentRegex.exec(content)) !== null) {
+        const body = intentMatch[1];
+
+        // Require VIEW action and both DEFAULT and BROWSABLE categories to reduce false positives
+        const hasViewAction = /<action[^>]*android:name=["']android\.intent\.action\.VIEW["'][^>]*>/i.test(body);
+        const hasDefaultCategory = /<category[^>]*android:name=["']android\.intent\.category\.DEFAULT["'][^>]*>/i.test(body);
+        const hasBrowsableCategory = /<category[^>]*android:name=["']android\.intent\.category\.BROWSABLE["'][^>]*>/i.test(body);
+        if (!hasViewAction || !hasDefaultCategory || !hasBrowsableCategory) {
+            continue;
+        }
+
+        const dataRegex = /<data[^>]*>/gi;
+        let dataMatch: RegExpExecArray | null;
+        while ((dataMatch = dataRegex.exec(body)) !== null) {
+            const dataTag = dataMatch[0];
+            const hostMatch = dataTag.match(/android:host=["']([^"']+)["']/i);
+            const schemeMatch = dataTag.match(/android:scheme=["']([^"']+)["']/i);
+            const host = hostMatch?.[1];
+            const scheme = schemeMatch?.[1];
+
+            // Skip OAuth-style authorize hosts
+            if (host && host.toLowerCase() === 'authorize') {
+                continue;
+            }
+
+            if (host) hosts.push(host);
+            if (scheme) schemes.push(scheme);
+        }
+    }
+
+    return { hosts: Array.from(new Set(hosts)), schemes: Array.from(new Set(schemes)) };
+}
+
 /**
  * Resolves @string/xxx or @values/xxx references by loading the appropriate XML resource file
  */
@@ -96,6 +143,65 @@ export async function extractServicesFromAndroid(
             let foundService = false;
             
             console.log(`[Services Extractor] Checking for service: ${serviceConfig.id}`);
+
+            if (serviceConfig.id === 'applinks') {
+                const applinksRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/i;
+                const applinksBlock = content.match(applinksRegex)?.[0] ?? '';
+
+                let hosts: string[] = [];
+                let schemes: string[] = [];
+
+                if (applinksBlock) {
+                    const schemeMatches = Array.from(applinksBlock.matchAll(/android:scheme=["']([^"']+)["']/gi));
+                    const hostMatches = Array.from(applinksBlock.matchAll(/android:host=["']([^"']+)["']/gi));
+                    const flutterMatch = applinksBlock.match(/android:name=["']flutter_deeplinking_enabled["'][^>]*android:value=["']([^"']+)["']/i);
+
+                    hosts = hostMatches.map(match => match[1]).filter(Boolean);
+                    if (hosts.length > 0) {
+                        foundService = true;
+                        extractedValues['domains'] = joinDomains(hosts);
+                    }
+
+                    schemes = schemeMatches.map(match => match[1]).filter(Boolean);
+                    if (schemes.length > 0) {
+                        foundService = true;
+                        extractedValues['scheme'] = joinUnique(schemes);
+                    }
+
+                    if (flutterMatch?.[1]) {
+                        foundService = true;
+                        extractedValues['flutterDeepLinkingEnabled'] = flutterMatch[1];
+                    }
+                }
+
+                // Fallback: derive hosts/schemes from any VIEW/DEFAULT/BROWSABLE intent-filter (non-authorize)
+                if (hosts.length === 0 || schemes.length === 0) {
+                    const fallback = extractApplinkIntents(content);
+                    if (fallback.hosts.length > 0) {
+                        foundService = true;
+                        extractedValues['domains'] = joinDomains(fallback.hosts);
+                    }
+                    if (fallback.schemes.length > 0) {
+                        foundService = true;
+                        extractedValues['scheme'] = joinUnique(fallback.schemes);
+                    }
+                }
+
+                // Fallback: capture flutter_deeplinking_enabled meta-data even if block markers are missing
+                if (!extractedValues['flutterDeepLinkingEnabled']) {
+                    const fallbackFlutterMatch = content.match(/<meta-data[^>]*android:name=["']flutter_deeplinking_enabled["'][^>]*android:value=["']([^"']+)["']/i);
+                    if (fallbackFlutterMatch?.[1]) {
+                        foundService = true;
+                        extractedValues['flutterDeepLinkingEnabled'] = fallbackFlutterMatch[1];
+                    }
+                }
+
+                const packageMatch = content.match(/<manifest[^>]*\bpackage=["']([^"']+)["']/i);
+                if (packageMatch?.[1]) {
+                    extractedValues['packageName'] = packageMatch[1];
+                    foundService = true;
+                }
+            }
 
             // Check meta-data entries - handle attributes in any order
             for (const metaDataConfig of serviceConfig.android.metaData) {
@@ -257,6 +363,23 @@ export async function extractServicesFromIOS(
             const extractedValues: Record<string, string> = {};
             let foundService = false;
 
+            if (serviceConfig.id === 'applinks') {
+                const applinksRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/i;
+                const applinksBlock = content.match(applinksRegex)?.[0] ?? '';
+                if (applinksBlock) {
+                    const bundleMatch = applinksBlock.match(/<key>CFBundleURLName<\/key>\s*<string>([^<]+)<\/string>/i);
+                    const schemeMatch = applinksBlock.match(/<key>CFBundleURLSchemes<\/key>[\s\S]*?<string>([^<]+)<\/string>/i);
+                    if (bundleMatch?.[1]) {
+                        extractedValues['bundleId'] = bundleMatch[1].trim();
+                        foundService = true;
+                    }
+                    if (schemeMatch?.[1]) {
+                        extractedValues['scheme'] = schemeMatch[1].trim();
+                        foundService = true;
+                    }
+                }
+            }
+
             // Check plist entries
             for (const plistEntry of serviceConfig.ios.plistEntries) {
                 if (plistEntry.type === 'string' && plistEntry.valueField) {
@@ -350,6 +473,55 @@ export async function extractServicesFromIOS(
         return services;
     } catch (error) {
         console.error('[Services Extractor] Error extracting services from iOS:', error);
+        return [];
+    }
+}
+
+/**
+ * Extracts configured services from iOS entitlements (e.g., applinks associated domains)
+ */
+export async function extractServicesFromIOSEntitlements(
+    iosEntitlementsUri: vscode.Uri | undefined,
+    servicesConfig: ServiceConfig[]
+): Promise<ServiceEntry[]> {
+    if (!iosEntitlementsUri) {
+        return [];
+    }
+
+    try {
+        const doc = await vscode.workspace.openTextDocument(iosEntitlementsUri);
+        const content = doc.getText();
+        const services: ServiceEntry[] = [];
+
+        for (const serviceConfig of servicesConfig) {
+            if (serviceConfig.id !== 'applinks') continue;
+
+            const extractedValues: Record<string, string> = {};
+            let foundService = false;
+
+            const applinksRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/i;
+            const block = content.match(applinksRegex)?.[0] ?? '';
+
+            const source = block || content;
+            const domainMatches = Array.from(source.matchAll(/<string>applinks:([^<]+)<\/string>/gi));
+            const domains = domainMatches.map(match => match[1]).filter(Boolean);
+
+            if (domains.length > 0) {
+                extractedValues['domains'] = joinDomains(domains.map(d => d.trim()));
+                foundService = true;
+            }
+
+            if (foundService) {
+                services.push({
+                    id: serviceConfig.id,
+                    values: extractedValues
+                });
+            }
+        }
+
+        return services;
+    } catch (error) {
+        console.error('[Services Extractor] Error extracting services from entitlements:', error);
         return [];
     }
 }
@@ -451,19 +623,121 @@ export async function extractServicesFromAppDelegate(
     }
 }
 
+function findPlatformRoot(filePath: string, platformDirName: string): string | undefined {
+    const segments = filePath.split(path.sep);
+    const index = segments.lastIndexOf(platformDirName);
+    if (index === -1) return undefined;
+    return segments.slice(0, index + 1).join(path.sep);
+}
+
+async function extractAssociatedApplinksFiles(
+    androidManifestUri: vscode.Uri | undefined,
+    iosPlistUri: vscode.Uri | undefined,
+    androidMainActivityUri: vscode.Uri | undefined,
+    iosPbxprojUri: vscode.Uri | undefined
+): Promise<Record<string, string>> {
+    const values: Record<string, string> = {};
+
+    try {
+        let androidRoot: string | undefined;
+        if (androidManifestUri) {
+            androidRoot = findPlatformRoot(androidManifestUri.fsPath, 'android');
+        }
+        if (!androidRoot && androidMainActivityUri) {
+            androidRoot = findPlatformRoot(androidMainActivityUri.fsPath, 'android');
+        }
+
+        if (androidRoot) {
+            const assetlinksPath = path.join(androidRoot, 'assetlinks.json');
+            const assetlinksUri = vscode.Uri.file(assetlinksPath);
+            const assetlinksBytes = await vscode.workspace.fs.readFile(assetlinksUri);
+            const assetlinksContent = Buffer.from(assetlinksBytes).toString('utf-8');
+            const assetlinksJson = JSON.parse(assetlinksContent) as Array<{ target?: { package_name?: string; sha256_cert_fingerprints?: string[] } }>;
+
+            const firstTarget = assetlinksJson?.[0]?.target;
+            if (firstTarget?.package_name) {
+                values['packageName'] = firstTarget.package_name;
+            }
+            if (firstTarget?.sha256_cert_fingerprints?.length) {
+                values['sha256CertFingerprints'] = firstTarget.sha256_cert_fingerprints.join(', ');
+            }
+        }
+    } catch (error) {
+        console.log('[Services Extractor] assetlinks.json not found or unreadable:', error);
+    }
+
+    try {
+        if (androidMainActivityUri) {
+            const doc = await vscode.workspace.openTextDocument(androidMainActivityUri);
+            const content = doc.getText();
+            const packageMatch = content.match(/^\s*package\s+([a-zA-Z0-9_.]+)\s*;?/m);
+            if (packageMatch?.[1]) {
+                values['packageName'] = packageMatch[1];
+            }
+        }
+    } catch (error) {
+        console.log('[Services Extractor] MainActivity package not found:', error);
+    }
+
+    try {
+        if (iosPlistUri) {
+            const iosRoot = findPlatformRoot(iosPlistUri.fsPath, 'ios');
+            if (iosRoot) {
+                const associationPath = path.join(iosRoot, 'apple-app-site-association');
+                const associationUri = vscode.Uri.file(associationPath);
+                const associationBytes = await vscode.workspace.fs.readFile(associationUri);
+                const associationContent = Buffer.from(associationBytes).toString('utf-8');
+                const associationJson = JSON.parse(associationContent) as { applinks?: { details?: Array<{ appID?: string }> } };
+                const appId = associationJson?.applinks?.details?.[0]?.appID;
+                if (appId && appId.includes('.')) {
+                    const [teamId, ...bundleParts] = appId.split('.');
+                    values['teamId'] = teamId;
+                    values['bundleId'] = bundleParts.join('.');
+                }
+            }
+        }
+    } catch (error) {
+        console.log('[Services Extractor] apple-app-site-association not found or unreadable:', error);
+    }
+
+    try {
+        if (iosPbxprojUri) {
+            const doc = await vscode.workspace.openTextDocument(iosPbxprojUri);
+            const content = doc.getText();
+            const teamMatch = content.match(/\bDEVELOPMENT_TEAM\s*=\s*([A-Z0-9]+);/);
+            if (teamMatch?.[1]) {
+                values['teamId'] = teamMatch[1];
+            }
+            const bundleMatch = content.match(/\bPRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;\n]+);/);
+            if (bundleMatch?.[1]) {
+                const bundleId = bundleMatch[1].trim().replace(/^"|"$/g, '');
+                values['bundleId'] = bundleId;
+            }
+        }
+    } catch (error) {
+        console.log('[Services Extractor] project.pbxproj values not found:', error);
+    }
+
+    return values;
+}
+
 /**
  * Extracts services from Android, iOS plist, and AppDelegate, merging the results
  */
 export async function extractServices(
     androidManifestUri: vscode.Uri | undefined,
+    androidMainActivityUri: vscode.Uri | undefined,
     iosPlistUri: vscode.Uri | undefined,
     iosAppDelegateUri: vscode.Uri | undefined,
+    iosEntitlementsUri: vscode.Uri | undefined,
+    iosPbxprojUri: vscode.Uri | undefined,
     servicesConfig: ServiceConfig[]
 ): Promise<ServiceEntry[]> {
-    const [androidServices, iosServices, appDelegateServices] = await Promise.all([
+    const [androidServices, iosServices, appDelegateServices, entitlementsServices] = await Promise.all([
         extractServicesFromAndroid(androidManifestUri, servicesConfig),
         extractServicesFromIOS(iosPlistUri, servicesConfig),
-        extractServicesFromAppDelegate(iosAppDelegateUri, servicesConfig)
+        extractServicesFromAppDelegate(iosAppDelegateUri, servicesConfig),
+        extractServicesFromIOSEntitlements(iosEntitlementsUri, servicesConfig)
     ]);
 
     // Merge services, preferring values from all sources
@@ -491,6 +765,31 @@ export async function extractServices(
             existing.values = { ...service.values, ...existing.values };
         } else {
             mergedServices.set(service.id, service);
+        }
+    }
+
+    // Merge entitlements services
+    for (const service of entitlementsServices) {
+        const existing = mergedServices.get(service.id);
+        if (existing) {
+            existing.values = { ...service.values, ...existing.values };
+        } else {
+            mergedServices.set(service.id, service);
+        }
+    }
+
+    const applinksAssociatedValues = await extractAssociatedApplinksFiles(
+        androidManifestUri,
+        iosPlistUri,
+        androidMainActivityUri,
+        iosPbxprojUri
+    );
+    if (Object.keys(applinksAssociatedValues).length > 0) {
+        const existing = mergedServices.get('applinks');
+        if (existing) {
+            existing.values = { ...applinksAssociatedValues, ...existing.values };
+        } else {
+            mergedServices.set('applinks', { id: 'applinks', values: applinksAssociatedValues });
         }
     }
 

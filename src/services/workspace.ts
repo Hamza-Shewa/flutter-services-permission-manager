@@ -10,7 +10,10 @@ import { FILE_PATTERNS, MAX_SEARCH_RESULTS } from "../constants/index.js";
 export interface ProjectFiles {
   androidManifestUri?: vscode.Uri;
   androidStringsUri?: vscode.Uri;
+  androidMainActivityUri?: vscode.Uri;
   iosPlistUri?: vscode.Uri;
+  iosEntitlementsUri?: vscode.Uri;
+  iosPbxprojUri?: vscode.Uri;
   iosPodfileUri?: vscode.Uri;
   iosAppDelegateUri?: vscode.Uri;
   macosPlistUri?: vscode.Uri;
@@ -29,7 +32,10 @@ export interface ProjectFilesWithContent extends ProjectFiles {
 export async function discoverProjectFiles(): Promise<ProjectFiles> {
   const [
     androidManifestUris,
+    androidMainActivityUris,
     iosPlistUris,
+    iosEntitlementsUris,
+    iosPbxprojUris,
     iosPodfileUris,
     iosAppDelegateUris,
     macosPlistUris,
@@ -40,7 +46,22 @@ export async function discoverProjectFiles(): Promise<ProjectFiles> {
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
+      FILE_PATTERNS.ANDROID_MAIN_ACTIVITY,
+      undefined,
+      MAX_SEARCH_RESULTS,
+    ),
+    vscode.workspace.findFiles(
       FILE_PATTERNS.IOS_PLIST,
+      undefined,
+      MAX_SEARCH_RESULTS,
+    ),
+    vscode.workspace.findFiles(
+      FILE_PATTERNS.IOS_ENTITLEMENTS,
+      undefined,
+      MAX_SEARCH_RESULTS,
+    ),
+    vscode.workspace.findFiles(
+      FILE_PATTERNS.IOS_PBXPROJ,
       undefined,
       MAX_SEARCH_RESULTS,
     ),
@@ -63,7 +84,10 @@ export async function discoverProjectFiles(): Promise<ProjectFiles> {
 
   return {
     androidManifestUri: androidManifestUris[0],
+    androidMainActivityUri: androidMainActivityUris[0],
     iosPlistUri: iosPlistUris[0],
+    iosEntitlementsUri: iosEntitlementsUris[0],
+    iosPbxprojUri: iosPbxprojUris[0],
     iosPodfileUri: iosPodfileUris[0],
     iosAppDelegateUri: iosAppDelegateUris[0],
     macosPlistUri: macosPlistUris[0],

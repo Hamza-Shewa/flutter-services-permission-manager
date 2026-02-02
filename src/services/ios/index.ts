@@ -18,3 +18,8 @@ export {
     updateAppDelegateWithServices,
     removeServicesFromAppDelegate
 } from './appdelegate.service.js';
+
+export {
+    updateIOSEntitlementsWithServices,
+    removeServicesFromIOSEntitlements
+} from './entitlements.service.js';

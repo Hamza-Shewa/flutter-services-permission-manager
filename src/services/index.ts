@@ -24,7 +24,9 @@ export {
     extractPodfileMacros,
     updateIOSPodfile,
     updateAppDelegateWithServices,
-    removeServicesFromAppDelegate
+    removeServicesFromAppDelegate,
+    updateIOSEntitlementsWithServices,
+    removeServicesFromIOSEntitlements
 } from './ios/index.js';
 
 // Document service
@@ -35,5 +37,6 @@ export {
     extractServices,
     extractServicesFromAndroid,
     extractServicesFromIOS,
-    extractServicesFromAppDelegate
+    extractServicesFromAppDelegate,
+    extractServicesFromIOSEntitlements
 } from './services-extractor.service.js';

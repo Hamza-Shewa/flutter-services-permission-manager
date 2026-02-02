@@ -65,8 +65,11 @@ export async function initializePermissionWebview(
   // Extract existing services
   const existingServices = await extractServices(
     files.androidManifestUri,
+    files.androidMainActivityUri,
     files.iosPlistUri,
     files.iosAppDelegateUri,
+    files.iosEntitlementsUri,
+    files.iosPbxprojUri,
     servicesConfigFile?.services ?? [],
   );
 

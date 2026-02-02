@@ -3,6 +3,7 @@
  */
 
 import * as vscode from "vscode";
+import * as path from "path";
 import type {
   IOSPermissionEntry,
   SaveResult,
@@ -24,7 +25,88 @@ import {
   updateIOSPodfile,
   updateAppDelegateWithServices,
   removeServicesFromAppDelegate,
+  updateIOSEntitlementsWithServices,
+  removeServicesFromIOSEntitlements,
 } from "./ios/index.js";
+
+const APPLINKS_SERVICE_ID = "applinks";
+
+function normalizeFingerprints(raw?: string): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/[,;\n]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function findPlatformRoot(filePath: string, platformDirName: string): string | undefined {
+  const segments = filePath.split(path.sep);
+  const index = segments.lastIndexOf(platformDirName);
+  if (index === -1) return undefined;
+  return segments.slice(0, index + 1).join(path.sep);
+}
+
+async function updateAssociatedDomainFiles(
+  service: ServiceEntry,
+  androidManifestUri?: vscode.Uri,
+  iosPlistUri?: vscode.Uri,
+): Promise<void> {
+  const fingerprints = normalizeFingerprints(service.values?.sha256CertFingerprints);
+  const packageName = service.values?.packageName?.trim();
+  const teamId = service.values?.teamId?.trim();
+  const bundleId = service.values?.bundleId?.trim();
+
+  if (androidManifestUri && packageName && fingerprints.length > 0) {
+    const androidRoot = findPlatformRoot(androidManifestUri.fsPath, "android");
+    if (androidRoot) {
+      const assetlinksPath = path.join(androidRoot, "assetlinks.json");
+      const assetlinksUri = vscode.Uri.file(assetlinksPath);
+      const assetlinksPayload = [
+        {
+          relation: [
+            "delegate_permission/common.handle_all_urls",
+            "delegate_permission/common.get_login_creds",
+          ],
+          target: {
+            namespace: "android_app",
+            package_name: packageName,
+            sha256_cert_fingerprints: fingerprints,
+          },
+        },
+      ];
+
+      await vscode.workspace.fs.writeFile(
+        assetlinksUri,
+        Buffer.from(JSON.stringify(assetlinksPayload, null, 2), "utf-8"),
+      );
+    }
+  }
+
+  if (iosPlistUri && teamId && bundleId) {
+    const iosRoot = findPlatformRoot(iosPlistUri.fsPath, "ios");
+    if (iosRoot) {
+      const associationPath = path.join(iosRoot, "apple-app-site-association");
+      const associationUri = vscode.Uri.file(associationPath);
+      const associationPayload = {
+        applinks: {
+          apps: [],
+          details: [
+            {
+              appID: `${teamId}.${bundleId}`,
+              paths: ["*"],
+            },
+          ],
+        },
+      };
+
+      await vscode.workspace.fs.writeFile(
+        associationUri,
+        Buffer.from(JSON.stringify(associationPayload, null, 2), "utf-8"),
+      );
+    }
+  }
+
+}
 
 /**
  * Replaces entire document content with new content
@@ -59,6 +141,7 @@ export async function savePermissions(
   iosPlistUri?: vscode.Uri,
   iosPodfileUri?: vscode.Uri,
   iosAppDelegateUri?: vscode.Uri,
+  iosEntitlementsUri?: vscode.Uri,
   categorizedIosPermissions?: Record<
     string,
     { permission: string; podfileMacro?: string }[]
@@ -180,6 +263,36 @@ export async function savePermissions(
       await replaceDocumentContent(iosPlistUri, updated);
     }
 
+    if (iosEntitlementsUri) {
+      try {
+        const entitlementsDoc =
+          await vscode.workspace.openTextDocument(iosEntitlementsUri);
+        let updatedEntitlements = entitlementsDoc.getText();
+
+        if (removedServiceIds.length > 0 && servicesConfig) {
+          updatedEntitlements = removeServicesFromIOSEntitlements(
+            updatedEntitlements,
+            removedServiceIds,
+            servicesConfig,
+          );
+        }
+
+        if (services && services.length > 0 && servicesConfig) {
+          updatedEntitlements = updateIOSEntitlementsWithServices(
+            updatedEntitlements,
+            services,
+            servicesConfig,
+          );
+        }
+
+        if (updatedEntitlements !== entitlementsDoc.getText()) {
+          await replaceDocumentContent(iosEntitlementsUri, updatedEntitlements);
+        }
+      } catch (entitlementsError) {
+        console.error("Entitlements update error:", entitlementsError);
+      }
+    }
+
     if (macosPlistUri && macosPermissions) {
       const doc = await vscode.workspace.openTextDocument(macosPlistUri);
 
@@ -247,6 +360,17 @@ export async function savePermissions(
         // Don't fail the entire save if Podfile update fails
         console.error("Podfile update error:", podError);
       }
+    }
+
+    const applinksService = (services || []).find(
+      (service) => service.id === APPLINKS_SERVICE_ID,
+    );
+    if (applinksService) {
+      await updateAssociatedDomainFiles(
+        applinksService,
+        androidManifestUri,
+        iosPlistUri,
+      );
     }
 
     return { success: true, message: "Permissions saved successfully." };

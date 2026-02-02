@@ -19,6 +19,37 @@ export function updateAppDelegateWithServices(
 ): string {
     let result = content;
 
+    const applinksService = services.find(s => s.id === 'applinks');
+    if (applinksService) {
+        const applinksBlockRegex = /\/\/\s*start applinks configuration[\s\S]*?\/\/\s*end applinks configuration/gi;
+        const desiredImportBlock = `// start applinks configuration\nimport app_links\n// end applinks configuration`;
+        const desiredCodeBlock = `        // start applinks configuration\n        if let url = AppLinks.shared.getLink(launchOptions: launchOptions) {\n            print("AppLinks: Got initial link: \\(url)")\n            AppLinks.shared.handleLink(url: url)\n            return true\n        }\n        // end applinks configuration`;
+
+        // Clean all existing applinks markers and stray imports to avoid duplication
+        result = result.replace(applinksBlockRegex, '\n');
+        result = result.replace(/\n?import app_links\s*\n?/gi, '\n');
+        // Clean any unmarked AppLinks handling blocks that may have been inserted previously
+        const unmarkedApplinksRegex = /[ \t]*if\s+let\s+url\s*=\s*AppLinks\.shared\.getLink\([\s\S]*?return\s+true\s*}\s*/gi;
+        result = result.replace(unmarkedApplinksRegex, '\n');
+
+        // Reinsert a single import and code block
+        const importRegex = /^import\s+\w+\s*$/gm;
+        let lastImportEnd = 0;
+        let m;
+        while ((m = importRegex.exec(result)) !== null) {
+            lastImportEnd = m.index + m[0].length;
+        }
+        const importBlockWithNL = `\n${desiredImportBlock}\n`;
+        result = result.slice(0, lastImportEnd) + importBlockWithNL + result.slice(lastImportEnd);
+
+        const registerPattern = /GeneratedPluginRegistrant\.register\(with:\s*self\)/;
+        const registerMatch = result.match(registerPattern);
+        if (registerMatch && registerMatch.index !== undefined) {
+            const insertPos = registerMatch.index + registerMatch[0].length;
+            result = result.slice(0, insertPos) + `\n${desiredCodeBlock}` + result.slice(insertPos);
+        }
+    }
+
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
         if (!config) continue;
@@ -105,6 +136,11 @@ export function removeServicesFromAppDelegate(
     servicesConfig: ServiceConfig[]
 ): string {
     let result = content;
+
+    if (removedServiceIds.includes('applinks')) {
+        const applinksBlockRegex = /\n?\/\/\s*start applinks configuration[\s\S]*?\/\/\s*end applinks configuration\n?/gi;
+        result = result.replace(applinksBlockRegex, '\n');
+    }
     
     for (const serviceId of removedServiceIds) {
         const config = servicesConfig.find(c => c.id === serviceId);

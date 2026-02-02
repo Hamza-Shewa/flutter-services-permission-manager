@@ -4,6 +4,107 @@
 
 import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../../types/index.js';
 
+type ArrayBounds = { openEnd: number; closeStart: number };
+
+function findMatchingArrayBounds(xml: string, arrayStart: number): ArrayBounds | null {
+    const openTag = '<array>';
+    const closeTag = '</array>';
+    let depth = 1;
+    let pos = arrayStart + openTag.length;
+
+    while (pos < xml.length) {
+        const nextOpen = xml.indexOf(openTag, pos);
+        const nextClose = xml.indexOf(closeTag, pos);
+        if (nextClose === -1) return null;
+
+        if (nextOpen !== -1 && nextOpen < nextClose) {
+            depth++;
+            pos = nextOpen + openTag.length;
+            continue;
+        }
+
+        depth--;
+        if (depth === 0) {
+            return { openEnd: arrayStart + openTag.length, closeStart: nextClose };
+        }
+        pos = nextClose + closeTag.length;
+    }
+
+    return null;
+}
+
+function stripApplinksBlock(plistContent: string): string {
+    const blockRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/gi;
+    return plistContent.replace(blockRegex, '');
+}
+
+function buildApplinksPlistBlock(bundleId: string, scheme: string, indent = '\t\t'): string {
+    const innerIndent = `${indent}\t`;
+    const schemeLine = `${innerIndent}\t<string>${scheme}</string>`;
+
+    return `<!-- start applinks configuration -->\n${indent}<dict>\n${innerIndent}<key>CFBundleTypeRole</key>\n${innerIndent}<string>Editor</string>\n${innerIndent}<key>CFBundleURLName</key>\n${innerIndent}<string>${bundleId}</string>\n${innerIndent}<key>CFBundleURLSchemes</key>\n${innerIndent}<array>\n${schemeLine}\n${innerIndent}</array>\n${indent}</dict>\n<!-- end applinks configuration -->`;
+}
+
+function replaceOrInsertApplinksBlock(plistContent: string, bundleId: string, scheme: string, block: string): string {
+    const blockRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/gi;
+    let cleaned = plistContent.replace(blockRegex, '');
+
+    const escapedBundle = bundleId ? bundleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+    const escapedScheme = scheme ? scheme.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+
+    if (escapedBundle) {
+        const bundleDictRegex = new RegExp(`\n?[\t ]*<dict>[\s\S]*?<key>CFBundleURLName<\/key>\s*<string>${escapedBundle}<\/string>[\s\S]*?<\/dict>\s*`, 'i');
+        cleaned = cleaned.replace(bundleDictRegex, '\n');
+    }
+    if (escapedScheme) {
+        const schemeDictRegex = new RegExp(`\n?[\t ]*<dict>[\s\S]*?<key>CFBundleURLSchemes<\/key>[\s\S]*?<string>${escapedScheme}<\/string>[\s\S]*?<\/dict>\s*`, 'i');
+        cleaned = cleaned.replace(schemeDictRegex, '\n');
+    }
+
+    const urlTypesKeyIndex = cleaned.indexOf('<key>CFBundleURLTypes</key>');
+    if (urlTypesKeyIndex !== -1) {
+        const arrayStart = cleaned.indexOf('<array>', urlTypesKeyIndex);
+        if (arrayStart !== -1) {
+            const bounds = findMatchingArrayBounds(cleaned, arrayStart);
+            if (bounds) {
+                const { openEnd, closeStart } = bounds;
+                const arrayBody = cleaned.slice(openEnd, closeStart);
+
+                const dictRegex = /<dict[\s\S]*?<\/dict>/gi;
+                const keptDicts: string[] = [];
+                let dictMatch: RegExpExecArray | null;
+                while ((dictMatch = dictRegex.exec(arrayBody)) !== null) {
+                    const dict = dictMatch[0];
+                    const hasBundle = escapedBundle && new RegExp(`<key>CFBundleURLName<\/key>\s*<string>${escapedBundle}<\/string>`, 'i').test(dict);
+                    const hasScheme = escapedScheme && new RegExp(`<string>${escapedScheme}<\/string>`, 'i').test(dict);
+                    if (hasBundle || hasScheme) {
+                        continue;
+                    }
+                    keptDicts.push(dict.trim());
+                }
+
+                const mergedBody = keptDicts.length > 0
+                    ? `${keptDicts.join('\n')}\n${block}`
+                    : block;
+
+                const beforeClose = cleaned.slice(0, closeStart);
+                const closeIndentMatch = beforeClose.match(/\n([\t ]*)$/);
+                const closeIndent = closeIndentMatch ? closeIndentMatch[1] : '';
+
+                return `${cleaned.slice(0, arrayStart)}<array>\n${mergedBody}\n${closeIndent}${cleaned.slice(closeStart)}`;
+            }
+        }
+    }
+
+    const dictEnd = cleaned.lastIndexOf('</dict>');
+    if (dictEnd !== -1) {
+        const urlTypesXml = `\t<key>CFBundleURLTypes</key>\n\t<array>\n${block}\n\t</array>\n`;
+        return cleaned.slice(0, dictEnd) + urlTypesXml + cleaned.slice(dictEnd);
+    }
+
+    return cleaned;
+}
+
 /**
  * Updates Info.plist content with new permission entries
  * Preserves existing structure and closing tags
@@ -24,7 +125,6 @@ export function updateIOSPlist(
 
     // Build a set of permission keys we're keeping
     const permissionKeys = new Set(Array.from(uniqueEntries.keys()));
-    
     const existingStringPairs = new Map<string, string>();
     const existingBooleanPairs = new Map<string, boolean>();
 
@@ -40,7 +140,6 @@ export function updateIOSPlist(
     // Extract existing permission values for potential re-use
     const stringRegex = /<key>(NS\w*UsageDescription)<\/key>\s*<string>([^<]*)<\/string>/g;
     const boolRegex = /<key>(NS\w*UsageDescription)<\/key>\s*<(true|false)\/>/g;
-    
     let match;
     while ((match = stringRegex.exec(prefix)) !== null) {
         existingStringPairs.set(match[1], match[2]);
@@ -54,14 +153,14 @@ export function updateIOSPlist(
     // 2. All existing NS*UsageDescription keys found in the plist - for generic cleanup
     // 3. All keys we're about to re-add (permissionKeys)
     const keysToRemove = new Set<string>(permissionKeys);
-    
+
     // Add all known keys from config
     if (allKnownKeys) {
         for (const key of allKnownKeys) {
             keysToRemove.add(key);
         }
     }
-    
+
     // Also add any existing NS*UsageDescription keys found in the plist
     for (const key of existingStringPairs.keys()) {
         keysToRemove.add(key);
@@ -130,10 +229,39 @@ export function updateIOSPlistWithServices(
     servicesConfig: ServiceConfig[]
 ): string {
     let result = plistContent;
+    let handledApplinks = false;
     
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
         if (!config?.ios) continue;
+
+        if (service.id === 'applinks') {
+            const bundleId = (service.values || {}).bundleId || '';
+            const rawSchemes = (service.values || {}).scheme || '';
+            const firstScheme = Array.isArray(rawSchemes)
+                ? (rawSchemes[0] || '')
+                : String(rawSchemes).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)[0] || '';
+            const scheme = firstScheme;
+            handledApplinks = true;
+            if (bundleId && scheme) {
+                // Try to mirror indentation of existing URL type entries when present
+                const urlTypesKeyIndex = result.indexOf('<key>CFBundleURLTypes</key>');
+                let entryIndent = '\t\t';
+                if (urlTypesKeyIndex !== -1) {
+                    const arrayStart = result.indexOf('<array>', urlTypesKeyIndex);
+                    if (arrayStart !== -1) {
+                        const indentMatch = result.slice(arrayStart, arrayStart + 200).match(/\n([\t ]+)<dict>/);
+                        if (indentMatch) {
+                            entryIndent = indentMatch[1];
+                        }
+                    }
+                }
+
+                const applinksBlock = buildApplinksPlistBlock(bundleId, scheme, entryIndent);
+                result = replaceOrInsertApplinksBlock(result, bundleId, scheme, applinksBlock);
+            }
+            continue;
+        }
         
         // Add/update plist entries
         if (config.ios.plistEntries && config.ios.plistEntries.length > 0) {
@@ -257,6 +385,11 @@ export function updateIOSPlistWithServices(
             }
         }
     }
+
+    // If applinks service not present, strip any existing applinks block from plist
+    if (!handledApplinks) {
+        result = stripApplinksBlock(result);
+    }
     
     return result;
 }
@@ -275,6 +408,12 @@ export function removeServicesFromIOSPlist(
     const protectedKeys = ['LSApplicationQueriesSchemes'];
     
     for (const serviceId of removedServiceIds) {
+        if (serviceId === 'applinks') {
+            const applinksRegex = /\s*<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->\s*/i;
+            result = result.replace(applinksRegex, '');
+            continue;
+        }
+
         const config = servicesConfig.find(c => c.id === serviceId);
         if (!config?.ios) continue;
         

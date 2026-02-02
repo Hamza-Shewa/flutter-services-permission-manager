@@ -210,6 +210,69 @@
       }
     },
     {
+      "id": "applinks",
+      "name": "App Links / Universal Links",
+      "description": "Deep linking for Android App Links and iOS Universal Links",
+      "icon": "🔗",
+      "fields": [
+        {
+          "id": "domains",
+          "label": "Associated Domains",
+          "placeholder": "example.com, www.example.com",
+          "required": true,
+          "type": "list"
+        },
+        {
+          "id": "scheme",
+          "label": "URL Scheme",
+          "placeholder": "myapp",
+          "required": true,
+          "type": "list"
+        },
+        {
+          "id": "packageName",
+          "label": "Android Package Name",
+          "placeholder": "com.example.app",
+          "required": true
+        },
+        {
+          "id": "sha256CertFingerprints",
+          "label": "SHA-256 Cert Fingerprints",
+          "placeholder": "AA:BB:... (comma separated)",
+          "required": true,
+          "type": "list"
+        },
+        {
+          "id": "teamId",
+          "label": "Apple Team ID",
+          "placeholder": "ABCDE12345",
+          "required": true
+        },
+        {
+          "id": "bundleId",
+          "label": "iOS Bundle ID",
+          "placeholder": "com.example.app.ios",
+          "required": true
+        },
+        {
+          "id": "flutterDeepLinkingEnabled",
+          "label": "Flutter Deep Linking Enabled (true/false)",
+          "placeholder": "false",
+          "required": false,
+          "type": "toggle"
+        }
+      ],
+      "ios": {
+        "plistEntries": [],
+        "urlSchemes": []
+      },
+      "android": {
+        "metaData": [],
+        "queries": [],
+        "applicationData": []
+      }
+    },
+    {
       "id": "onesignal",
       "name": "OneSignal",
       "description": "Push notifications via OneSignal",

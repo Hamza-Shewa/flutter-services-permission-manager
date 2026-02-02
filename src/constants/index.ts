@@ -6,7 +6,10 @@
 export const FILE_PATTERNS = {
   ANDROID_MANIFEST: "**/app/src/main/AndroidManifest.xml",
   ANDROID_STRINGS: "**/app/src/main/res/values/strings.xml",
+  ANDROID_MAIN_ACTIVITY: "**/app/src/main/{java,kotlin}/**/MainActivity.*",
   IOS_PLIST: "**/ios/Runner/Info.plist",
+  IOS_ENTITLEMENTS: "**/ios/Runner/*.entitlements",
+  IOS_PBXPROJ: "**/ios/*.xcodeproj/project.pbxproj",
   IOS_PODFILE: "**/ios/Podfile",
   IOS_APPDELEGATE: "**/ios/Runner/AppDelegate.swift",
   MACOS_PLIST: "**/macos/Runner/Info.plist",

@@ -4,6 +4,76 @@
 
 import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
 
+const APPLINKS_START = '<!-- start applinks configuration -->';
+const APPLINKS_END = '<!-- end applinks configuration -->';
+
+function normalizeDomains(raw?: string): string[] {
+    if (!raw) return [];
+    return raw
+        .split(/[,;\n]+/)
+        .map(value => value.trim())
+        .filter(Boolean)
+        .map(value => value.replace(/^applinks:/i, ''))
+        .map(value => value.replace(/^https?:\/\//i, ''))
+        .map(value => value.split('/')[0].trim())
+        .filter(Boolean);
+}
+
+function normalizeSchemes(raw?: string): string[] {
+    if (!raw) return [];
+    return raw
+        .split(/[,;\n]+/)
+        .map(value => value.trim())
+        .filter(Boolean);
+}
+
+function normalizeBoolean(raw?: string, fallback = false): boolean {
+    if (raw === undefined || raw === null || raw.trim() === '') return fallback;
+    return raw.trim().toLowerCase() === 'true';
+}
+
+function buildApplinksAndroidBlock(domains: string[], schemes: string[], flutterDeepLinkingEnabled: boolean): string {
+    const uniqueDomains = Array.from(new Set(domains));
+    const uniqueSchemes = schemes.length > 0 ? Array.from(new Set(schemes)) : ['https'];
+    const dataLines = uniqueSchemes
+        .flatMap(scheme => uniqueDomains.map(domain => `            <data android:scheme="${scheme}" android:host="${domain}" />`))
+        .join('\n');
+
+    return [
+        `            ${APPLINKS_START}`,
+        `            <meta-data android:name="flutter_deeplinking_enabled" android:value="${flutterDeepLinkingEnabled ? 'true' : 'false'}" />`,
+        `            <intent-filter android:autoVerify="true">`,
+        `                <action android:name="android.intent.action.VIEW" />`,
+        `                <category android:name="android.intent.category.DEFAULT" />`,
+        `                <category android:name="android.intent.category.BROWSABLE" />`,
+        dataLines,
+        `            </intent-filter>`,
+        `            ${APPLINKS_END}`
+    ].join('\n');
+}
+
+function replaceOrInsertApplinksBlock(manifestContent: string, block: string): string {
+    const blockRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/i;
+    // Strip any previous applinks block so we always rewrite cleanly
+    let cleaned = manifestContent.replace(blockRegex, '');
+
+    // Also strip legacy deep link blocks that contain flutter_deeplinking_enabled meta-data followed by an intent-filter
+    const legacyRegex = /[ \t]*<meta-data[^>]*android:name="flutter_deeplinking_enabled"[^>]*>\s*<intent-filter[\s\S]*?<\/intent-filter>\s*/gi;
+    cleaned = cleaned.replace(legacyRegex, '');
+
+    const mainActivityRegex = /<activity[^>]*android:name="[^"]*MainActivity"[^>]*>/i;
+    const activityMatch = cleaned.match(mainActivityRegex);
+    if (activityMatch && activityMatch.index !== undefined) {
+        const activityStart = activityMatch.index + activityMatch[0].length;
+        const activityEnd = cleaned.indexOf('</activity>', activityStart);
+        if (activityEnd !== -1) {
+            return cleaned.slice(0, activityEnd) + '\n' + block + '\n' + cleaned.slice(activityEnd);
+        }
+    }
+
+    return cleaned;
+}
+
 /**
  * Normalizes permission names to full Android format
  */
@@ -93,6 +163,17 @@ export function updateAndroidManifestWithServices(
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
         if (!config?.android) continue;
+
+        if (service.id === 'applinks') {
+            const domains = normalizeDomains((service.values || {}).domains);
+            const schemes = normalizeSchemes((service.values || {}).scheme);
+            if (domains.length > 0) {
+                const flutterEnabled = normalizeBoolean((service.values || {}).flutterDeepLinkingEnabled, false);
+                const applinksBlock = buildApplinksAndroidBlock(domains, schemes, flutterEnabled);
+                result = replaceOrInsertApplinksBlock(result, applinksBlock);
+            }
+            continue;
+        }
         
         // Add/update meta-data in application tag
         if (config.android.metaData && config.android.metaData.length > 0) {
@@ -194,6 +275,12 @@ export function removeServicesFromAndroidManifest(
     let result = manifestContent;
     
     for (const serviceId of removedServiceIds) {
+        if (serviceId === 'applinks') {
+            const applinksRegex = /\s*<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->\s*/i;
+            result = result.replace(applinksRegex, '');
+            continue;
+        }
+
         const config = servicesConfig.find(c => c.id === serviceId);
         if (!config?.android) continue;
         
