@@ -126,51 +126,6 @@
       }
     },
     {
-      "id": "google_signin",
-      "name": "Google Sign-In",
-      "description": "Google authentication for iOS and Android",
-      "icon": "🔴",
-      "fields": [
-        {
-          "id": "iosClientId",
-          "label": "iOS Client ID",
-          "placeholder": "xxx.apps.googleusercontent.com",
-          "required": true
-        },
-        {
-          "id": "iosReversedClientId",
-          "label": "iOS Reversed Client ID",
-          "placeholder": "com.googleusercontent.apps.xxx",
-          "required": true
-        },
-        {
-          "id": "serverClientId",
-          "label": "Server/Web Client ID (optional)",
-          "placeholder": "xxx.apps.googleusercontent.com",
-          "required": false
-        }
-      ],
-      "ios": {
-        "plistEntries": [
-          {
-            "key": "GIDClientID",
-            "valueField": "iosClientId",
-            "type": "string"
-          }
-        ],
-        "urlSchemes": [
-          {
-            "valueField": "iosReversedClientId"
-          }
-        ]
-      },
-      "android": {
-        "metaData": [],
-        "queries": [],
-        "applicationData": []
-      }
-    },
-    {
       "id": "firebase",
       "name": "Firebase Cloud Messaging",
       "description": "Push notifications via Firebase",
@@ -385,7 +340,7 @@
     {
       "id": "stripe",
       "name": "Stripe Payments",
-      "description": "Stripe payment processing",
+      "description": "Stripe payment processing with flutterstripe URL scheme for payment callbacks",
       "icon": "💳",
       "fields": [
         {
@@ -403,12 +358,27 @@
       ],
       "ios": {
         "plistEntries": [],
-        "urlSchemes": []
+        "urlSchemes": [
+          {
+            "prefix": "flutterstripe"
+          }
+        ]
       },
       "android": {
         "metaData": [],
         "queries": [],
-        "applicationData": []
+        "applicationData": [],
+        "mainActivityIntentFilters": [
+          {
+            "tag": "intent-filter",
+            "children": [
+              { "tag": "action", "attributes": { "android:name": "android.intent.action.VIEW" } },
+              { "tag": "category", "attributes": { "android:name": "android.intent.category.DEFAULT" } },
+              { "tag": "category", "attributes": { "android:name": "android.intent.category.BROWSABLE" } },
+              { "tag": "data", "attributes": { "android:scheme": "flutterstripe", "android:host": "safepay" } }
+            ]
+          }
+        ]
       }
     },
     {
@@ -515,50 +485,6 @@
         ],
         "queries": [],
         "applicationData": []
-      }
-    },
-    {
-      "id": "deeplink",
-      "name": "Deep Linking",
-      "description": "Custom URL scheme for deep links",
-      "icon": "🔗",
-      "fields": [
-        {
-          "id": "scheme",
-          "label": "URL Scheme",
-          "placeholder": "myapp (without ://)",
-          "required": true
-        },
-        {
-          "id": "host",
-          "label": "Host (Android)",
-          "placeholder": "open or leave empty",
-          "required": false
-        }
-      ],
-      "ios": {
-        "plistEntries": [],
-        "urlSchemes": [
-          {
-            "valueField": "scheme"
-          }
-        ]
-      },
-      "android": {
-        "metaData": [],
-        "queries": [],
-        "applicationData": [],
-        "mainActivityIntentFilters": [
-          {
-            "tag": "intent-filter",
-            "children": [
-              { "tag": "action", "attributes": { "android:name": "android.intent.action.VIEW" } },
-              { "tag": "category", "attributes": { "android:name": "android.intent.category.DEFAULT" } },
-              { "tag": "category", "attributes": { "android:name": "android.intent.category.BROWSABLE" } },
-              { "tag": "data", "attributes": { "android:scheme": "{scheme}", "android:host": "{host}" } }
-            ]
-          }
-        ]
       }
     }
   ]

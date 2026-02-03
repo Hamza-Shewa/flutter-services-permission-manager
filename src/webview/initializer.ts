@@ -10,9 +10,13 @@ import type {
   PermissionsPayload,
   WebviewMessage,
   ServicesConfigFile,
+  AppNameLocalization,
+  LanguageInfo,
 } from "../types/index.js";
 import { getCategorizedIOSPermissions } from "../utils/extractors.js";
 import { extractServices } from "../services/index.js";
+import { extractAndroidAppNameLocalizations } from "../services/android/localization.service.js";
+import { extractIOSAppNameLocalizations } from "../services/ios/localization.service.js";
 import { getWebviewContent } from "./content.js";
 import { readJsonFile } from "../utils/file.js";
 import type { ProjectFiles } from "../services/workspace.js";
@@ -27,9 +31,15 @@ import {
   handleRequestAllAndroid,
   handleRequestAllIOS,
   handleRequestServices,
-  handleSave,
+  handleSavePermissions,
+  handleSaveServices,
+  handleSaveAppName,
   type WebviewRef,
 } from "./handlers/index.js";
+
+interface LanguagesConfigFile {
+  languages: LanguageInfo[];
+}
 
 /** Target type for webview initialization */
 export type WebviewTarget =
@@ -54,16 +64,19 @@ export async function initializePermissionWebview(
   webview.html = await getWebviewContent(webview, extensionUri);
 
   // Load and cache data
-  const [categorizedPermissions, servicesConfigFile] = await Promise.all([
+  const [categorizedPermissions, servicesConfigFile, languagesConfig] = await Promise.all([
     getCategorizedIOSPermissions(),
     readJsonFile<ServicesConfigFile>("services-config.json"),
+    readJsonFile<LanguagesConfigFile>("languages.json"),
   ]);
 
   setCategorizedIosPermissionsCache(categorizedPermissions);
   setServicesConfigCache(servicesConfigFile?.services ?? null);
 
   // Extract existing services
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   const existingServices = await extractServices(
+    workspaceFolder?.uri,
     files.androidManifestUri,
     files.androidMainActivityUri,
     files.iosPlistUri,
@@ -74,6 +87,24 @@ export async function initializePermissionWebview(
   );
 
   setPreviousServicesCache(existingServices);
+
+  // Extract app name localizations
+  let appNameData: AppNameLocalization | undefined;
+  if (workspaceFolder) {
+    const androidAppName = await extractAndroidAppNameLocalizations(workspaceFolder.uri);
+    const iosAppName = await extractIOSAppNameLocalizations(workspaceFolder.uri);
+    
+    // Prefer Android values, fallback to iOS
+    const defaultName = androidAppName?.defaultName || iosAppName?.defaultName || "";
+    const localizations = { ...(iosAppName?.localizations || {}), ...(androidAppName?.localizations || {}) };
+    
+    if (defaultName) {
+      appNameData = {
+        defaultName,
+        localizations
+      };
+    }
+  }
 
   // Build initial payload
   const payload: PermissionsPayload = {
@@ -87,6 +118,8 @@ export async function initializePermissionWebview(
     hasPodfile: !!files.iosPodfileUri,
     services: existingServices,
     availableServices: servicesConfigFile?.services ?? [],
+    appName: appNameData,
+    languages: languagesConfig?.languages ?? [],
   };
 
   // Set up message handler
@@ -143,14 +176,21 @@ function setupMessageHandler(
         break;
 
       case "savePermissions":
-        await handleSave(
+        await handleSavePermissions(
           ref,
           message.androidPermissions ?? [],
           message.iosPermissions ?? [],
           message.macosPermissions ?? [],
-          message.services ?? [],
           files,
         );
+        break;
+
+      case "saveAppName":
+        await handleSaveAppName(ref, message.appName, files);
+        break;
+
+      case "saveServices":
+        await handleSaveServices(ref, message.services ?? [], files);
         break;
     }
   });

@@ -21,8 +21,28 @@ export type WebviewMessage =
       androidPermissions: string[];
       iosPermissions: IOSPermissionEntry[];
       macosPermissions: IOSPermissionEntry[];
-      services?: ServiceEntry[];
+    }
+  | {
+      type: "saveAppName";
+      appName: AppNameLocalization;
+    }
+  | {
+      type: "saveServices";
+      services: ServiceEntry[];
     };
+
+/** Language info */
+export interface LanguageInfo {
+  code: string;
+  name: string;
+  nativeName: string;
+}
+
+/** App name localization data */
+export interface AppNameLocalization {
+  defaultName: string;
+  localizations: Record<string, string>;
+}
 
 /** Extension to webview payload */
 export interface PermissionsPayload {
@@ -36,6 +56,8 @@ export interface PermissionsPayload {
   hasPodfile: boolean;
   services: ServiceEntry[];
   availableServices: ServiceConfig[];
+  appName?: AppNameLocalization;
+  languages?: LanguageInfo[];
 }
 
 /** Outgoing message for all Android permissions */

@@ -1,8 +1,8 @@
 {
   "name": "flutter-config-manager",
   "displayName": "Flutter Config Manager",
-  "description": "Manage Flutter app permissions and service configurations for Android and iOS. Configure Facebook SDK, Google Maps, Firebase, AdMob, and more with a visual interface.",
-  "version": "1.0.5",
+  "description": "Manage Flutter Android/iOS/macOS permissions, services, and app name localizations. Update manifests, plists, Podfile, and AppDelegate from one VS Code UI.",
+  "version": "1.0.6",
   "publisher": "hamza-shewa",
   "author": {
     "name": "Hamza Shewa",
@@ -24,17 +24,23 @@
   },
   "keywords": [
     "flutter",
+    "vscode-extension",
+    "permissions",
+    "services",
     "android",
     "ios",
-    "permissions",
+    "macos",
     "manifest",
     "plist",
-    "firebase",
-    "facebook",
-    "google maps",
-    "admob",
+    "podfile",
+    "appdelegate",
+    "applinks",
+    "deep-linking",
     "configuration",
-    "mobile"
+    "localization",
+    "localizations",
+    "app-name",
+    "app-name-localization"
   ],
   "engines": {
     "vscode": "^1.80.0"

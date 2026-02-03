@@ -16,3 +16,16 @@ export {
     hasStringResource,
     removeServicesFromAndroidStrings
 } from './strings.service.js';
+
+export {
+    getStringsFileForLanguage,
+    createStringsFileForLanguage,
+    extractAppNameFromStrings,
+    updateAppNameInStrings,
+    updateManifestToUseLocalizedAppName,
+    isUsingLocalizedAppName,
+    extractAppNameFromManifest,
+    getAvailableLanguages,
+    updateAndroidAppNameLocalizations,
+    extractAndroidAppNameLocalizations
+} from './localization.service.js';

@@ -5,6 +5,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import type { ServiceEntry, ServiceConfig } from '../types/index.js';
+import { extractAndroidAppNameLocalizations, extractAppNameFromManifest } from './android/localization.service.js';
+import { extractIOSAppNameLocalizations, extractAppNameFromInfoPlist } from './ios/localization.service.js';
 
 function joinDomains(domains: string[]): string {
     return Array.from(new Set(domains)).join(', ');
@@ -722,9 +724,85 @@ async function extractAssociatedApplinksFiles(
 }
 
 /**
+ * Extracts app name localization from Android and iOS
+ */
+async function extractAppNameService(
+    workspaceRoot: vscode.Uri | undefined,
+    androidManifestUri: vscode.Uri | undefined,
+    iosPlistUri: vscode.Uri | undefined
+): Promise<ServiceEntry | undefined> {
+    if (!workspaceRoot) return undefined;
+    
+    let defaultName: string | undefined;
+    const allLocalizations: Record<string, string> = {};
+    
+    // Try Android first
+    if (androidManifestUri) {
+        try {
+            const manifestDoc = await vscode.workspace.openTextDocument(androidManifestUri);
+            const manifestContent = manifestDoc.getText();
+            defaultName = extractAppNameFromManifest(manifestContent);
+            
+            // If using @string/app_name, read from strings.xml
+            if (!defaultName) {
+                const androidLocalizations = await extractAndroidAppNameLocalizations(workspaceRoot);
+                if (androidLocalizations) {
+                    defaultName = androidLocalizations.defaultName;
+                    Object.assign(allLocalizations, androidLocalizations.localizations);
+                }
+            }
+        } catch (error) {
+            console.log('[Services Extractor] Could not extract Android app name:', error);
+        }
+    }
+    
+    // Try iOS
+    if (iosPlistUri) {
+        try {
+            const plistDoc = await vscode.workspace.openTextDocument(iosPlistUri);
+            const plistContent = plistDoc.getText();
+            const iosAppNames = extractAppNameFromInfoPlist(plistContent);
+            
+            if (!defaultName && iosAppNames.displayName) {
+                defaultName = iosAppNames.displayName;
+            }
+            
+            // Extract from InfoPlist.strings if available
+            const iosLocalizations = await extractIOSAppNameLocalizations(workspaceRoot);
+            if (iosLocalizations) {
+                if (!defaultName) {
+                    defaultName = iosLocalizations.defaultName;
+                }
+                // Merge iOS localizations (prefer Android if both exist)
+                for (const [lang, name] of Object.entries(iosLocalizations.localizations)) {
+                    if (!allLocalizations[lang]) {
+                        allLocalizations[lang] = name;
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('[Services Extractor] Could not extract iOS app name:', error);
+        }
+    }
+    
+    if (!defaultName) return undefined;
+    
+    return {
+        id: 'appName',
+        values: {
+            defaultName,
+            localizations: Object.keys(allLocalizations).length > 0 
+                ? JSON.stringify(allLocalizations) 
+                : ''
+        }
+    };
+}
+
+/**
  * Extracts services from Android, iOS plist, and AppDelegate, merging the results
  */
 export async function extractServices(
+    workspaceRoot: vscode.Uri | undefined,
     androidManifestUri: vscode.Uri | undefined,
     androidMainActivityUri: vscode.Uri | undefined,
     iosPlistUri: vscode.Uri | undefined,
@@ -733,11 +811,12 @@ export async function extractServices(
     iosPbxprojUri: vscode.Uri | undefined,
     servicesConfig: ServiceConfig[]
 ): Promise<ServiceEntry[]> {
-    const [androidServices, iosServices, appDelegateServices, entitlementsServices] = await Promise.all([
+    const [androidServices, iosServices, appDelegateServices, entitlementsServices, appNameService] = await Promise.all([
         extractServicesFromAndroid(androidManifestUri, servicesConfig),
         extractServicesFromIOS(iosPlistUri, servicesConfig),
         extractServicesFromAppDelegate(iosAppDelegateUri, servicesConfig),
-        extractServicesFromIOSEntitlements(iosEntitlementsUri, servicesConfig)
+        extractServicesFromIOSEntitlements(iosEntitlementsUri, servicesConfig),
+        extractAppNameService(workspaceRoot, androidManifestUri, iosPlistUri)
     ]);
 
     // Merge services, preferring values from all sources
@@ -791,6 +870,11 @@ export async function extractServices(
         } else {
             mergedServices.set('applinks', { id: 'applinks', values: applinksAssociatedValues });
         }
+    }
+
+    // Add appName service if found
+    if (appNameService) {
+        mergedServices.set('appName', appNameService);
     }
 
     return Array.from(mergedServices.values());

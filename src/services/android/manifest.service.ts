@@ -16,7 +16,10 @@ function normalizeDomains(raw?: string): string[] {
         .map(value => value.replace(/^applinks:/i, ''))
         .map(value => value.replace(/^https?:\/\//i, ''))
         .map(value => value.split('/')[0].trim())
-        .filter(Boolean);
+        .filter(value => {
+            // Only include valid domain names (must contain a dot, not be just a hostname like 'safepay')
+            return value.includes('.') && !value.includes(' ');
+        });
 }
 
 function normalizeSchemes(raw?: string): string[] {
@@ -34,7 +37,15 @@ function normalizeBoolean(raw?: string, fallback = false): boolean {
 
 function buildApplinksAndroidBlock(domains: string[], schemes: string[], flutterDeepLinkingEnabled: boolean): string {
     const uniqueDomains = Array.from(new Set(domains));
-    const uniqueSchemes = schemes.length > 0 ? Array.from(new Set(schemes)) : ['https'];
+    // Only use http/https schemes for applinks - other schemes are handled separately by their services
+    const inputSchemes = schemes.length > 0 ? Array.from(new Set(schemes)) : ['https'];
+    const uniqueSchemes = inputSchemes.filter(s => s === 'https' || s === 'http');
+    
+    // If no valid schemes, default to https
+    if (uniqueSchemes.length === 0) {
+        uniqueSchemes.push('https');
+    }
+    
     const dataLines = uniqueSchemes
         .flatMap(scheme => uniqueDomains.map(domain => `            <data android:scheme="${scheme}" android:host="${domain}" />`))
         .join('\n');
@@ -259,6 +270,34 @@ export function updateAndroidManifestWithServices(
                 }
             }
         }
+        
+        // Add MainActivity intent-filters (for URL schemes like Stripe)
+        if (config.android.mainActivityIntentFilters && config.android.mainActivityIntentFilters.length > 0) {
+            for (const intentFilter of config.android.mainActivityIntentFilters) {
+                const intentFilterXml = buildIntentFilterElement(intentFilter, service.values);
+                
+                // Find MainActivity and insert intent-filter before </activity>
+                const mainActivityRegex = /<activity[^>]*android:name="[^"]*\.MainActivity"[^>]*>[\s\S]*?<\/activity>/i;
+                const activityMatch = result.match(mainActivityRegex);
+                
+                if (activityMatch) {
+                    const activityContent = activityMatch[0];
+                    // Check if this specific intent-filter already exists (by scheme)
+                    const schemeMatch = intentFilterXml.match(/android:scheme="([^"]+)"/);
+                    const scheme = schemeMatch?.[1];
+                    if (scheme && activityContent.includes(`android:scheme="${scheme}"`)) {
+                        continue; // Already exists
+                    }
+                    
+                    // Insert before </activity>
+                    const updatedActivity = activityContent.replace(
+                        /<\/activity>/,
+                        `${intentFilterXml}        </activity>`
+                    );
+                    result = result.replace(activityMatch[0], updatedActivity);
+                }
+            }
+        }
     }
     
     return result;
@@ -305,6 +344,24 @@ export function removeServicesFromAndroidManifest(
                         'gi'
                     );
                     result = result.replace(queryRegex, '');
+                }
+            }
+        }
+        
+        // Remove MainActivity intent-filters
+        if (config.android.mainActivityIntentFilters) {
+            for (const intentFilter of config.android.mainActivityIntentFilters) {
+                // Find the scheme and host to identify the intent-filter
+                const dataChild = intentFilter.children?.find((c: { tag: string; attributes: Record<string, string> }) => c.tag === 'data');
+                const scheme = dataChild?.attributes['android:scheme'];
+                if (scheme) {
+                    // Find and remove the specific intent-filter by scheme
+                    // Match intent-filter that contains the specific data scheme
+                    const filterRegex = new RegExp(
+                        `<intent-filter[^>]*>[\\s\\S]*?<data[^>]*android:scheme="${scheme.replace(/\./g, '\\.')}"[^/]*/?>[\\s\\S]*?<\\/intent-filter>`,
+                        'gi'
+                    );
+                    result = result.replace(filterRegex, '');
                 }
             }
         }
@@ -410,6 +467,40 @@ export function removeServicesFromAndroidManifest(
     result = result.replace(/\n{3,}/g, '\n\n');
     
     return result;
+}
+
+/**
+ * Builds an intent-filter element string from config
+ */
+function buildIntentFilterElement(
+    intentFilter: { tag: string; attributes?: Record<string, string>; children?: { tag: string; attributes: Record<string, string> }[] },
+    values: Record<string, string>
+): string {
+    const spaces = '        ';
+    
+    if (!intentFilter.children || intentFilter.children.length === 0) {
+        return '';
+    }
+    
+    const childrenXml = intentFilter.children
+        .map(child => {
+            const attrs = Object.entries(child.attributes || {})
+                .map(([k, v]) => {
+                    // Replace {fieldId} placeholders with actual values
+                    let value = v;
+                    const match = v.match(/\{(\w+)\}/);
+                    if (match) {
+                        const fieldId = match[1];
+                        value = v.replace(`{${fieldId}}`, (values || {})[fieldId] || '');
+                    }
+                    return `${k}="${value}"`;
+                })
+                .join(' ');
+            return `${spaces}    <${child.tag} ${attrs} />`;
+        })
+        .join('\n');
+    
+    return `${spaces}<intent-filter>\n${childrenXml}\n${spaces}</intent-filter>\n`;
 }
 
 /**

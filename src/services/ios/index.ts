@@ -23,3 +23,15 @@ export {
     updateIOSEntitlementsWithServices,
     removeServicesFromIOSEntitlements
 } from './entitlements.service.js';
+
+export {
+    getInfoPlistStringsFile,
+    createInfoPlistStringsFile,
+    extractAppNameFromInfoPlistStrings,
+    updateAppNameInInfoPlistStrings,
+    extractAppNameFromInfoPlist,
+    updateInfoPlistToUseLocalizedAppName,
+    getAvailableLanguages,
+    updateIOSAppNameLocalizations,
+    extractIOSAppNameLocalizations
+} from './localization.service.js';

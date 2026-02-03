@@ -30,7 +30,13 @@ export {
 } from './ios/index.js';
 
 // Document service
-export { replaceDocumentContent, savePermissions } from './document.service.js';
+export {
+  replaceDocumentContent,
+  savePermissions,
+  savePermissionsOnly,
+  saveServicesOnly,
+  saveAppNameOnly,
+} from './document.service.js';
 
 // Services extractor
 export {

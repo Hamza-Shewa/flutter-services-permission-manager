@@ -13,6 +13,9 @@
   const iosSearchInput = document.getElementById("iosPermissionSearch");
   const iosCategoryFilter = document.getElementById("iosCategoryFilter");
   const saveButton = document.getElementById("savePermissionsButton");
+  const saveAppNameButton = document.getElementById("saveAppNameButton");
+  const saveServicesButton = document.getElementById("saveServicesButton");
+  const saveAllButton = document.getElementById("saveAllButton");
   const statusMessage = document.getElementById("statusMessage");
   const toastContainer = document.getElementById("toastContainer");
   const refreshButton = document.getElementById("refreshButton");
@@ -102,6 +105,18 @@
     "addServiceModalCancel",
   );
 
+  // App Name elements
+  const appNameDefault = document.getElementById("appNameDefault");
+  const appNameLangDropdown = document.getElementById("appNameLangDropdown");
+  const appNameLangDropdownTrigger = document.getElementById("appNameLangDropdownTrigger");
+  const appNameLangDropdownMenu = document.getElementById("appNameLangDropdownMenu");
+  const appNameLangSearch = document.getElementById("appNameLangSearch");
+  const appNameLangOptions = document.getElementById("appNameLangOptions");
+  const appNameLangList = document.getElementById("appNameLangList");
+
+  // Languages data (loaded from extension)
+  let languagesData = [];
+
   let pendingRefreshTimeout = null;
 
   const state = {
@@ -135,6 +150,13 @@
     currentEditingService: null,
     serviceSearch: "",
     pendingSyncModal: false,
+    // App Name state
+    appName: {
+      defaultName: "",
+      localizations: {}
+    },
+    // Languages list
+    languages: [],
   };
 
   function scheduleRefresh() {
@@ -1638,6 +1660,173 @@
     updateView();
   }
 
+  // ==================== App Name Functions ====================
+
+  function renderAppName() {
+    if (!appNameDefault) return;
+    
+    appNameDefault.value = state.appName.defaultName || "";
+    renderAppNameLangList();
+  }
+
+  function renderLanguageDropdown() {
+    if (!appNameLangOptions || !state.languages) return;
+    
+    const searchTerm = (appNameLangSearch?.value || "").toLowerCase();
+    const existingCodes = Object.keys(state.appName.localizations || {});
+    
+    const filteredLangs = state.languages.filter(lang => {
+      // Don't show already added languages
+      if (existingCodes.includes(lang.code)) return false;
+      
+      // Filter by search term
+      if (!searchTerm) return true;
+      return (
+        lang.name.toLowerCase().includes(searchTerm) ||
+        lang.nativeName.toLowerCase().includes(searchTerm) ||
+        lang.code.toLowerCase().includes(searchTerm)
+      );
+    });
+    
+    if (filteredLangs.length === 0) {
+      appNameLangOptions.innerHTML = '<div class="appname-lang-option"><span class="appname-lang-option-title">No languages found</span></div>';
+      return;
+    }
+    
+    appNameLangOptions.innerHTML = filteredLangs
+      .map(lang => `
+        <div class="appname-lang-option" data-code="${lang.code}">
+          <span class="appname-lang-option-title">${lang.name} <span class="appname-lang-option-code">${lang.code}</span></span>
+          <span class="appname-lang-option-subtitle">${lang.nativeName}</span>
+        </div>
+      `)
+      .join("");
+    
+    // Add click handlers - add language directly when clicked
+    appNameLangOptions.querySelectorAll('.appname-lang-option').forEach(option => {
+      option.addEventListener('click', () => {
+        const code = option.dataset.code;
+        const lang = state.languages.find(l => l.code === code);
+        if (lang) {
+          // Add language directly
+          addAppNameLanguageDirect(code);
+          closeAppNameLangDropdown();
+        }
+      });
+    });
+  }
+
+  function openAppNameLangDropdown() {
+    if (!appNameLangDropdownMenu) return;
+    appNameLangDropdownMenu.classList.add('active');
+    appNameLangDropdownTrigger.classList.add('active');
+    renderLanguageDropdown();
+    if (appNameLangSearch) appNameLangSearch.focus();
+  }
+
+  function closeAppNameLangDropdown() {
+    if (!appNameLangDropdownMenu) return;
+    appNameLangDropdownMenu.classList.remove('active');
+    appNameLangDropdownTrigger.classList.remove('active');
+  }
+
+  function toggleAppNameLangDropdown() {
+    if (appNameLangDropdownMenu?.classList.contains('active')) {
+      closeAppNameLangDropdown();
+    } else {
+      openAppNameLangDropdown();
+    }
+  }
+
+  function addAppNameLanguageDirect(code) {
+    if (!code) return;
+    
+    // Check if already added
+    if (state.appName.localizations && state.appName.localizations[code] !== undefined) {
+      showToast("Language already added", "info");
+      return;
+    }
+    
+    // Initialize localizations if not exists
+    if (!state.appName.localizations) {
+      state.appName.localizations = {};
+    }
+    
+    // Add language with empty value
+    state.appName.localizations[code] = "";
+    
+    // Reset dropdown trigger text
+    appNameLangDropdownTrigger.innerHTML = `<span>Select a language...</span><span>▼</span>`;
+    // Clear search
+    if (appNameLangSearch) appNameLangSearch.value = "";
+    
+    renderAppNameLangList();
+    showToast("Language added. Enter the app name for this language.", "info");
+  }
+
+  function removeAppNameLanguage(code) {
+    if (state.appName.localizations && state.appName.localizations[code] !== undefined) {
+      delete state.appName.localizations[code];
+      renderAppNameLangList();
+    }
+  }
+
+  function updateAppNameLanguage(code, value) {
+    if (!state.appName.localizations) {
+      state.appName.localizations = {};
+    }
+    state.appName.localizations[code] = value;
+  }
+
+  function renderAppNameLangList() {
+    if (!appNameLangList) return;
+    
+    const locs = state.appName.localizations || {};
+    const entries = Object.entries(locs);
+    
+    if (entries.length === 0) {
+      appNameLangList.innerHTML = '<div class="appname-lang-empty">No localized languages added yet. Select a language from the dropdown above.</div>';
+      return;
+    }
+    
+    appNameLangList.innerHTML = entries
+      .map(([code, value]) => {
+        const lang = state.languages.find(l => l.code === code);
+        const langName = lang ? lang.name : code;
+        const nativeName = lang ? lang.nativeName : "";
+        
+        return `
+          <div class="appname-lang-item" data-code="${code}">
+            <div class="appname-lang-item-info">
+              <span class="appname-lang-item-name">${langName}</span>
+              <span class="appname-lang-item-code">${nativeName} (${code})</span>
+            </div>
+            <div class="appname-lang-item-input">
+              <input type="text" value="${value}" placeholder="App name in ${langName}..." data-code="${code}" />
+            </div>
+            <button type="button" class="appname-lang-item-remove" data-code="${code}">Remove</button>
+          </div>
+        `;
+      })
+      .join("");
+    
+    // Add event listeners to inputs
+    appNameLangList.querySelectorAll('.appname-lang-item-input input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const code = e.target.dataset.code;
+        updateAppNameLanguage(code, e.target.value);
+      });
+    });
+    
+    // Add event listeners to remove buttons
+    appNameLangList.querySelectorAll('.appname-lang-item-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const code = e.target.dataset.code;
+        removeAppNameLanguage(code);
+      });
+    });
+  }
+
   // ==================== Services Functions ====================
 
   function renderServices() {
@@ -2011,12 +2200,9 @@
     );
   }
 
-  function handleSave() {
-    console.log("[PermissionManager] handleSave called");
-    console.log(
-      "[PermissionManager] Services to save:",
-      JSON.stringify(state.services),
-    );
+  function handleSavePermissions() {
+    console.log("[PermissionManager] handleSavePermissions called");
+    
     const androidPermissions = utils
       .dedupePermissions(state.androidPermissions)
       .map((permission) => permission.constantValue || permission.permission)
@@ -2035,13 +2221,55 @@
         type: permission.type,
       }))
       .filter((entry) => entry.permission);
+    
     console.log("[PermissionManager] Posting savePermissions message");
-    setStatus("Saving permissions...", "");
+    showToast("Saving permissions...", "info");
+    
     vscode.postMessage({
       type: "savePermissions",
       androidPermissions: androidPermissions,
       iosPermissions: iosPermissions,
       macosPermissions: macosPermissions,
+    });
+  }
+  
+  function handleSaveAppName() {
+    console.log("[PermissionManager] handleSaveAppName called");
+    
+    // Sync app name from input fields to state
+    if (appNameDefault) {
+      state.appName.defaultName = appNameDefault.value.trim();
+    }
+    
+    if (!state.appName.defaultName) {
+      showToast("Please enter a default app name", "error");
+      return;
+    }
+    
+    console.log("[PermissionManager] Posting saveAppName message");
+    showToast("Saving app name localization...", "info");
+    
+    vscode.postMessage({
+      type: "saveAppName",
+      appName: {
+        defaultName: state.appName.defaultName,
+        localizations: state.appName.localizations || {}
+      },
+    });
+  }
+  
+  function handleSaveServices() {
+    console.log("[PermissionManager] handleSaveServices called");
+    console.log(
+      "[PermissionManager] Services to save:",
+      JSON.stringify(state.services),
+    );
+    
+    console.log("[PermissionManager] Posting saveServices message");
+    showToast("Saving services...", "info");
+    
+    vscode.postMessage({
+      type: "saveServices",
       services: state.services,
     });
   }
@@ -2132,6 +2360,30 @@
     addServiceModalCancel.addEventListener("click", closeAddServiceModal);
   }
 
+  // App Name event listeners
+  if (appNameDefault) {
+    appNameDefault.addEventListener("input", () => {
+      state.appName.defaultName = appNameDefault.value.trim();
+    });
+  }
+  if (appNameLangDropdownTrigger) {
+    appNameLangDropdownTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleAppNameLangDropdown();
+    });
+  }
+  if (appNameLangSearch) {
+    appNameLangSearch.addEventListener("input", () => {
+      renderLanguageDropdown();
+    });
+  }
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (appNameLangDropdown && !appNameLangDropdown.contains(e.target)) {
+      closeAppNameLangDropdown();
+    }
+  });
+
   console.log("[PermissionManager] Initializing...");
   console.log("[PermissionManager] saveButton element:", saveButton);
 
@@ -2184,13 +2436,34 @@
   themeToggleButton.addEventListener('click', toggleTheme);
 
   if (saveButton) {
-    console.log("[PermissionManager] Adding click listener to save button");
+    console.log("[PermissionManager] Adding click listener to save permissions button");
     saveButton.addEventListener("click", () => {
-      console.log("[PermissionManager] Save button clicked!");
-      handleSave();
+      console.log("[PermissionManager] Save permissions button clicked!");
+      handleSavePermissions();
     });
   } else {
     console.error("[PermissionManager] saveButton not found!");
+  }
+  if (saveAllButton) {
+    console.log("[PermissionManager] Adding click listener to save all button");
+    saveAllButton.addEventListener("click", () => {
+      console.log("[PermissionManager] Save all button clicked!");
+      handleSaveAll();
+    });
+  }
+  
+  if (saveAppNameButton) {
+    saveAppNameButton.addEventListener("click", () => {
+      console.log("[PermissionManager] Save app name button clicked!");
+      handleSaveAppName();
+    });
+  }
+  
+  if (saveServicesButton) {
+    saveServicesButton.addEventListener("click", () => {
+      console.log("[PermissionManager] Save services button clicked!");
+      handleSaveServices();
+    });
   }
   if (refreshButton) {
     refreshButton.addEventListener("click", () => {
@@ -2199,6 +2472,26 @@
   }
   if (syncPermissionsButton) {
     syncPermissionsButton.addEventListener("click", syncEquivalents);
+  }
+
+  function handleSaveAll() {
+    console.log("[PermissionManager] handleSaveAll called");
+    // Fire the individual save handlers in sequence
+    try {
+      handleSavePermissions();
+    } catch (e) {
+      console.error('Error saving permissions', e);
+    }
+    try {
+      handleSaveServices();
+    } catch (e) {
+      console.error('Error saving services', e);
+    }
+    try {
+      handleSaveAppName();
+    } catch (e) {
+      console.error('Error saving app name', e);
+    }
   }
 
   modalCancel.addEventListener("click", closeModal);
@@ -2273,8 +2566,20 @@
         state.services = message.services || [];
         state.availableServices =
           message.availableServices || state.availableServices || [];
+        // Handle languages
+        if (message.languages) {
+          state.languages = message.languages;
+        }
+        // Handle appName
+        if (message.appName) {
+          state.appName = {
+            defaultName: message.appName.defaultName || "",
+            localizations: message.appName.localizations || {}
+          };
+        }
         updateView();
         renderServices();
+        renderAppName();
         break;
       case "allAndroidPermissions":
         state.allAndroidPermissions = message.permissions || [];

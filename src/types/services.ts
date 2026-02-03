@@ -100,3 +100,21 @@ export interface ServiceConfig {
 export interface ServicesConfigFile {
     services: ServiceConfig[];
 }
+
+/** Android localized string entry */
+export interface AndroidLocalizedString {
+    languageCode: string;
+    value: string;
+}
+
+/** iOS localized string entry */
+export interface IOSLocalizedString {
+    languageCode: string;
+    value: string;
+}
+
+/** App name localization configuration */
+export interface AppNameLocalizationConfig {
+    defaultName: string;
+    localizations: Record<string, string>;
+}

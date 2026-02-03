@@ -8,14 +8,25 @@ import type {
   IOSPermissionEntry,
   ServiceEntry,
   PermissionsPayload,
+  AppNameLocalization,
+  LanguageInfo,
 } from "../../types/index.js";
+import { readJsonFile } from "../../utils/file.js";
 import {
   getUsedAndroidPermissions,
   getUsedIOSPermissions,
   getAndroidPermissions,
   getIOSPermissions,
 } from "../../utils/extractors.js";
-import { savePermissions, extractServices } from "../../services/index.js";
+import {
+  savePermissions,
+  savePermissionsOnly,
+  saveServicesOnly,
+  saveAppNameOnly,
+  extractServices,
+} from "../../services/index.js";
+import { extractAndroidAppNameLocalizations } from "../../services/android/localization.service.js";
+import { extractIOSAppNameLocalizations } from "../../services/ios/localization.service.js";
 import type { ProjectFiles } from "../../services/workspace.js";
 import {
   getCategorizedIosPermissionsCache,
@@ -56,7 +67,9 @@ export async function handleRefresh(
     ]);
 
   const servicesConfig = getServicesConfigCache();
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   const existingServices = await extractServices(
+    workspaceFolder?.uri,
     files.androidManifestUri,
     files.androidMainActivityUri,
     files.iosPlistUri,
@@ -67,6 +80,23 @@ export async function handleRefresh(
   );
 
   setPreviousServicesCache(existingServices);
+
+  // Extract app name localizations
+  let appNameData: AppNameLocalization | undefined;
+  if (workspaceFolder) {
+    const androidAppName = await extractAndroidAppNameLocalizations(workspaceFolder.uri);
+    const iosAppName = await extractIOSAppNameLocalizations(workspaceFolder.uri);
+    
+    const defaultName = androidAppName?.defaultName || iosAppName?.defaultName || "";
+    const localizations = { ...(iosAppName?.localizations || {}), ...(androidAppName?.localizations || {}) };
+    
+    if (defaultName) {
+      appNameData = { defaultName, localizations };
+    }
+  }
+
+  // Load languages
+  const languagesConfig = await readJsonFile<{ languages: LanguageInfo[] }>("languages.json");
 
   const payload: PermissionsPayload = {
     type: "permissions",
@@ -79,6 +109,8 @@ export async function handleRefresh(
     hasPodfile: !!files.iosPodfileUri,
     services: existingServices,
     availableServices: servicesConfig ?? [],
+    appName: appNameData,
+    languages: languagesConfig?.languages ?? [],
   };
 
   ref.webview.postMessage(payload);
@@ -117,13 +149,14 @@ export function handleRequestServices(ref: WebviewRef): void {
 }
 
 /**
- * Handle save permissions request
+ * Handle save permissions request (legacy - saves everything)
  */
 export async function handleSave(
   ref: WebviewRef,
   androidPermissions: string[],
   iosPermissions: IOSPermissionEntry[],
   macosPermissions: IOSPermissionEntry[],
+  appName: AppNameLocalization | undefined,
   services: ServiceEntry[],
   files: ProjectFiles,
 ): Promise<void> {
@@ -141,11 +174,78 @@ export async function handleSave(
     getPreviousServicesCache(),
     macosPermissions,
     files.macosPlistUri,
+    appName,
   );
 
   if (result.success) {
     setPreviousServicesCache(services);
   }
+
+  ref.webview.postMessage({ type: "saveResult", ...result });
+}
+
+/**
+ * Handle save permissions only (without services or app name)
+ */
+export async function handleSavePermissions(
+  ref: WebviewRef,
+  androidPermissions: string[],
+  iosPermissions: IOSPermissionEntry[],
+  macosPermissions: IOSPermissionEntry[],
+  files: ProjectFiles,
+): Promise<void> {
+  const result = await savePermissionsOnly(
+    androidPermissions,
+    iosPermissions,
+    files.androidManifestUri,
+    files.iosPlistUri,
+    files.iosPodfileUri,
+    getCategorizedIosPermissionsCache() ?? undefined,
+    macosPermissions,
+    files.macosPlistUri,
+  );
+
+  ref.webview.postMessage({ type: "saveResult", ...result });
+}
+
+/**
+ * Handle save services only (without permissions or app name)
+ */
+export async function handleSaveServices(
+  ref: WebviewRef,
+  services: ServiceEntry[],
+  files: ProjectFiles,
+): Promise<void> {
+  const result = await saveServicesOnly(
+    services,
+    getServicesConfigCache() ?? [],
+    getPreviousServicesCache(),
+    files.androidManifestUri,
+    files.iosPlistUri,
+    files.iosAppDelegateUri,
+    files.iosEntitlementsUri,
+  );
+
+  if (result.success) {
+    setPreviousServicesCache(services);
+  }
+
+  ref.webview.postMessage({ type: "saveResult", ...result });
+}
+
+/**
+ * Handle save app name only (without permissions or services)
+ */
+export async function handleSaveAppName(
+  ref: WebviewRef,
+  appName: AppNameLocalization,
+  files: ProjectFiles,
+): Promise<void> {
+  const result = await saveAppNameOnly(
+    appName,
+    files.androidManifestUri,
+    files.iosPlistUri,
+  );
 
   ref.webview.postMessage({ type: "saveResult", ...result });
 }

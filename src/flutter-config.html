@@ -253,6 +253,26 @@
         box-shadow: none;
       }
 
+      .section.permissions .section-header {
+        background: var(--bg-secondary);
+        padding: 16px 20px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-default);
+        margin-bottom: 24px;
+      }
+
+      .section.permissions .section-header h2::before {
+        background: var(--accent);
+        box-shadow: none;
+      }
+
+      .section-header-with-button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
       /* Toolbar */
       .toolbar {
         display: flex;
@@ -665,6 +685,315 @@
         to {
           width: 0%;
         }
+      }
+
+      /* App Name Section */
+      .section.appname {
+        background: var(--bg-secondary);
+        border-color: var(--border-default);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        padding: 18px;
+        margin-bottom: 24px;
+      }
+
+      .section.appname .section-header h2 {
+        color: var(--text-primary);
+        font-size: 1.3rem;
+      }
+
+      .section.appname .section-header h2::before {
+        background: #f59e0b;
+        box-shadow: none;
+      }
+
+      .appname-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .appname-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .appname-field label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .appname-field input,
+      .appname-field textarea {
+        padding: 12px 14px;
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+      }
+
+      .appname-field input:focus,
+      .appname-field textarea:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+      }
+
+      .appname-field textarea {
+        min-height: 80px;
+        resize: vertical;
+        font-family: "Consolas", "Monaco", monospace;
+      }
+
+      .appname-help {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      .appname-localizations {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .appname-lang-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-default);
+      }
+
+      .appname-lang-code {
+        font-family: "Consolas", "Monaco", monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: #f59e0b;
+        min-width: 40px;
+      }
+
+      .appname-lang-value {
+        flex: 1;
+        color: var(--text-primary);
+        font-size: 13px;
+      }
+
+      .appname-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .appname-actions button {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      /* Language Dropdown Styles */
+      .appname-lang-selector {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin-top: 8px;
+      }
+
+      .appname-lang-dropdown {
+        position: relative;
+        flex: 1;
+      }
+
+      .appname-lang-dropdown-trigger {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: var(--transition-fast);
+      }
+
+      .appname-lang-dropdown-trigger:hover {
+        border-color: #f59e0b;
+      }
+
+      .appname-lang-dropdown-trigger.active {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+      }
+
+      .appname-lang-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 4px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        max-height: 280px;
+        overflow-y: auto;
+        z-index: 100;
+        display: none;
+        box-shadow: var(--shadow-lg);
+      }
+
+      .appname-lang-dropdown-menu.active {
+        display: block;
+      }
+
+      .appname-lang-search {
+        padding: 10px;
+        border-bottom: 1px solid var(--border-default);
+        position: sticky;
+        top: 0;
+        background: var(--bg-tertiary);
+      }
+
+      .appname-lang-search input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-sm);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: 13px;
+      }
+
+      .appname-lang-search input:focus {
+        outline: none;
+        border-color: #f59e0b;
+      }
+
+      .appname-lang-option {
+        padding: 10px 14px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        transition: var(--transition-fast);
+      }
+
+      .appname-lang-option:hover {
+        background: var(--bg-secondary);
+      }
+
+      .appname-lang-option.selected {
+        background: rgba(245, 158, 11, 0.15);
+      }
+
+      .appname-lang-option-title {
+        font-size: 14px;
+        color: var(--text-primary);
+      }
+
+      .appname-lang-option-subtitle {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .appname-lang-option-code {
+        font-family: "Consolas", "Monaco", monospace;
+        background: var(--bg-secondary);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
+
+      .appname-lang-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .appname-lang-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+      }
+
+      .appname-lang-item-info {
+        flex: 0 0 150px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .appname-lang-item-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .appname-lang-item-code {
+        font-size: 12px;
+        color: #f59e0b;
+        font-family: "Consolas", "Monaco", monospace;
+      }
+
+      .appname-lang-item-input {
+        flex: 1;
+      }
+
+      .appname-lang-item-input input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-sm);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: 14px;
+      }
+
+      .appname-lang-item-input input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+      }
+
+      .appname-lang-item-remove {
+        background: var(--danger-dim);
+        color: var(--danger);
+        border: 1px solid rgba(211, 47, 47, 0.3);
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 12px;
+        transition: var(--transition-fast);
+      }
+
+      .appname-lang-item-remove:hover {
+        background: rgba(211, 47, 47, 0.25);
+      }
+
+      .appname-lang-empty {
+        text-align: center;
+        padding: 24px;
+        color: var(--text-muted);
+        font-style: italic;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        border: 1px dashed var(--border-default);
       }
 
       /* Services Section */
@@ -1283,17 +1612,31 @@
           <div id="iosCountChip" class="chip ios">iOS: 0</div>
           <div id="macosCountChip" class="chip macos">macOS: 0</div>
         </div>
-        <button id="savePermissionsButton" type="button" class="btn-save">
+
+        <button id="saveAllButton" type="button" class="btn-primary btn-save">
           💾 Save All Changes
-        </button>
-        <button id="syncPermissionsButton" type="button" class="btn-secondary">
-          🔄 Sync Equivalents
         </button>
         <button id="refreshButton" type="button" class="btn-secondary">
           ↻ Refresh
         </button>
       </div>
     </header>
+
+    <section id="permissionsSection" class="section permissions">
+      <div class="section-header">
+        <div class="section-header-with-button">
+          <h2>🔐 Permissions</h2>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button id="syncPermissionsButton" type="button" class="btn-secondary">
+              🔄 Sync Equivalents
+            </button>
+            <button id="savePermissionsButton" type="button" class="btn-save">
+              💾 Save Permissions
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section id="androidSection" class="section android">
       <div class="section-header">
@@ -1427,9 +1770,55 @@
       </div>
     </section>
 
+    <section class="section appname">
+      <div class="section-header">
+        <div class="section-header-with-button">
+          <h2>📱 App Name Localization</h2>
+          <button id="saveAppNameButton" type="button" class="btn-save" style="background: #f59e0b;">
+            💾 Save Localization
+          </button>
+        </div>
+      </div>
+      <div class="appname-form">
+        <div class="appname-field">
+          <label for="appNameDefault">Default App Name</label>
+          <input
+            type="text"
+            id="appNameDefault"
+            placeholder="Your App Name"
+          />
+          <span class="appname-help">This name will be used as the default for all languages without specific localization.</span>
+        </div>
+        <div class="appname-field">
+          <label>Add Localized Languages</label>
+          <div class="appname-lang-selector">
+            <div class="appname-lang-dropdown" id="appNameLangDropdown">
+              <div class="appname-lang-dropdown-trigger" id="appNameLangDropdownTrigger">
+                <span>Select a language...</span>
+                <span>▼</span>
+              </div>
+              <div class="appname-lang-dropdown-menu" id="appNameLangDropdownMenu">
+                <div class="appname-lang-search">
+                  <input type="text" id="appNameLangSearch" placeholder="Search languages..." />
+                </div>
+                <div id="appNameLangOptions"></div>
+              </div>
+            </div>
+          </div>
+          <span class="appname-help">Select a language from the dropdown to add it. Files will be created automatically if they don't exist.</span>
+        </div>
+        <div id="appNameLangList" class="appname-lang-list"></div>
+      </div>
+    </section>
+
     <section class="section services">
       <div class="section-header">
-        <h2>🔌 Services</h2>
+        <div class="section-header-with-button">
+          <h2>🔌 Services</h2>
+          <button id="saveServicesButton" type="button" class="btn-save" style="background: #8b5cf6;">
+            💾 Save Services
+          </button>
+        </div>
       </div>
       <div class="toolbar">
         <input

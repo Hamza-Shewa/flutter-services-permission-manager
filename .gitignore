@@ -8,3 +8,4 @@ node_modules
 .vscode-test/
 .github/
 .env
+AGENTS.md

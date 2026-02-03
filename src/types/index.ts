@@ -27,7 +27,10 @@ export type {
     IOSServiceConfig,
     AndroidServiceConfig,
     ServiceConfig,
-    ServicesConfigFile
+    ServicesConfigFile,
+    AndroidLocalizedString,
+    IOSLocalizedString,
+    AppNameLocalizationConfig
 } from './services.js';
 
 // Webview types
@@ -39,5 +42,7 @@ export type {
     ServicesConfigMessage,
     SaveResultMessage,
     WebviewOutgoingMessage,
-    SaveResult
+    SaveResult,
+    AppNameLocalization,
+    LanguageInfo
 } from './webview.js';
