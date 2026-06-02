@@ -19,6 +19,7 @@ import { extractAndroidAppNameLocalizations } from "../services/android/localiza
 import { extractIOSAppNameLocalizations } from "../services/ios/localization.service.js";
 import { getWebviewContent } from "./content.js";
 import { readJsonFile } from "../utils/file.js";
+import { discoverProjectPlatformDetails } from "../services/workspace.js";
 import type { ProjectFiles } from "../services/workspace.js";
 import {
   setCategorizedIosPermissionsCache,
@@ -34,6 +35,10 @@ import {
   handleSavePermissions,
   handleSaveServices,
   handleSaveAppName,
+  handleSavePlatformDetails,
+  handleSavePackageNames,
+  handleSaveAndroidBuildDetails,
+  handleSaveIosBuildDetails,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -75,6 +80,7 @@ export async function initializePermissionWebview(
 
   // Extract existing services
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  const platformDetails = await discoverProjectPlatformDetails(files);
   const existingServices = await extractServices(
     workspaceFolder?.uri,
     files.androidManifestUri,
@@ -93,11 +99,11 @@ export async function initializePermissionWebview(
   if (workspaceFolder) {
     const androidAppName = await extractAndroidAppNameLocalizations(workspaceFolder.uri);
     const iosAppName = await extractIOSAppNameLocalizations(workspaceFolder.uri);
-    
+
     // Prefer Android values, fallback to iOS
     const defaultName = androidAppName?.defaultName || iosAppName?.defaultName || "";
     const localizations = { ...(iosAppName?.localizations || {}), ...(androidAppName?.localizations || {}) };
-    
+
     if (defaultName) {
       appNameData = {
         defaultName,
@@ -118,6 +124,7 @@ export async function initializePermissionWebview(
     hasPodfile: !!files.iosPodfileUri,
     services: existingServices,
     availableServices: servicesConfigFile?.services ?? [],
+    platformDetails,
     appName: appNameData,
     languages: languagesConfig?.languages ?? [],
   };
@@ -189,8 +196,35 @@ function setupMessageHandler(
         await handleSaveAppName(ref, message.appName, files);
         break;
 
+      case "savePlatformDetails":
+        await handleSavePlatformDetails(ref, message.platformDetails, files);
+        break;
+
       case "saveServices":
         await handleSaveServices(ref, message.services ?? [], files);
+        break;
+
+      case "savePackageNames":
+        await handleSavePackageNames(
+          ref,
+          {
+            applicationId: message.applicationId || "",
+            bundleIdentifier: message.bundleIdentifier || "",
+          },
+          files,
+        );
+        break;
+
+      case "saveAndroidBuildDetails":
+        await handleSaveAndroidBuildDetails(
+          ref,
+          message.androidDetails ?? [],
+          files,
+        );
+        break;
+
+      case "saveIosBuildDetails":
+        await handleSaveIosBuildDetails(ref, message.iosDetails ?? [], files);
         break;
     }
   });

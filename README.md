@@ -15,7 +15,9 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
   - Stripe Payments
   - Deep Linking
 - **App Name Localizations**: Add or edit localized app names so the app displays the proper name based on the device's locale.
+- **Package Configuration Management**: A dedicated dashboard at the top of the UI to view and update your Android Application ID and iOS Bundle Identifier with a single click.
 - **Safe & Automated Updates**: With a single click, the extension updates all necessary files (`AndroidManifest.xml`, `Info.plist`, `Podfile`, `AppDelegate.swift`, etc.) while preserving your existing project structure and comments.
+- **Vibe Coded**: This extension was vibe coded in the most fashionable way, because your development workflow deserves to look and feel as good as your apps.
 
 ## 🛠️ Usage
 
@@ -46,7 +48,12 @@ _macOS service configuration support is coming soon!_
 
 ## 📝 Release Notes
 
-### 1.0.6 (Latest)
+### 1.0.7 (Latest)
+- **New Package Configuration Section**: Manage Android Application ID and iOS Bundle Identifier from a unified dashboard at the top of the UI.
+- **Gradle Standardization**: Forced `versionName` to `"flutterVersionName"` in Android build files to maintain consistency with Flutter versioning.
+- **Vibe Update**: Refined the UI/UX for a more fashionable development experience.
+
+### 1.0.6
 
 - Added section-level Save buttons so each section can be saved independently.
 - Moved the "Sync Equivalents" control into the Permissions toolbar.

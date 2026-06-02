@@ -31,11 +31,12 @@ export {
 
 // Document service
 export {
-  replaceDocumentContent,
-  savePermissions,
-  savePermissionsOnly,
-  saveServicesOnly,
-  saveAppNameOnly,
+    replaceDocumentContent,
+    savePermissions,
+    savePermissionsOnly,
+    saveServicesOnly,
+    saveAppNameOnly,
+    savePlatformDetails,
 } from './document.service.js';
 
 // Services extractor

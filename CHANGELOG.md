@@ -5,6 +5,23 @@ All notable changes to the "Flutter Config Manager" extension will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2026-06-02
+
+### Added
+- **Package Configuration Dashboard**: A new high-level section to manage Android Application ID and iOS Bundle Identifier.
+- **Platform-Specific Controls**: Individual "Save" buttons for Android and iOS build configurations.
+- **Vibe Coding**: Officially vibe coded in the most fashionable way for peak developer experience.
+
+### Changed
+- **UI Reordering**: Restructured the dashboard flow: Package Configuration -> Android Build Details -> iOS Build Details -> Permissions -> Services.
+- **Gradle Standardization**: `versionName` is now forced to `flutterVersionName.toString()` to ensure parity with Flutter's versioning.
+- **Podfile Standardization**: Automatically injects `COCOAPODS_DISABLE_STATS`, `project 'Runner'`, and comprehensive `post_install` settings into the iOS Podfile.
+- **Android SDK naming**: Switched to explicit `minSdkVersion` and `targetSdkVersion` labels in build files for better compatibility.
+
+### Fixed
+- **Conditional Kotlin Management**: The extension now detects if Kotlin is explicitly configured and avoids generating redundant Kotlin setup for newer Flutter versions using embedded Kotlin.
+- **Podfile Deployment Target**: Fixed a bug that could corrupt the `platform :ios` line during updates.
+
 ## [1.0.6] - 2026-02-03
 
 ### Added

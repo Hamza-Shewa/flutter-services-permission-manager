@@ -9,6 +9,21 @@ import type {
 } from "./permissions.js";
 import type { ServiceEntry, ServiceConfig } from "./services.js";
 
+/** Platform build metadata item */
+export interface PlatformDetailItem {
+  key: string;
+  label: string;
+  value: string;
+  editable?: boolean;
+  source?: string;
+}
+
+/** Platform build metadata payload */
+export interface PlatformDetails {
+  android: PlatformDetailItem[];
+  ios: PlatformDetailItem[];
+}
+
 /** Webview incoming message types */
 export type WebviewMessage =
   | { type: "ready" }
@@ -17,19 +32,36 @@ export type WebviewMessage =
   | { type: "requestAllIOSPermissions" }
   | { type: "requestServices" }
   | {
-      type: "savePermissions";
-      androidPermissions: string[];
-      iosPermissions: IOSPermissionEntry[];
-      macosPermissions: IOSPermissionEntry[];
-    }
+    type: "savePermissions";
+    androidPermissions: string[];
+    iosPermissions: IOSPermissionEntry[];
+    macosPermissions: IOSPermissionEntry[];
+  }
   | {
-      type: "saveAppName";
-      appName: AppNameLocalization;
-    }
+    type: "saveAppName";
+    appName: AppNameLocalization;
+  }
   | {
-      type: "saveServices";
-      services: ServiceEntry[];
-    };
+    type: "saveServices";
+    services: ServiceEntry[];
+  }
+  | {
+    type: "savePlatformDetails";
+    platformDetails: PlatformDetails;
+  }
+  | {
+    type: "savePackageNames";
+    applicationId?: string;
+    bundleIdentifier?: string;
+  }
+  | {
+    type: "saveAndroidBuildDetails";
+    androidDetails: PlatformDetailItem[];
+  }
+  | {
+    type: "saveIosBuildDetails";
+    iosDetails: PlatformDetailItem[];
+  };
 
 /** Language info */
 export interface LanguageInfo {
@@ -56,6 +88,7 @@ export interface PermissionsPayload {
   hasPodfile: boolean;
   services: ServiceEntry[];
   availableServices: ServiceConfig[];
+  platformDetails?: PlatformDetails;
   appName?: AppNameLocalization;
   languages?: LanguageInfo[];
 }

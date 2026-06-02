@@ -10,15 +10,21 @@
     "addAndroidPermissionButton",
   );
   const addIosButton = document.getElementById("addIosPermissionButton");
+  const saveAndroidBuildDetailsButton = document.getElementById("saveAndroidBuildDetailsButton");
+  const saveIosBuildDetailsButton = document.getElementById("saveIosBuildDetailsButton");
   const iosSearchInput = document.getElementById("iosPermissionSearch");
   const iosCategoryFilter = document.getElementById("iosCategoryFilter");
   const saveButton = document.getElementById("savePermissionsButton");
   const saveAppNameButton = document.getElementById("saveAppNameButton");
   const saveServicesButton = document.getElementById("saveServicesButton");
+  const savePackageNamesButton = document.getElementById("savePackageNamesButton");
   const saveAllButton = document.getElementById("saveAllButton");
   const statusMessage = document.getElementById("statusMessage");
   const toastContainer = document.getElementById("toastContainer");
   const refreshButton = document.getElementById("refreshButton");
+
+  const androidPackageNameInput = document.getElementById("androidPackageNameInput");
+  const iosBundleIdentifierInput = document.getElementById("iosBundleIdentifierInput");
 
   const modalBackdrop = document.getElementById("modalBackdrop");
   const modalSearch = document.getElementById("modalSearch");
@@ -35,6 +41,10 @@
   const macosSearchInput = document.getElementById("macosPermissionSearch");
   const macosCategoryFilter = document.getElementById("macosCategoryFilter");
   const addMacosButton = document.getElementById("addMacosPermissionButton");
+  const androidDetailsSection = document.getElementById("androidDetailsSection");
+  const iosDetailsSection = document.getElementById("iosDetailsSection");
+  const androidDetailsGrid = document.getElementById("androidDetailsGrid");
+  const iosDetailsGrid = document.getElementById("iosDetailsGrid");
   const androidSection = document.getElementById("androidSection");
   const iosSection = document.getElementById("iosSection");
   const macosSection = document.getElementById("macosSection");
@@ -155,9 +165,38 @@
       defaultName: "",
       localizations: {}
     },
+    platformDetails: {
+      android: [],
+      ios: [],
+    },
     // Languages list
     languages: [],
   };
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function normalizeBuildDetailValue(key, value) {
+    const raw = String(value ?? "").replace(/\r\n|\r|\n/g, " ").trim();
+    if (key === "compileSdk" || key === "minSdk" || key === "targetSdk" || key === "versionCode") {
+      return raw.replace(/^API\s+/i, "");
+    }
+    return raw;
+  }
+
+  function updatePlatformDetailValue(sectionName, key, value) {
+    const section = state.platformDetails?.[sectionName] || [];
+    const detail = section.find((item) => item.key === key);
+    if (detail) {
+      detail.value = value;
+    }
+  }
 
   function scheduleRefresh() {
     if (pendingRefreshTimeout) {
@@ -540,6 +579,55 @@
     });
   }
 
+  function renderDetailCards(container, details, emptyMessage, sectionName) {
+    if (!container) return;
+
+    if (!details || details.length === 0) {
+      container.innerHTML = `
+        <div class="detail-empty">${escapeHtml(emptyMessage)}</div>
+      `;
+      return;
+    }
+
+    container.innerHTML = details
+      .map((detail) => `
+        <article class="detail-card" data-detail-key="${escapeHtml(detail.key)}">
+          <div class="detail-card-label">${escapeHtml(detail.label)}</div>
+          ${detail.editable !== false
+          ? `<input class="detail-card-input" data-section="${escapeHtml(sectionName)}" data-key="${escapeHtml(detail.key)}" type="text" value="${escapeHtml(normalizeBuildDetailValue(detail.key, detail.value))}" />`
+          : `<div class="detail-card-readonly">${escapeHtml(detail.value)}</div>`}
+          ${detail.source ? `<div class="detail-card-source">${escapeHtml(detail.source)}</div>` : ""}
+        </article>
+      `)
+      .join("");
+
+    container.querySelectorAll(".detail-card-input").forEach((input) => {
+      input.addEventListener("input", (event) => {
+        const target = event.target;
+        updatePlatformDetailValue(
+          target.dataset.section,
+          target.dataset.key,
+          target.value,
+        );
+      });
+    });
+  }
+
+  function renderPlatformDetails() {
+    renderDetailCards(
+      androidDetailsGrid,
+      state.platformDetails?.android || [],
+      "No Android build metadata detected.",
+      "android",
+    );
+    renderDetailCards(
+      iosDetailsGrid,
+      state.platformDetails?.ios || [],
+      "No iOS build metadata detected.",
+      "ios",
+    );
+  }
+
   function renderModalCategoryTabs() {
     const modalCategoryTabs = document.getElementById("modalCategoryTabs");
     const isIos = state.modalMode === "ios";
@@ -606,12 +694,22 @@
     renderAndroidTable();
     renderIOSTable();
     renderMacOSTable();
+    renderPlatformDetails();
     applySortIndicator();
     updateCounts();
     updateSectionVisibility();
   }
 
   function updateSectionVisibility() {
+    const hasAndroidDetails = (state.platformDetails?.android || []).length > 0;
+    const hasIOSDetails = (state.platformDetails?.ios || []).length > 0;
+
+    if (androidDetailsSection) {
+      androidDetailsSection.style.display = state.hasAndroidManifest || hasAndroidDetails ? "" : "none";
+    }
+    if (iosDetailsSection) {
+      iosDetailsSection.style.display = state.hasIOSPlist || hasIOSDetails ? "" : "none";
+    }
     if (androidSection) {
       androidSection.style.display = state.hasAndroidManifest ? "" : "none";
     }
@@ -637,9 +735,9 @@
       (p) =>
         (p.constantValue &&
           utils.normalizeText(p.constantValue) ===
-            utils.normalizeText(iosPermissionName)) ||
+          utils.normalizeText(iosPermissionName)) ||
         utils.normalizeText(p.permission) ===
-          utils.normalizeText(iosPermissionName),
+        utils.normalizeText(iosPermissionName),
     );
   }
 
@@ -834,8 +932,8 @@
           } else {
             skippedExisting.push(
               item.target.permission ||
-                item.target.constantValue ||
-                "Android permission",
+              item.target.constantValue ||
+              "Android permission",
             );
           }
         } else {
@@ -1417,8 +1515,8 @@
         targetPlatform === "ios"
           ? state.iosPermissions.some((p) => p.permission === perm.permission)
           : state.androidPermissions.some(
-              (p) => p.permission === perm.permission,
-            );
+            (p) => p.permission === perm.permission,
+          );
       return !isAlreadyAdded;
     });
 
@@ -1494,8 +1592,8 @@
         targetPlatform === "ios"
           ? state.iosPermissions.some((p) => p.permission === perm.permission)
           : state.androidPermissions.some(
-              (p) => p.permission === perm.permission,
-            );
+            (p) => p.permission === perm.permission,
+          );
       return !isAlreadyAdded;
     });
 
@@ -1664,21 +1762,21 @@
 
   function renderAppName() {
     if (!appNameDefault) return;
-    
+
     appNameDefault.value = state.appName.defaultName || "";
     renderAppNameLangList();
   }
 
   function renderLanguageDropdown() {
     if (!appNameLangOptions || !state.languages) return;
-    
+
     const searchTerm = (appNameLangSearch?.value || "").toLowerCase();
     const existingCodes = Object.keys(state.appName.localizations || {});
-    
+
     const filteredLangs = state.languages.filter(lang => {
       // Don't show already added languages
       if (existingCodes.includes(lang.code)) return false;
-      
+
       // Filter by search term
       if (!searchTerm) return true;
       return (
@@ -1687,12 +1785,12 @@
         lang.code.toLowerCase().includes(searchTerm)
       );
     });
-    
+
     if (filteredLangs.length === 0) {
       appNameLangOptions.innerHTML = '<div class="appname-lang-option"><span class="appname-lang-option-title">No languages found</span></div>';
       return;
     }
-    
+
     appNameLangOptions.innerHTML = filteredLangs
       .map(lang => `
         <div class="appname-lang-option" data-code="${lang.code}">
@@ -1701,7 +1799,7 @@
         </div>
       `)
       .join("");
-    
+
     // Add click handlers - add language directly when clicked
     appNameLangOptions.querySelectorAll('.appname-lang-option').forEach(option => {
       option.addEventListener('click', () => {
@@ -1740,26 +1838,26 @@
 
   function addAppNameLanguageDirect(code) {
     if (!code) return;
-    
+
     // Check if already added
     if (state.appName.localizations && state.appName.localizations[code] !== undefined) {
       showToast("Language already added", "info");
       return;
     }
-    
+
     // Initialize localizations if not exists
     if (!state.appName.localizations) {
       state.appName.localizations = {};
     }
-    
+
     // Add language with empty value
     state.appName.localizations[code] = "";
-    
+
     // Reset dropdown trigger text
     appNameLangDropdownTrigger.innerHTML = `<span>Select a language...</span><span>▼</span>`;
     // Clear search
     if (appNameLangSearch) appNameLangSearch.value = "";
-    
+
     renderAppNameLangList();
     showToast("Language added. Enter the app name for this language.", "info");
   }
@@ -1780,21 +1878,21 @@
 
   function renderAppNameLangList() {
     if (!appNameLangList) return;
-    
+
     const locs = state.appName.localizations || {};
     const entries = Object.entries(locs);
-    
+
     if (entries.length === 0) {
       appNameLangList.innerHTML = '<div class="appname-lang-empty">No localized languages added yet. Select a language from the dropdown above.</div>';
       return;
     }
-    
+
     appNameLangList.innerHTML = entries
       .map(([code, value]) => {
         const lang = state.languages.find(l => l.code === code);
         const langName = lang ? lang.name : code;
         const nativeName = lang ? lang.nativeName : "";
-        
+
         return `
           <div class="appname-lang-item" data-code="${code}">
             <div class="appname-lang-item-info">
@@ -1809,7 +1907,7 @@
         `;
       })
       .join("");
-    
+
     // Add event listeners to inputs
     appNameLangList.querySelectorAll('.appname-lang-item-input input').forEach(input => {
       input.addEventListener('input', (e) => {
@@ -1817,7 +1915,7 @@
         updateAppNameLanguage(code, e.target.value);
       });
     });
-    
+
     // Add event listeners to remove buttons
     appNameLangList.querySelectorAll('.appname-lang-item-remove').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -1885,15 +1983,15 @@
                     </div>
                     <div class="service-card-fields">
                         ${config.fields
-                          .map(
-                            (field) => `
+            .map(
+              (field) => `
                             <div class="service-field">
                                 <span class="service-field-label">${field.label}</span>
                                 <span class="service-field-value" title="${service.values[field.id] || "-"}">${service.values[field.id] || "-"}</span>
                             </div>
                         `,
-                          )
-                          .join("")}
+            )
+            .join("")}
                     </div>
                     <div class="service-card-actions">
                         <button type="button" class="btn-secondary edit-service-btn" data-service-id="${service.id}">✏️ Edit</button>
@@ -1988,23 +2086,23 @@
     serviceModalContent.innerHTML = `
             <div class="service-form">
                 ${config.fields
-                  .map((field) => {
-                    const fieldType = field.type || "text";
-                    if (fieldType === "list") {
-                      const rawValue = existingValues[field.id] || "";
-                      const items = String(rawValue)
-                        .split(/[,;\n]+/)
-                        .map((value) => value.trim())
-                        .filter(Boolean);
-                      const listItems = items.length > 0 ? items : [""];
+        .map((field) => {
+          const fieldType = field.type || "text";
+          if (fieldType === "list") {
+            const rawValue = existingValues[field.id] || "";
+            const items = String(rawValue)
+              .split(/[,;\n]+/)
+              .map((value) => value.trim())
+              .filter(Boolean);
+            const listItems = items.length > 0 ? items : [""];
 
-                      return `
+            return `
                     <div class="form-group" data-field-type="list" data-field-id="${field.id}">
                         <label>${field.label}${field.required ? " *" : ""}</label>
                         <div class="service-list-inputs" data-list-id="${field.id}">
                             ${listItems
-                              .map(
-                                (value) => `
+                .map(
+                  (value) => `
                                 <div class="service-list-input-row">
                                     <input
                                         type="text"
@@ -2015,26 +2113,26 @@
                                     <button type="button" class="btn-secondary btn-small remove-list-item" data-field-id="${field.id}">−</button>
                                 </div>
                             `,
-                              )
-                              .join("")}
+                )
+                .join("")}
                         </div>
                         <button type="button" class="btn-secondary btn-small add-list-item" data-field-id="${field.id}">+ Add</button>
                     </div>
                   `;
-                    }
+          }
 
-                    if (fieldType === "toggle") {
-                      const rawValue = String(existingValues[field.id] || "false").toLowerCase();
-                      const isEnabled = rawValue === "true";
-                      return `
+          if (fieldType === "toggle") {
+            const rawValue = String(existingValues[field.id] || "false").toLowerCase();
+            const isEnabled = rawValue === "true";
+            return `
                     <div class="form-group" data-field-type="toggle" data-field-id="${field.id}">
                         <label>${field.label}${field.required ? " *" : ""}</label>
                         <button type="button" class="btn-secondary toggle-button" data-field-id="${field.id}" data-value="${isEnabled}">${isEnabled ? "true" : "false"}</button>
                     </div>
                   `;
-                    }
+          }
 
-                    return `
+          return `
                     <div class="form-group">
                         <label for="service-field-${field.id}">${field.label}${field.required ? " *" : ""}</label>
                         <input 
@@ -2047,8 +2145,8 @@
                         />
                     </div>
                   `;
-                  })
-                  .join("")}
+        })
+        .join("")}
             </div>
         `;
 
@@ -2067,8 +2165,8 @@
           row.className = "service-list-input-row";
           row.innerHTML = `
                 <input type="text" data-field-id="${fieldId}" placeholder="${escapeAttr(
-                  config.fields.find((f) => f.id === fieldId)?.placeholder,
-                )}" />
+            config.fields.find((f) => f.id === fieldId)?.placeholder,
+          )}" />
                 <button type="button" class="btn-secondary btn-small remove-list-item" data-field-id="${fieldId}">−</button>
             `;
           container.appendChild(row);
@@ -2202,7 +2300,7 @@
 
   function handleSavePermissions() {
     console.log("[PermissionManager] handleSavePermissions called");
-    
+
     const androidPermissions = utils
       .dedupePermissions(state.androidPermissions)
       .map((permission) => permission.constantValue || permission.permission)
@@ -2221,10 +2319,10 @@
         type: permission.type,
       }))
       .filter((entry) => entry.permission);
-    
+
     console.log("[PermissionManager] Posting savePermissions message");
     showToast("Saving permissions...", "info");
-    
+
     vscode.postMessage({
       type: "savePermissions",
       androidPermissions: androidPermissions,
@@ -2232,23 +2330,23 @@
       macosPermissions: macosPermissions,
     });
   }
-  
+
   function handleSaveAppName() {
     console.log("[PermissionManager] handleSaveAppName called");
-    
+
     // Sync app name from input fields to state
     if (appNameDefault) {
       state.appName.defaultName = appNameDefault.value.trim();
     }
-    
+
     if (!state.appName.defaultName) {
       showToast("Please enter a default app name", "error");
       return;
     }
-    
+
     console.log("[PermissionManager] Posting saveAppName message");
     showToast("Saving app name localization...", "info");
-    
+
     vscode.postMessage({
       type: "saveAppName",
       appName: {
@@ -2257,20 +2355,86 @@
       },
     });
   }
-  
+
+  function handleSaveAndroidBuildDetails() {
+    console.log("[PermissionManager] handleSaveAndroidBuildDetails called");
+    showToast("Saving Android build details...", "info");
+    const androidDetails = (state.platformDetails?.android || []).map((detail) => ({
+      ...detail,
+      value: normalizeBuildDetailValue(detail.key, detail.value),
+    }));
+    vscode.postMessage({
+      type: "saveAndroidBuildDetails",
+      androidDetails,
+    });
+  }
+
+  function handleSaveIosBuildDetails() {
+    console.log("[PermissionManager] handleSaveIosBuildDetails called");
+    showToast("Saving iOS build details...", "info");
+    const iosDetails = (state.platformDetails?.ios || []).map((detail) => ({
+      ...detail,
+      value: normalizeBuildDetailValue(detail.key, detail.value),
+    }));
+    vscode.postMessage({
+      type: "saveIosBuildDetails",
+      iosDetails,
+    });
+  }
+
+  function handleSavePlatformDetails() {
+    console.log("[PermissionManager] handleSavePlatformDetails called");
+
+    showToast("Saving build details...", "info");
+
+    const platformDetails = {
+      android: (state.platformDetails?.android || []).map((detail) => ({
+        ...detail,
+        value: normalizeBuildDetailValue(detail.key, detail.value),
+      })),
+      ios: (state.platformDetails?.ios || []).map((detail) => ({
+        ...detail,
+        value: normalizeBuildDetailValue(detail.key, detail.value),
+      })),
+    };
+
+    vscode.postMessage({
+      type: "savePlatformDetails",
+      platformDetails,
+    });
+  }
+
   function handleSaveServices() {
     console.log("[PermissionManager] handleSaveServices called");
     console.log(
       "[PermissionManager] Services to save:",
       JSON.stringify(state.services),
     );
-    
+
     console.log("[PermissionManager] Posting saveServices message");
     showToast("Saving services...", "info");
-    
+
     vscode.postMessage({
       type: "saveServices",
       services: state.services,
+    });
+  }
+
+  function handleSavePackageNames() {
+    const applicationId = androidPackageNameInput.value.trim();
+    const bundleIdentifier = iosBundleIdentifierInput.value.trim();
+
+    if (!applicationId && !bundleIdentifier) {
+      showToast("Please enter at least one package name", "error");
+      return;
+    }
+
+    showToast("Saving package names...", "info");
+
+    vscode.postMessage({
+      type: "savePackageNames",
+      applicationId,
+      bundleIdentifier,
     });
   }
 
@@ -2360,6 +2524,18 @@
     addServiceModalCancel.addEventListener("click", closeAddServiceModal);
   }
 
+  if (saveAndroidBuildDetailsButton) {
+    saveAndroidBuildDetailsButton.addEventListener("click", () => {
+      handleSaveAndroidBuildDetails();
+    });
+  }
+
+  if (saveIosBuildDetailsButton) {
+    saveIosBuildDetailsButton.addEventListener("click", () => {
+      handleSaveIosBuildDetails();
+    });
+  }
+
   // App Name event listeners
   if (appNameDefault) {
     appNameDefault.addEventListener("input", () => {
@@ -2423,13 +2599,13 @@
       themeToggleButton.textContent = '🌙';
       try {
         localStorage.setItem('permissionManagerTheme', 'dark');
-      } catch (e) {}
+      } catch (e) { }
     } else {
       document.documentElement.setAttribute('data-theme', 'light');
       themeToggleButton.textContent = '☀️';
       try {
         localStorage.setItem('permissionManagerTheme', 'light');
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
@@ -2451,20 +2627,28 @@
       handleSaveAll();
     });
   }
-  
+
   if (saveAppNameButton) {
     saveAppNameButton.addEventListener("click", () => {
       console.log("[PermissionManager] Save app name button clicked!");
       handleSaveAppName();
     });
   }
-  
+
   if (saveServicesButton) {
     saveServicesButton.addEventListener("click", () => {
       console.log("[PermissionManager] Save services button clicked!");
       handleSaveServices();
     });
   }
+
+  if (savePackageNamesButton) {
+    savePackageNamesButton.addEventListener("click", () => {
+      console.log("[PermissionManager] Save package names button clicked!");
+      handleSavePackageNames();
+    });
+  }
+
   if (refreshButton) {
     refreshButton.addEventListener("click", () => {
       vscode.postMessage({ type: "refresh" });
@@ -2477,6 +2661,11 @@
   function handleSaveAll() {
     console.log("[PermissionManager] handleSaveAll called");
     // Fire the individual save handlers in sequence
+    try {
+      handleSavePlatformDetails();
+    } catch (e) {
+      console.error('Error saving build details', e);
+    }
     try {
       handleSavePermissions();
     } catch (e) {
@@ -2566,6 +2755,19 @@
         state.services = message.services || [];
         state.availableServices =
           message.availableServices || state.availableServices || [];
+        state.platformDetails = message.platformDetails || { android: [], ios: [] };
+
+        // Populate package configuration inputs
+        const androidAppId = state.platformDetails.android?.find((d) => d.key === "applicationId")?.value;
+        const iosBundleId = state.platformDetails.ios?.find((d) => d.key === "bundleIdentifier")?.value;
+
+        if (androidPackageNameInput && androidAppId) {
+          androidPackageNameInput.value = androidAppId;
+        }
+        if (iosBundleIdentifierInput && iosBundleId) {
+          iosBundleIdentifierInput.value = iosBundleId;
+        }
+
         // Handle languages
         if (message.languages) {
           state.languages = message.languages;

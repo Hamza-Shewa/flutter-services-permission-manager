@@ -9,6 +9,8 @@ import type {
   ServiceEntry,
   PermissionsPayload,
   AppNameLocalization,
+  PlatformDetails,
+  PlatformDetailItem,
   LanguageInfo,
 } from "../../types/index.js";
 import { readJsonFile } from "../../utils/file.js";
@@ -23,11 +25,13 @@ import {
   savePermissionsOnly,
   saveServicesOnly,
   saveAppNameOnly,
+  savePlatformDetails,
   extractServices,
 } from "../../services/index.js";
 import { extractAndroidAppNameLocalizations } from "../../services/android/localization.service.js";
 import { extractIOSAppNameLocalizations } from "../../services/ios/localization.service.js";
 import type { ProjectFiles } from "../../services/workspace.js";
+import { discoverProjectPlatformDetails } from "../../services/workspace.js";
 import {
   getCategorizedIosPermissionsCache,
   getServicesConfigCache,
@@ -68,6 +72,7 @@ export async function handleRefresh(
 
   const servicesConfig = getServicesConfigCache();
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  const platformDetails = await discoverProjectPlatformDetails(files);
   const existingServices = await extractServices(
     workspaceFolder?.uri,
     files.androidManifestUri,
@@ -86,10 +91,10 @@ export async function handleRefresh(
   if (workspaceFolder) {
     const androidAppName = await extractAndroidAppNameLocalizations(workspaceFolder.uri);
     const iosAppName = await extractIOSAppNameLocalizations(workspaceFolder.uri);
-    
+
     const defaultName = androidAppName?.defaultName || iosAppName?.defaultName || "";
     const localizations = { ...(iosAppName?.localizations || {}), ...(androidAppName?.localizations || {}) };
-    
+
     if (defaultName) {
       appNameData = { defaultName, localizations };
     }
@@ -109,6 +114,7 @@ export async function handleRefresh(
     hasPodfile: !!files.iosPodfileUri,
     services: existingServices,
     availableServices: servicesConfig ?? [],
+    platformDetails,
     appName: appNameData,
     languages: languagesConfig?.languages ?? [],
   };
@@ -248,4 +254,90 @@ export async function handleSaveAppName(
   );
 
   ref.webview.postMessage({ type: "saveResult", ...result });
+}
+
+/**
+ * Handle save platform build details request
+ */
+export async function handleSavePlatformDetails(
+  ref: WebviewRef,
+  platformDetails: PlatformDetails,
+  files: ProjectFiles,
+): Promise<void> {
+  const result = await savePlatformDetails(platformDetails, files);
+
+  ref.webview.postMessage({ type: "saveResult", ...result });
+}
+
+/**
+ * Handle save Android build details request
+ */
+export async function handleSaveAndroidBuildDetails(
+  ref: WebviewRef,
+  androidDetails: PlatformDetailItem[],
+  files: ProjectFiles,
+): Promise<void> {
+  const details: PlatformDetails = {
+    android: androidDetails,
+    ios: [],
+  };
+  const result = await savePlatformDetails(details, files);
+  ref.webview.postMessage({ type: "saveResult", ...result });
+}
+
+/**
+ * Handle save iOS build details request
+ */
+export async function handleSaveIosBuildDetails(
+  ref: WebviewRef,
+  iosDetails: PlatformDetailItem[],
+  files: ProjectFiles,
+): Promise<void> {
+  const details: PlatformDetails = {
+    android: [],
+    ios: iosDetails,
+  };
+  const result = await savePlatformDetails(details, files);
+  ref.webview.postMessage({ type: "saveResult", ...result });
+}
+
+/**
+ * Handle save package names request
+ */
+export async function handleSavePackageNames(
+  ref: WebviewRef,
+  payload: { applicationId: string; bundleIdentifier: string },
+  files: ProjectFiles,
+): Promise<void> {
+  try {
+    const details: PlatformDetails = {
+      android: [
+        {
+          key: "applicationId",
+          label: "Application ID",
+          value: payload.applicationId,
+          editable: true,
+          source: "build.gradle",
+        },
+      ],
+      ios: [
+        {
+          key: "bundleIdentifier",
+          label: "Bundle Identifier",
+          value: payload.bundleIdentifier,
+          editable: true,
+          source: "project.pbxproj",
+        },
+      ],
+    };
+
+    const result = await savePlatformDetails(details, files);
+    ref.webview.postMessage({ type: "saveResult", ...result });
+  } catch (error) {
+    ref.webview.postMessage({
+      type: "saveResult",
+      success: false,
+      message: `Failed to save package names: ${error}`,
+    });
+  }
 }

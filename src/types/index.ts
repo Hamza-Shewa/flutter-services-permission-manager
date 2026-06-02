@@ -43,6 +43,8 @@ export type {
     SaveResultMessage,
     WebviewOutgoingMessage,
     SaveResult,
+    PlatformDetailItem,
+    PlatformDetails,
     AppNameLocalization,
     LanguageInfo
 } from './webview.js';

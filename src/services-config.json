@@ -180,7 +180,7 @@
         {
           "id": "scheme",
           "label": "URL Scheme",
-          "placeholder": "myapp",
+          "placeholder": "https or http",
           "required": true,
           "type": "list"
         },

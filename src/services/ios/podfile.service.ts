@@ -112,11 +112,14 @@ export async function updateIOSPodfile(
     // Build the new block content
     const indent = '              ';
     const macroEntries = macrosList.map(m => `${indent}'${m}=1',`).join('\n');
-    const newBlock = `config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+    const gccBlockContent = `config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
               '$(inherited)',
 ${macroEntries}
             ]`;
     
+    // Deployment target to use in post_install
+    const deploymentTarget = "16.6"; // Fallback to 16.6 as per how_pod_should_be
+
     // Check if GCC_PREPROCESSOR_DEFINITIONS block exists
     const gccBlock = findGccBlock(content);
     
@@ -124,7 +127,7 @@ ${macroEntries}
         // Replace existing block entirely
         const startPos = document.positionAt(gccBlock.start);
         const endPos = document.positionAt(gccBlock.end);
-        edit.replace(document.uri, new vscode.Range(startPos, endPos), newBlock);
+        edit.replace(document.uri, new vscode.Range(startPos, endPos), gccBlockContent);
     } else {
         // Check if target.build_configurations block exists
         const buildConfigRegex = /target\.build_configurations\.each\s+do\s+\|config\|/;
@@ -132,7 +135,7 @@ ${macroEntries}
         
         if (buildConfigMatch) {
             const insertIndex = buildConfigMatch.index + buildConfigMatch[0].length;
-            const insertBlock = `\n            ${newBlock}`;
+            const insertBlock = `\n            ${gccBlockContent}`;
             const insertPos = document.positionAt(insertIndex);
             edit.insert(document.uri, insertPos, insertBlock);
         } else {
@@ -144,20 +147,42 @@ ${macroEntries}
                 const insertIndex = postInstallMatch.index + postInstallMatch[0].length;
                 const insertBlock = `
   installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
-            ${newBlock}
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '${deploymentTarget}'
+      ${gccBlockContent}
     end
   end`;
                 const insertPos = document.positionAt(insertIndex);
                 edit.insert(document.uri, insertPos, insertBlock);
             } else {
-                // Add post_install block at end of file
+                // Add complete post_install block at end of file
                 const insertBlock = `
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
-            ${newBlock}
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '${deploymentTarget}'
+      ${gccBlockContent}
+    end
+  end
+
+  # Additional project-level settings for all targets
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+  end
+
+  # Copy TweetNacl header into pod root so ctweetnacl.c can include it
+  require 'fileutils'
+  tweetnacl_pod = File.join(__dir__, 'Pods', 'TweetNacl', 'Sources', 'CTweetNacl')
+  src = File.join(tweetnacl_pod, 'include', 'ctweetnacl.h')
+  dst = File.join(tweetnacl_pod, 'ctweetnacl.h')
+  if File.exist?(src)
+    begin
+      FileUtils.cp(src, dst)
+    rescue => e
+      puts "[post_install] Failed copying ctweetnacl.h: #{e}"
     end
   end
 end
