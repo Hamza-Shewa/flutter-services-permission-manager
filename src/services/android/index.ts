@@ -29,3 +29,7 @@ export {
     updateAndroidAppNameLocalizations,
     extractAndroidAppNameLocalizations
 } from './localization.service.js';
+
+export {
+    migrateAndroidSetup
+} from './migration.service.js';

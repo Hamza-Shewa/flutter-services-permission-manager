@@ -2649,6 +2649,20 @@
     });
   }
 
+  const migrateAndroidButton = document.getElementById("migrateAndroidButton");
+  if (migrateAndroidButton) {
+    migrateAndroidButton.addEventListener("click", () => {
+      vscode.postMessage({ type: "migrateAndroid" });
+    });
+  }
+
+  const upgradePackagesButton = document.getElementById("upgradePackagesButton");
+  if (upgradePackagesButton) {
+    upgradePackagesButton.addEventListener("click", () => {
+      vscode.postMessage({ type: "upgradePackages" });
+    });
+  }
+
   if (refreshButton) {
     refreshButton.addEventListener("click", () => {
       vscode.postMessage({ type: "refresh" });

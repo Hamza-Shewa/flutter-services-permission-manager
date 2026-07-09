@@ -61,7 +61,9 @@ export type WebviewMessage =
   | {
     type: "saveIosBuildDetails";
     iosDetails: PlatformDetailItem[];
-  };
+  }
+  | { type: "migrateAndroid" }
+  | { type: "upgradePackages" };
 
 /** Language info */
 export interface LanguageInfo {

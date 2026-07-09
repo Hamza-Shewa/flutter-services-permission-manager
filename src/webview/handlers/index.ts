@@ -341,3 +341,5 @@ export async function handleSavePackageNames(
     });
   }
 }
+
+export { handleMigrateAndroid, handleUpgradePackages } from './migrate.js';

@@ -39,6 +39,8 @@ import {
   handleSavePackageNames,
   handleSaveAndroidBuildDetails,
   handleSaveIosBuildDetails,
+  handleMigrateAndroid,
+  handleUpgradePackages,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -225,6 +227,20 @@ function setupMessageHandler(
 
       case "saveIosBuildDetails":
         await handleSaveIosBuildDetails(ref, message.iosDetails ?? [], files);
+        break;
+
+      case "migrateAndroid":
+        if ((ref.webview as any).__panel) {
+          await handleMigrateAndroid((ref.webview as any).__panel);
+        } else {
+          // If it's a view, it doesn't have a panel to show the progress. We can just run it.
+          // Wait, the handler expects a WebviewPanel to send status updates. Let's just create a dummy object with webview: ref.webview
+          await handleMigrateAndroid(ref as any);
+        }
+        break;
+
+      case "upgradePackages":
+        await handleUpgradePackages(ref as any);
         break;
     }
   });

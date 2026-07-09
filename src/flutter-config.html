@@ -1741,6 +1741,37 @@
     </div>
   </section>
 
+  <section class="section platform-details">
+    <div class="section-header">
+      <h2>🛠 Android Project Setup</h2>
+    </div>
+    <div class="details-grid">
+      <div class="detail-card" style="display:flex; flex-direction:column; gap:12px; justify-content: space-between;">
+        <div>
+          <div class="detail-card-label" style="font-size: 14px; color: var(--android-accent);">🚀 Migrate to Declarative Setup</div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
+            Automatically upgrades your Android build files to the modern declarative setup (AGP 8.13.2, Kotlin 2.2.21). Removes legacy buildscripts and syncs your NDK version.
+          </div>
+        </div>
+        <button id="migrateAndroidButton" type="button" class="btn-primary" style="background: var(--android-accent); border-color: var(--android-accent); color: #fff; width: 100%; justify-content: center;">
+          Run Migration
+        </button>
+      </div>
+
+      <div class="detail-card" style="display:flex; flex-direction:column; gap:12px; justify-content: space-between;">
+        <div>
+          <div class="detail-card-label" style="font-size: 14px;">📦 Upgrade Packages</div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
+            Executes <code style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">flutter pub upgrade</code> in your workspace to ensure all Flutter dependencies are updated and compatible.
+          </div>
+        </div>
+        <button id="upgradePackagesButton" type="button" class="btn-secondary" style="width: 100%; justify-content: center;">
+          Upgrade Packages
+        </button>
+      </div>
+    </div>
+  </section>
+
   <section id="androidDetailsSection" class="section platform-details android">
     <div class="section-header">
       <div class="section-header-with-button">
