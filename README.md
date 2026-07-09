@@ -9,12 +9,11 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 - **Service Integrations**: Quickly configure popular third-party services without diving into documentation for platform-specific setup. Supported services include:
   - Facebook SDK
   - Google Sign-In & Google Maps
-  - Firebase Cloud Messaging
-  - Google AdMob & OneSignal
-  - Twitter/X Login & Apple Sign-In
-  - Stripe Payments
-  - Deep Linking
-- **App Name Localizations**: Add or edit localized app names so the app displays the proper name based on the device's locale.
+  - **App Name Localization**: Easily manage `CFBundleDisplayName` (iOS) and `strings.xml` (Android) for multiple languages.
+- **Gradle Declarative Migration**: One-click migration of Android projects to use declarative Gradle (replacing hardcoded paths with `flutter.minSdkVersion`, `flutter.targetSdkVersion`, and `flutter.ndkVersion`).
+- **Dependency Management**: Fully-featured Flutter dependencies table showing direct, dev, and transitive packages.
+  - **Search & Add**: Integrated pub.dev API search with typeahead and live package details preview.
+  - **Dependency Validator**: Built-in integration with `dependency_validator` to safely analyze unused packages and automatically downgrade them or remove them.
 - **Package Configuration Management**: A dedicated dashboard at the top of the UI to view and update your Android Application ID and iOS Bundle Identifier with a single click.
 - **Safe & Automated Updates**: With a single click, the extension updates all necessary files (`AndroidManifest.xml`, `Info.plist`, `Podfile`, `AppDelegate.swift`, etc.) while preserving your existing project structure and comments.
 - **Vibe Coded**: This extension was vibe coded in the most fashionable way, because your development workflow deserves to look and feel as good as your apps.

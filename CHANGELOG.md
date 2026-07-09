@@ -5,6 +5,20 @@ All notable changes to the "Flutter Config Manager" extension will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2026-07-09
+
+### Added
+- **Flutter Package Management**:
+  - Full display of all dependencies categorized into Direct, Dev, and Transitive.
+  - Automatically fetches outdated packages using `flutter pub outdated`.
+  - In-app pub.dev search with typeahead suggestions and package preview cards.
+  - Integration with `dependency_validator` to safely analyze unused dependencies with auto-downgrade and removal tools.
+- **Android Gradle Declarative Migration**: Added a button to safely migrate Android projects from hardcoded SDK paths to declarative Gradle setups (e.g., `flutter.minSdkVersion`, `flutter.ndkVersion`).
+
+### Changed
+- Replaced the direct VS Code webview script injection with `esbuild`, improving frontend compilation and optimizing the extension payload size.
+- Improved and automatically linted the entire TypeScript backend.
+
 ## [1.0.7] - 2026-06-02
 
 ### Added
