@@ -2140,6 +2140,43 @@
       </div>
     </div>
     
+    <!-- Search & Add Packages -->
+    <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--vscode-editorGroup-border);">
+      <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 13px; color: var(--text-primary);">🔍 Search & Add Packages</h3>
+      
+      <!-- Search Input Container -->
+      <div style="position: relative; margin-bottom: 12px;">
+        <input type="text" id="packageSearchInput" placeholder="Search pub.dev..." class="detail-card-input" style="width: 100%; padding-right: 30px;" autocomplete="off" />
+        <div id="packageSearchSpinner" class="spinner" style="display: none; position: absolute; right: 10px; top: 8px; border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid var(--vscode-button-background); width: 14px; height: 14px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        
+        <!-- Typeahead Dropdown -->
+        <ul id="packageSearchDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-primary); border: 1px solid var(--vscode-editorGroup-border); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 10; margin: 4px 0 0; padding: 0; list-style: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+          <!-- List items will be generated here -->
+        </ul>
+      </div>
+
+      <!-- Popular Suggestions -->
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Popular Suggestions</div>
+        <div id="popularPackagesContainer" style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <!-- Chips will be generated here by JS -->
+        </div>
+      </div>
+
+      <!-- Preview Card -->
+      <div id="packagePreviewCard" style="display: none; background: var(--bg-primary); border: 1px solid var(--vscode-editorGroup-border); border-radius: 6px; padding: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <div>
+            <div id="previewPackageName" style="font-weight: bold; font-size: 14px; color: var(--text-primary);"></div>
+            <div id="previewPackageVersion" class="version-badge" style="display: inline-block; margin-top: 4px; font-size: 11px;"></div>
+          </div>
+          <button id="previewAddButton" type="button" class="btn-primary" style="padding: 4px 12px; font-size: 12px;">Add to Project</button>
+        </div>
+        <div id="previewPackageDescription" style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;"></div>
+        <div id="previewLoading" style="display: none; font-size: 12px; color: var(--text-secondary);">Fetching details...</div>
+      </div>
+    </div>
+
     <div id="packagesLoadingIndicator" style="display: none; padding: 20px; text-align: center; color: var(--text-secondary);">
       <div style="margin-bottom: 10px;">Analyzing flutter packages (this may take a few moments)...</div>
       <div class="spinner" style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid var(--vscode-button-background); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
@@ -2201,6 +2238,33 @@
       }
       .row-transitive {
         opacity: 0.7;
+      }
+      .popular-chip {
+        background: rgba(0, 122, 204, 0.1);
+        border: 1px solid rgba(0, 122, 204, 0.3);
+        color: #4fc3f7;
+        padding: 4px 10px;
+        border-radius: 14px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .popular-chip:hover {
+        background: rgba(0, 122, 204, 0.3);
+        border-color: rgba(0, 122, 204, 0.5);
+      }
+      .typeahead-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--vscode-editorGroup-border);
+      }
+      .typeahead-item:last-child {
+        border-bottom: none;
+      }
+      .typeahead-item:hover {
+        background: var(--vscode-list-hoverBackground, rgba(255,255,255,0.05));
       }
     </style>
   </section>

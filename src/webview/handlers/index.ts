@@ -343,4 +343,10 @@ export async function handleSavePackageNames(
 }
 
 export { handleMigrateAndroid, handleUpgradePackages } from './migrate.js';
-export { handleRequestPackagesAnalysis, handleUpgradeSinglePackage } from './packages.js';
+export { 
+    handleRequestPackagesAnalysis, 
+    handleUpgradeSinglePackage,
+    handleSearchPackages,
+    handleRequestPackageDetails,
+    handleAddPackage
+} from './packages.js';

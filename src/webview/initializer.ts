@@ -43,6 +43,9 @@ import {
   handleUpgradePackages,
   handleRequestPackagesAnalysis,
   handleUpgradeSinglePackage,
+  handleSearchPackages,
+  handleRequestPackageDetails,
+  handleAddPackage,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -252,6 +255,24 @@ function setupMessageHandler(
       case "upgradeSinglePackage":
         if (message.packageName) {
           await handleUpgradeSinglePackage(ref as any, message.packageName);
+        }
+        break;
+
+      case "searchPackages":
+        if (message.query !== undefined) {
+          await handleSearchPackages(ref as any, message.query);
+        }
+        break;
+
+      case "requestPackageDetails":
+        if (message.packageName) {
+          await handleRequestPackageDetails(ref as any, message.packageName);
+        }
+        break;
+
+      case "addPackage":
+        if (message.packageName) {
+          await handleAddPackage(ref as any, message.packageName);
         }
         break;
     }

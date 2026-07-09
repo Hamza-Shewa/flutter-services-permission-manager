@@ -68,6 +68,18 @@ export type WebviewMessage =
   | {
     type: "upgradeSinglePackage";
     packageName: string;
+  }
+  | {
+    type: "searchPackages";
+    query: string;
+  }
+  | {
+    type: "requestPackageDetails";
+    packageName: string;
+  }
+  | {
+    type: "addPackage";
+    packageName: string;
   };
 
 /** Language info */
@@ -132,7 +144,9 @@ export type WebviewOutgoingMessage =
   | AllIOSPermissionsMessage
   | ServicesConfigMessage
   | SaveResultMessage
-  | PackagesAnalysisResultMessage;
+  | PackagesAnalysisResultMessage
+  | SearchPackagesResultMessage
+  | PackageDetailsResultMessage;
 
 /** Result of a save operation */
 export interface SaveResult {
@@ -160,5 +174,21 @@ export interface OutdatedPackage {
 export interface PackagesAnalysisResultMessage {
   type: "packagesAnalysisResult";
   packages: OutdatedPackage[];
+  error?: string;
+}
+
+/** Outgoing message for package search result */
+export interface SearchPackagesResultMessage {
+  type: "searchPackagesResult";
+  packages: string[];
+  error?: string;
+}
+
+/** Outgoing message for package details result */
+export interface PackageDetailsResultMessage {
+  type: "packageDetailsResult";
+  packageName: string;
+  description?: string;
+  latestVersion?: string;
   error?: string;
 }

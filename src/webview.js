@@ -34,6 +34,19 @@
   const packagesTableContainer = document.getElementById("packagesTableContainer");
   const packagesTableBody = document.getElementById("packagesTableBody");
 
+  // Search Elements
+  const packageSearchInput = document.getElementById("packageSearchInput");
+  const packageSearchSpinner = document.getElementById("packageSearchSpinner");
+  const packageSearchDropdown = document.getElementById("packageSearchDropdown");
+  const popularPackagesContainer = document.getElementById("popularPackagesContainer");
+  
+  const packagePreviewCard = document.getElementById("packagePreviewCard");
+  const previewPackageName = document.getElementById("previewPackageName");
+  const previewPackageVersion = document.getElementById("previewPackageVersion");
+  const previewPackageDescription = document.getElementById("previewPackageDescription");
+  const previewLoading = document.getElementById("previewLoading");
+  const previewAddButton = document.getElementById("previewAddButton");
+
   const modalBackdrop = document.getElementById("modalBackdrop");
   const modalSearch = document.getElementById("modalSearch");
   const modalResults = document.getElementById("modalResults");
@@ -2935,6 +2948,88 @@
     });
   }
 
+  // --- Search & Add Packages Logic ---
+  
+  const POPULAR_PACKAGES = [
+    "bloc", "flutter_bloc", "dio", "get_it", 
+    "shared_preferences", "cached_network_image", 
+    "easy_localization", "provider", "freezed", "sqflite"
+  ];
+
+  let searchTimeout = null;
+  let currentPreviewPackage = null;
+
+  function renderPopularPackages() {
+    if (!popularPackagesContainer) return;
+    popularPackagesContainer.innerHTML = "";
+    POPULAR_PACKAGES.forEach(pkg => {
+      const chip = document.createElement("div");
+      chip.className = "popular-chip";
+      chip.textContent = pkg;
+      chip.addEventListener("click", () => {
+        packageSearchInput.value = pkg;
+        packageSearchDropdown.style.display = "none";
+        loadPackagePreview(pkg);
+      });
+      popularPackagesContainer.appendChild(chip);
+    });
+  }
+
+  function loadPackagePreview(packageName) {
+    currentPreviewPackage = packageName;
+    packagePreviewCard.style.display = "block";
+    previewPackageName.textContent = packageName;
+    previewPackageVersion.textContent = "";
+    previewPackageDescription.textContent = "";
+    previewAddButton.style.display = "none";
+    previewLoading.style.display = "block";
+
+    vscode.postMessage({ type: "requestPackageDetails", packageName });
+  }
+
+  if (packageSearchInput) {
+    packageSearchInput.addEventListener("input", (e) => {
+      const query = e.target.value.trim();
+      
+      clearTimeout(searchTimeout);
+      
+      if (query.length < 2) {
+        packageSearchDropdown.style.display = "none";
+        packageSearchSpinner.style.display = "none";
+        return;
+      }
+
+      packageSearchSpinner.style.display = "block";
+      searchTimeout = setTimeout(() => {
+        vscode.postMessage({ type: "searchPackages", query });
+      }, 400); // 400ms debounce
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!packageSearchInput.contains(e.target) && !packageSearchDropdown.contains(e.target)) {
+        packageSearchDropdown.style.display = "none";
+      }
+    });
+  }
+
+  if (previewAddButton) {
+    previewAddButton.addEventListener("click", () => {
+      if (currentPreviewPackage) {
+        if (packagesLoadingIndicator) {
+          packagesLoadingIndicator.style.display = "block";
+          packagesLoadingIndicator.querySelector("div").textContent = `Adding ${currentPreviewPackage}...`;
+        }
+        vscode.postMessage({ type: "addPackage", packageName: currentPreviewPackage });
+        packagePreviewCard.style.display = "none";
+        packageSearchInput.value = "";
+      }
+    });
+  }
+
+  renderPopularPackages();
+  // -----------------------------------
+
   // Auto-refresh when the webview regains focus to pick up file changes
   window.addEventListener("focus", () => {
     scheduleRefresh();
@@ -3069,6 +3164,42 @@
           }
         }
         renderPackagesTable();
+        break;
+      case "searchPackagesResult":
+        if (packageSearchSpinner) {
+          packageSearchSpinner.style.display = "none";
+        }
+        if (packageSearchDropdown) {
+          packageSearchDropdown.innerHTML = "";
+          if (message.error || !message.packages || message.packages.length === 0) {
+            packageSearchDropdown.style.display = "none";
+          } else {
+            message.packages.forEach(pkg => {
+              const li = document.createElement("li");
+              li.className = "typeahead-item";
+              li.textContent = pkg;
+              li.addEventListener("click", () => {
+                packageSearchInput.value = pkg;
+                packageSearchDropdown.style.display = "none";
+                loadPackagePreview(pkg);
+              });
+              packageSearchDropdown.appendChild(li);
+            });
+            packageSearchDropdown.style.display = "block";
+          }
+        }
+        break;
+      case "packageDetailsResult":
+        if (currentPreviewPackage === message.packageName) {
+          if (previewLoading) previewLoading.style.display = "none";
+          if (message.error) {
+            if (previewPackageDescription) previewPackageDescription.textContent = `Error: ${message.error}`;
+          } else {
+            if (previewPackageVersion) previewPackageVersion.textContent = message.latestVersion || "Unknown";
+            if (previewPackageDescription) previewPackageDescription.textContent = message.description || "No description provided.";
+            if (previewAddButton) previewAddButton.style.display = "inline-block";
+          }
+        }
         break;
       default:
         break;
