@@ -26,6 +26,14 @@
   const androidPackageNameInput = document.getElementById("androidPackageNameInput");
   const iosBundleIdentifierInput = document.getElementById("iosBundleIdentifierInput");
 
+  // Packages Elements
+  const analyzePackagesButton = document.getElementById("analyzePackagesButton");
+  const updateAllPackagesButton = document.getElementById("updateAllPackagesButton");
+  const toggleTransitiveButton = document.getElementById("toggleTransitiveButton");
+  const packagesLoadingIndicator = document.getElementById("packagesLoadingIndicator");
+  const packagesTableContainer = document.getElementById("packagesTableContainer");
+  const packagesTableBody = document.getElementById("packagesTableBody");
+
   const modalBackdrop = document.getElementById("modalBackdrop");
   const modalSearch = document.getElementById("modalSearch");
   const modalResults = document.getElementById("modalResults");
@@ -165,6 +173,8 @@
       defaultName: "",
       localizations: {}
     },
+    packages: [],
+    showTransitive: false,
     platformDetails: {
       android: [],
       ios: [],
@@ -2741,11 +2751,188 @@
 
   equivalentModalCancel.addEventListener("click", closeEquivalentModal);
   equivalentModalAdd.addEventListener("click", addEquivalentPermissions);
+  
+  function confirmSync() {
+    vscode.postMessage({
+      type: "savePermissions",
+      androidPermissions: state.androidPermissions,
+      iosPermissions: state.iosPermissions,
+      macosPermissions: state.macosPermissions,
+    });
+    closeSyncModal();
+  }
+
   if (syncModalCancel) {
     syncModalCancel.addEventListener("click", closeSyncModal);
   }
   if (syncModalConfirm) {
     syncModalConfirm.addEventListener("click", confirmSync);
+  }
+
+  let hasAnalyzedPackages = false;
+
+  // Packages Render and Listeners
+  function renderPackagesTable() {
+    if (!packagesTableBody) return;
+    packagesTableBody.innerHTML = "";
+
+    if (!state.packages || state.packages.length === 0) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 6;
+      cell.className = "empty-state";
+      cell.textContent = "No packages analyzed or no outdated packages found.";
+      row.appendChild(cell);
+      packagesTableBody.appendChild(row);
+      return;
+    }
+
+    // Sort by kind: direct, dev, transitive
+    const kindOrder = { "direct": 0, "dev": 1, "transitive": 2 };
+    const sortedPackages = [...state.packages].sort((a, b) => {
+      const kindA = a.kind || "transitive";
+      const kindB = b.kind || "transitive";
+      if (kindOrder[kindA] !== kindOrder[kindB]) {
+        return kindOrder[kindA] - kindOrder[kindB];
+      }
+      return a.package.localeCompare(b.package);
+    });
+
+    sortedPackages.forEach((pkg) => {
+      // Filter out transitive if not toggled
+      if (!state.showTransitive && pkg.kind === "transitive") {
+        return;
+      }
+
+      // Only show outdated packages (upgradable > current or resolvable > current)
+      const isOutdated = (pkg.upgradable?.version && pkg.current?.version && pkg.upgradable.version !== pkg.current.version) ||
+                         (pkg.resolvable?.version && pkg.current?.version && pkg.resolvable.version !== pkg.current.version);
+      
+      if (!isOutdated) {
+        return;
+      }
+
+      const row = document.createElement("tr");
+      if (pkg.kind === "transitive") {
+        row.className = "row-transitive";
+      }
+
+      // Package Name
+      const nameCell = document.createElement("td");
+      nameCell.textContent = pkg.package;
+      row.appendChild(nameCell);
+
+      // Type Badge
+      const typeCell = document.createElement("td");
+      const typeBadge = document.createElement("span");
+      typeBadge.className = `package-type-badge type-${pkg.kind || "transitive"}`;
+      typeBadge.textContent = pkg.kind || "transitive";
+      typeCell.appendChild(typeBadge);
+      row.appendChild(typeCell);
+
+      // Current Version
+      const currentCell = document.createElement("td");
+      if (pkg.current?.version) {
+        const badge = document.createElement("span");
+        badge.className = "version-badge";
+        badge.textContent = pkg.current.version;
+        currentCell.appendChild(badge);
+      } else {
+        currentCell.textContent = "-";
+      }
+      row.appendChild(currentCell);
+
+      // Upgradable Version
+      const upgradableCell = document.createElement("td");
+      if (pkg.upgradable?.version) {
+        const badge = document.createElement("span");
+        badge.className = "version-badge version-upgrade";
+        badge.textContent = pkg.upgradable.version;
+        upgradableCell.appendChild(badge);
+      } else {
+        upgradableCell.textContent = "-";
+      }
+      row.appendChild(upgradableCell);
+
+      // Latest Version
+      const latestCell = document.createElement("td");
+      if (pkg.latest?.version) {
+        const badge = document.createElement("span");
+        badge.className = "version-badge";
+        badge.textContent = pkg.latest.version;
+        latestCell.appendChild(badge);
+      } else {
+        latestCell.textContent = "-";
+      }
+      row.appendChild(latestCell);
+
+      // Action Button
+      const actionCell = document.createElement("td");
+      if (pkg.kind === "direct" || pkg.kind === "dev") {
+        const upgradeBtn = document.createElement("button");
+        upgradeBtn.className = "btn-upgrade-single";
+        upgradeBtn.textContent = "Update";
+        upgradeBtn.addEventListener("click", () => {
+          if (packagesLoadingIndicator) {
+            packagesLoadingIndicator.style.display = "block";
+            packagesLoadingIndicator.querySelector("div").textContent = `Upgrading ${pkg.package}...`;
+          }
+          if (packagesTableContainer) {
+            packagesTableContainer.style.display = "none";
+          }
+          vscode.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package });
+        });
+        actionCell.appendChild(upgradeBtn);
+      }
+      row.appendChild(actionCell);
+
+      packagesTableBody.appendChild(row);
+    });
+
+    // Check if body is empty after filtering
+    if (packagesTableBody.children.length === 0) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 6;
+      cell.className = "empty-state";
+      cell.textContent = "All packages are up to date!";
+      row.appendChild(cell);
+      packagesTableBody.appendChild(row);
+    }
+  }
+
+  if (analyzePackagesButton) {
+    analyzePackagesButton.addEventListener("click", () => {
+      if (packagesLoadingIndicator) {
+        packagesLoadingIndicator.style.display = "block";
+        packagesLoadingIndicator.querySelector("div").textContent = "Analyzing flutter packages (this may take a few moments)...";
+      }
+      if (packagesTableContainer) {
+        packagesTableContainer.style.display = "none";
+      }
+      vscode.postMessage({ type: "requestPackagesAnalysis" });
+    });
+  }
+
+  if (updateAllPackagesButton) {
+    updateAllPackagesButton.addEventListener("click", () => {
+      if (packagesLoadingIndicator) {
+        packagesLoadingIndicator.style.display = "block";
+        packagesLoadingIndicator.querySelector("div").textContent = "Upgrading all packages... Please wait.";
+      }
+      if (packagesTableContainer) {
+        packagesTableContainer.style.display = "none";
+      }
+      vscode.postMessage({ type: "upgradePackages" });
+    });
+  }
+
+  if (toggleTransitiveButton) {
+    toggleTransitiveButton.addEventListener("click", () => {
+      state.showTransitive = !state.showTransitive;
+      toggleTransitiveButton.textContent = state.showTransitive ? "🙈 Hide Transitive" : "👁 Show Transitive";
+      renderPackagesTable();
+    });
   }
 
   // Auto-refresh when the webview regains focus to pick up file changes
@@ -2796,6 +2983,12 @@
         updateView();
         renderServices();
         renderAppName();
+        
+        // Auto-run packages analysis on first load
+        if (!hasAnalyzedPackages && analyzePackagesButton) {
+          hasAnalyzedPackages = true;
+          analyzePackagesButton.click();
+        }
         break;
       case "allAndroidPermissions":
         state.allAndroidPermissions = message.permissions || [];
@@ -2853,6 +3046,29 @@
         break;
       case "saveResult":
         setStatus(message.message || "", message.success ? "success" : "error");
+        // Also hide loading indicator if packages update fails
+        if (packagesLoadingIndicator) {
+          packagesLoadingIndicator.style.display = "none";
+        }
+        break;
+      case "packagesAnalysisResult":
+        if (packagesLoadingIndicator) {
+          packagesLoadingIndicator.style.display = "none";
+        }
+        if (packagesTableContainer) {
+          packagesTableContainer.style.display = "block";
+        }
+        if (message.error) {
+          setStatus(`Package analysis failed: ${message.error}`, "error");
+          state.packages = [];
+        } else {
+          state.packages = message.packages || [];
+          // Scroll down to the table
+          if (packagesTableContainer) {
+            packagesTableContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+        renderPackagesTable();
         break;
       default:
         break;

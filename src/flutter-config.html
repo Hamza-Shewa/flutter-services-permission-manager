@@ -2122,6 +2122,89 @@
     </div>
   </div>
 
+  <section id="packagesSection" class="section platform-details">
+    <div class="section-header">
+      <div class="section-header-with-button">
+        <h2>📦 Flutter Dependencies</h2>
+        <div style="display:flex; gap:8px;">
+          <button id="toggleTransitiveButton" type="button" class="btn-secondary" style="border: 1px solid var(--vscode-button-background); background: transparent;">
+            👁 Show Transitive
+          </button>
+          <button id="analyzePackagesButton" type="button" class="btn-secondary">
+            🔍 Analyze Packages
+          </button>
+          <button id="updateAllPackagesButton" type="button" class="btn-primary" style="background: var(--android-accent); border-color: var(--android-accent); color: #fff;">
+            🚀 Update All Outdated
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="packagesLoadingIndicator" style="display: none; padding: 20px; text-align: center; color: var(--text-secondary);">
+      <div style="margin-bottom: 10px;">Analyzing flutter packages (this may take a few moments)...</div>
+      <div class="spinner" style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid var(--vscode-button-background); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+    </div>
+    
+    <div id="packagesTableContainer" style="display: none; margin-top: 15px;">
+      <table class="permissions-table">
+        <thead>
+          <tr>
+            <th>Package</th>
+            <th>Type</th>
+            <th>Current</th>
+            <th>Upgradable</th>
+            <th>Latest</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="packagesTableBody">
+          <!-- Rows will be injected here -->
+        </tbody>
+      </table>
+    </div>
+    
+    <style>
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      .package-type-badge {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+      .type-direct { background: rgba(0, 122, 204, 0.2); color: #4fc3f7; }
+      .type-dev { background: rgba(76, 175, 80, 0.2); color: #81c784; }
+      .type-transitive { background: rgba(158, 158, 158, 0.2); color: #bdbdbd; }
+      
+      .version-badge {
+        font-family: monospace;
+        background: var(--bg-primary);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .version-upgrade {
+        color: #ffb74d; /* orange highlight for upgradable */
+        font-weight: bold;
+      }
+      .btn-upgrade-single {
+        background: transparent;
+        border: 1px solid var(--vscode-button-background);
+        color: var(--text-primary);
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn-upgrade-single:hover {
+        background: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+      }
+      .row-transitive {
+        opacity: 0.7;
+      }
+    </style>
+  </section>
+
   <script src="{{utilsUri}}"></script>
   <script src="{{scriptUri}}"></script>
 </body>

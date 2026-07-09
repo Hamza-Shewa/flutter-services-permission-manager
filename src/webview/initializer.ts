@@ -41,6 +41,8 @@ import {
   handleSaveIosBuildDetails,
   handleMigrateAndroid,
   handleUpgradePackages,
+  handleRequestPackagesAnalysis,
+  handleUpgradeSinglePackage,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -241,6 +243,16 @@ function setupMessageHandler(
 
       case "upgradePackages":
         await handleUpgradePackages(ref as any);
+        break;
+
+      case "requestPackagesAnalysis":
+        await handleRequestPackagesAnalysis(ref as any);
+        break;
+
+      case "upgradeSinglePackage":
+        if (message.packageName) {
+          await handleUpgradeSinglePackage(ref as any, message.packageName);
+        }
         break;
     }
   });

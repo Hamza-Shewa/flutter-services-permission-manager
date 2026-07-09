@@ -63,7 +63,12 @@ export type WebviewMessage =
     iosDetails: PlatformDetailItem[];
   }
   | { type: "migrateAndroid" }
-  | { type: "upgradePackages" };
+  | { type: "upgradePackages" }
+  | { type: "requestPackagesAnalysis" }
+  | {
+    type: "upgradeSinglePackage";
+    packageName: string;
+  };
 
 /** Language info */
 export interface LanguageInfo {
@@ -126,10 +131,34 @@ export type WebviewOutgoingMessage =
   | AllAndroidPermissionsMessage
   | AllIOSPermissionsMessage
   | ServicesConfigMessage
-  | SaveResultMessage;
+  | SaveResultMessage
+  | PackagesAnalysisResultMessage;
 
 /** Result of a save operation */
 export interface SaveResult {
   success: boolean;
   message: string;
+}
+
+/** Represents a package version in pub outdated */
+export interface PackageVersion {
+  version: string;
+}
+
+/** Represents an outdated package from flutter pub outdated */
+export interface OutdatedPackage {
+  package: string;
+  kind: "direct" | "dev" | "transitive" | string;
+  isDiscontinued?: boolean;
+  current?: PackageVersion;
+  upgradable?: PackageVersion;
+  resolvable?: PackageVersion;
+  latest?: PackageVersion;
+}
+
+/** Outgoing message for packages analysis result */
+export interface PackagesAnalysisResultMessage {
+  type: "packagesAnalysisResult";
+  packages: OutdatedPackage[];
+  error?: string;
 }
