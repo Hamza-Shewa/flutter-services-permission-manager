@@ -19,7 +19,7 @@ export interface XmlElementBounds {
  */
 export function escapeXmlAttribute(value: string): string {
     return value
-        .replace(/&/g, '&amp;')
+        .replace(/&(?!(?:apos|quot|amp|lt|gt);)/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')

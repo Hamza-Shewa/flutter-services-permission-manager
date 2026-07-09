@@ -242,7 +242,13 @@
       ],
       "ios": {
         "plistEntries": [],
-        "urlSchemes": []
+        "urlSchemes": [],
+        "podfileTargets": [
+          {
+            "targetName": "OneSignalNotificationServiceExtension",
+            "code": "  use_frameworks!\n  pod 'OneSignalXCFramework', '>= 5.0.0', '< 6.0'"
+          }
+        ]
       },
       "android": {
         "metaData": [

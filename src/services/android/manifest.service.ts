@@ -3,12 +3,13 @@
  */
 
 import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
+import { findXmlElementBounds } from '../../shared/xml.js';
 
 const APPLINKS_START = '<!-- start applinks configuration -->';
 const APPLINKS_END = '<!-- end applinks configuration -->';
 
 function normalizeDomains(raw?: string): string[] {
-    if (!raw) return [];
+    if (!raw) {return [];}
     return raw
         .split(/[,;\n]+/)
         .map(value => value.trim())
@@ -23,7 +24,7 @@ function normalizeDomains(raw?: string): string[] {
 }
 
 function normalizeSchemes(raw?: string): string[] {
-    if (!raw) return [];
+    if (!raw) {return [];}
     return raw
         .split(/[,;\n]+/)
         .map(value => value.trim())
@@ -31,7 +32,7 @@ function normalizeSchemes(raw?: string): string[] {
 }
 
 function normalizeBoolean(raw?: string, fallback = false): boolean {
-    if (raw === undefined || raw === null || raw.trim() === '') return fallback;
+    if (raw === undefined || raw === null || raw.trim() === '') {return fallback;}
     return raw.trim().toLowerCase() === 'true';
 }
 
@@ -173,7 +174,7 @@ export function updateAndroidManifestWithServices(
     
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
-        if (!config?.android) continue;
+        if (!config?.android) {continue;}
 
         if (service.id === 'applinks') {
             const domains = normalizeDomains((service.values || {}).domains);
@@ -190,7 +191,7 @@ export function updateAndroidManifestWithServices(
         if (config.android.metaData && config.android.metaData.length > 0) {
             for (const meta of config.android.metaData) {
                 let value = (service.values || {})[meta.valueField] || meta.defaultValue || '';
-                if (!value) continue;
+                if (!value) {continue;}
                 
                 // Use @string reference if stringResource is defined
                 const androidValue = meta.stringResource 
@@ -321,7 +322,7 @@ export function removeServicesFromAndroidManifest(
         }
 
         const config = servicesConfig.find(c => c.id === serviceId);
-        if (!config?.android) continue;
+        if (!config?.android) {continue;}
         
         // Remove meta-data entries
         if (config.android.metaData) {
@@ -371,89 +372,17 @@ export function removeServicesFromAndroidManifest(
             for (const appData of config.android.applicationData) {
                 const activityName = appData.attributes['android:name'];
                 if (activityName) {
-                    // Find the element by searching for the tag with the specific android:name
-                    const searchPattern = `android:name="${activityName}"`;
-                    let searchPos = 0;
-                    
-                    while (searchPos < result.length) {
-                        const namePos = result.indexOf(searchPattern, searchPos);
-                        if (namePos === -1) break;
-                        
-                        // Find the start of this tag (go backwards to find <activity or <tag)
-                        let tagStart = namePos;
-                        while (tagStart > 0 && result[tagStart] !== '<') {
-                            tagStart--;
+                    const bounds = findXmlElementBounds(result, appData.tag, { name: 'android:name', value: activityName });
+                    if (bounds) {
+                        // Also strip leading whitespace and newline
+                        let removeStart = bounds.start;
+                        while (removeStart > 0 && (result[removeStart - 1] === ' ' || result[removeStart - 1] === '\t')) {
+                            removeStart--;
                         }
-                        
-                        // Verify this is the right tag type
-                        const tagCheck = result.slice(tagStart, tagStart + appData.tag.length + 2);
-                        if (!tagCheck.startsWith(`<${appData.tag}`)) {
-                            searchPos = namePos + 1;
-                            continue;
+                        if (removeStart > 0 && result[removeStart - 1] === '\n') {
+                            removeStart--;
                         }
-                        
-                        // Find the end of this element
-                        // First check if it's self-closing by finding > or />
-                        let pos = namePos + searchPattern.length;
-                        let foundSelfClose = false;
-                        let tagEnd = -1;
-                        
-                        while (pos < result.length) {
-                            if (result[pos] === '>' && result[pos - 1] === '/') {
-                                // Self-closing tag
-                                tagEnd = pos + 1;
-                                foundSelfClose = true;
-                                break;
-                            } else if (result[pos] === '>' && result[pos - 1] !== '/') {
-                                // Opening tag - need to find closing tag
-                                break;
-                            }
-                            pos++;
-                        }
-                        
-                        if (!foundSelfClose && pos < result.length) {
-                            // Find matching closing tag
-                            const closingTag = `</${appData.tag}>`;
-                            let depth = 1;
-                            pos++; // Move past the >
-                            
-                            while (pos < result.length && depth > 0) {
-                                const nextOpen = result.indexOf(`<${appData.tag}`, pos);
-                                const nextClose = result.indexOf(closingTag, pos);
-                                
-                                if (nextClose === -1) break;
-                                
-                                if (nextOpen !== -1 && nextOpen < nextClose) {
-                                    // Check if it's a self-closing nested tag
-                                    const closeAngle = result.indexOf('>', nextOpen);
-                                    if (closeAngle !== -1 && result[closeAngle - 1] !== '/') {
-                                        depth++;
-                                    }
-                                    pos = closeAngle + 1;
-                                } else {
-                                    depth--;
-                                    if (depth === 0) {
-                                        tagEnd = nextClose + closingTag.length;
-                                    }
-                                    pos = nextClose + closingTag.length;
-                                }
-                            }
-                        }
-                        
-                        if (tagEnd !== -1) {
-                            // Also remove leading whitespace
-                            while (tagStart > 0 && (result[tagStart - 1] === ' ' || result[tagStart - 1] === '\t')) {
-                                tagStart--;
-                            }
-                            if (tagStart > 0 && result[tagStart - 1] === '\n') {
-                                tagStart--;
-                            }
-                            
-                            result = result.slice(0, tagStart) + result.slice(tagEnd);
-                            // Don't increment searchPos since we removed content
-                        } else {
-                            searchPos = namePos + 1;
-                        }
+                        result = result.slice(0, removeStart) + result.slice(bounds.end);
                     }
                 }
             }

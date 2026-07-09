@@ -10,7 +10,6 @@ import type { PlatformDetailItem, PlatformDetails } from "../types/index.js";
 /** Discovered project files */
 export interface ProjectFiles {
   androidManifestUri?: vscode.Uri;
-  androidStringsUri?: vscode.Uri;
   androidMainActivityUri?: vscode.Uri;
   androidAppBuildGradleUri?: vscode.Uri;
   androidAppBuildGradleKtsUri?: vscode.Uri;
@@ -24,6 +23,7 @@ export interface ProjectFiles {
   iosPbxprojUri?: vscode.Uri;
   iosPodfileUri?: vscode.Uri;
   iosAppDelegateUri?: vscode.Uri;
+    androidStringsUri?: vscode.Uri;
   macosPlistUri?: vscode.Uri;
 }
 

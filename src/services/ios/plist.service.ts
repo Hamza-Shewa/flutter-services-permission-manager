@@ -4,6 +4,22 @@
 
 import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../../types/index.js';
 
+function detectPlistIndent(plistContent: string): string {
+    const lines = plistContent.split('\n');
+    let tabs = 0;
+    let spaces2 = 0;
+    let spaces4 = 0;
+    for (const line of lines) {
+        if (line.match(/^\t+<key>/)) tabs++;
+        else if (line.match(/^  <key>/)) spaces2++;
+        else if (line.match(/^    <key>/)) spaces4++;
+    }
+    if (tabs > spaces2 && tabs > spaces4) return '\t';
+    if (spaces4 > tabs && spaces4 > spaces2) return '    ';
+    if (spaces2 > tabs && spaces2 > spaces4) return '  ';
+    return '\t';
+}
+
 type ArrayBounds = { openEnd: number; closeStart: number };
 
 function findMatchingArrayBounds(xml: string, arrayStart: number): ArrayBounds | null {
@@ -53,11 +69,11 @@ function replaceOrInsertApplinksBlock(plistContent: string, bundleId: string, sc
     const escapedScheme = scheme ? scheme.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
 
     if (escapedBundle) {
-        const bundleDictRegex = new RegExp(`\n?[\t ]*<dict>[\s\S]*?<key>CFBundleURLName<\/key>\s*<string>${escapedBundle}<\/string>[\s\S]*?<\/dict>\s*`, 'i');
+        const bundleDictRegex = new RegExp(`\\n?[\\t ]*<dict>[\\s\\S]*?<key>CFBundleURLName<\\/key>\\s*<string>${escapedBundle}<\\/string>[\\s\\S]*?<\\/dict>\\s*`, 'i');
         cleaned = cleaned.replace(bundleDictRegex, '\n');
     }
     if (escapedScheme) {
-        const schemeDictRegex = new RegExp(`\n?[\t ]*<dict>[\s\S]*?<key>CFBundleURLSchemes<\/key>[\s\S]*?<string>${escapedScheme}<\/string>[\s\S]*?<\/dict>\s*`, 'i');
+        const schemeDictRegex = new RegExp(`\\n?[\\t ]*<dict>[\\s\\S]*?<key>CFBundleURLSchemes<\\/key>[\\s\\S]*?<string>${escapedScheme}<\\/string>[\\s\\S]*?<\\/dict>\\s*`, 'i');
         cleaned = cleaned.replace(schemeDictRegex, '\n');
     }
 
@@ -98,7 +114,8 @@ function replaceOrInsertApplinksBlock(plistContent: string, bundleId: string, sc
 
     const dictEnd = cleaned.lastIndexOf('</dict>');
     if (dictEnd !== -1) {
-        const urlTypesXml = `\t<key>CFBundleURLTypes</key>\n\t<array>\n${block}\n\t</array>\n`;
+        const baseIndent = detectPlistIndent(cleaned);
+        const urlTypesXml = `${baseIndent}<key>CFBundleURLTypes</key>\n${baseIndent}<array>\n${block}\n${baseIndent}</array>\n`;
         return cleaned.slice(0, dictEnd) + urlTypesXml + cleaned.slice(dictEnd);
     }
 
@@ -217,7 +234,7 @@ export function updateIOSPlist(
  */
 export function normalizePlistSpacing(plistContent: string): string {
     // Only clean up excessive blank lines, preserve everything else
-    return plistContent.replace(/\n{3,}/g, '\n\n');
+    return plistContent.replace(/(\r?\n){3,}/g, '$1$1');
 }
 
 /**
@@ -230,6 +247,7 @@ export function updateIOSPlistWithServices(
 ): string {
     let result = plistContent;
     let handledApplinks = false;
+    const baseIndent = detectPlistIndent(plistContent);
     
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
@@ -284,7 +302,7 @@ export function updateIOSPlistWithServices(
                         );
                     } else {
                         // Add new entry before last </dict>
-                        const entryXml = `\t<key>${entry.key}</key>\n\t<string>${value}</string>\n`;
+                        const entryXml = `${baseIndent}<key>${entry.key}</key>\n${baseIndent}<string>${value}</string>\n`;
                         const dictEnd = result.lastIndexOf('</dict>');
                         if (dictEnd !== -1) {
                             result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
@@ -295,7 +313,7 @@ export function updateIOSPlistWithServices(
                     if (result.includes(`<key>${entry.key}</key>`)) continue;
                     
                     const boolValue = entry.staticValue ? 'true' : 'false';
-                    const entryXml = `\t<key>${entry.key}</key>\n\t<${boolValue}/>\n`;
+                    const entryXml = `${baseIndent}<key>${entry.key}</key>\n${baseIndent}<${boolValue}/>\n`;
                     const dictEnd = result.lastIndexOf('</dict>');
                     if (dictEnd !== -1) {
                         result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
@@ -306,16 +324,16 @@ export function updateIOSPlistWithServices(
                     
                     const arrayItems = (entry.staticValue as unknown[]).map(v => {
                         if (typeof v === 'string') {
-                            return `\t\t<string>${v}</string>`;
+                            return `${baseIndent.repeat(2)}<string>${v}</string>`;
                         } else if (typeof v === 'object' && v !== null) {
                             const dictEntries = Object.entries(v).map(([key, val]) => 
-                                `\t\t\t<key>${key}</key>\n\t\t\t<string>${val}</string>`
+                                `${baseIndent.repeat(3)}<key>${key}</key>\n${baseIndent.repeat(3)}<string>${val}</string>`
                             ).join('\n');
-                            return `\t\t<dict>\n${dictEntries}\n\t\t</dict>`;
+                            return `${baseIndent.repeat(2)}<dict>\n${dictEntries}\n${baseIndent.repeat(2)}</dict>`;
                         }
                         return '';
                     }).join('\n');
-                    const entryXml = `\t<key>${entry.key}</key>\n\t<array>\n${arrayItems}\n\t</array>\n`;
+                    const entryXml = `${baseIndent}<key>${entry.key}</key>\n${baseIndent}<array>\n${arrayItems}\n${baseIndent}</array>\n`;
                     const dictEnd = result.lastIndexOf('</dict>');
                     if (dictEnd !== -1) {
                         result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
@@ -364,19 +382,19 @@ export function updateIOSPlistWithServices(
                     
                     // No existing scheme with prefix - add new scheme
                     const schemasArrayEnd = result.indexOf('</array>', urlSchemesMatch.index!);
-                    const schemeToAdd = `\t\t\t\t<string>${newScheme}</string>\n\t\t\t`;
+                    const schemeToAdd = `${baseIndent.repeat(4)}<string>${newScheme}</string>\n${baseIndent.repeat(3)}`;
                     result = result.slice(0, schemasArrayEnd) + schemeToAdd + result.slice(schemasArrayEnd);
                 } else if (result.includes('<key>CFBundleURLTypes</key>')) {
                     // CFBundleURLTypes exists but no CFBundleURLSchemes found - look for first dict
                     const urlTypesMatch = result.match(/<key>CFBundleURLTypes<\/key>\s*<array>\s*<dict>/);
                     if (urlTypesMatch) {
                         const firstDictEnd = result.indexOf('</dict>', urlTypesMatch.index! + urlTypesMatch[0].length);
-                        const schemesXml = `\t\t\t<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>${newScheme}</string>\n\t\t\t</array>\n\t\t`;
+                        const schemesXml = `${baseIndent.repeat(3)}<key>CFBundleURLSchemes</key>\n${baseIndent.repeat(3)}<array>\n${baseIndent.repeat(4)}<string>${newScheme}</string>\n${baseIndent.repeat(3)}</array>\n${baseIndent.repeat(2)}`;
                         result = result.slice(0, firstDictEnd) + schemesXml + result.slice(firstDictEnd);
                     }
                 } else {
                     // No CFBundleURLTypes - create it
-                    const urlTypesXml = `\t<key>CFBundleURLTypes</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>CFBundleTypeRole</key>\n\t\t\t<string>Editor</string>\n\t\t\t<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>${newScheme}</string>\n\t\t\t</array>\n\t\t</dict>\n\t</array>\n`;
+                    const urlTypesXml = `${baseIndent}<key>CFBundleURLTypes</key>\n${baseIndent}<array>\n${baseIndent.repeat(2)}<dict>\n${baseIndent.repeat(3)}<key>CFBundleTypeRole</key>\n${baseIndent.repeat(3)}<string>Editor</string>\n${baseIndent.repeat(3)}<key>CFBundleURLSchemes</key>\n${baseIndent.repeat(3)}<array>\n${baseIndent.repeat(4)}<string>${newScheme}</string>\n${baseIndent.repeat(3)}</array>\n${baseIndent.repeat(2)}</dict>\n${baseIndent}</array>\n`;
                     const dictEnd = result.lastIndexOf('</dict>');
                     if (dictEnd !== -1) {
                         result = result.slice(0, dictEnd) + urlTypesXml + result.slice(dictEnd);
@@ -466,7 +484,21 @@ export function removeServicesFromIOSPlist(
     }
     
     // Clean up multiple blank lines
-    result = result.replace(/\n{3,}/g, '\n\n');
+    result = result.replace(/(\r?\n){3,}/g, '$1$1');
     
     return result;
+}
+
+
+export function validateIOSPermissionEntries(entries: IOSPermissionEntry[]): void {
+    for (const entry of entries) {
+        if (!entry.permission || entry.permission.trim().length === 0) {
+            throw new Error('iOS permission key cannot be empty');
+        }
+        if (typeof entry.value === 'string' && /[<>&]/.test(entry.value)) {
+            if (!/&(lt|gt|amp|quot|apos);/.test(entry.value)) {
+                throw new Error(`iOS usage description for ${entry.permission} contains unescaped illegal characters (<, >, or &)`);
+            }
+        }
+    }
 }

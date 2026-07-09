@@ -4,6 +4,7 @@
 
 import type { AndroidPermission, IOSPermission, PermissionMapping } from '../types/index.js';
 import { readJsonFile } from './file.js';
+import { logger } from '../shared/index.js';
 
 /**
  * Extracts used Android permissions from manifest content
@@ -27,7 +28,7 @@ export async function getUsedAndroidPermissions(manifestContent: string): Promis
         }
     }
 
-    console.log('used permissions:', usedPermissions.length);
+    logger.debug('Android permissions extracted', { count: usedPermissions.length });
     return usedPermissions;
 }
 
@@ -41,8 +42,7 @@ export async function getUsedIOSPermissions(plistContent: string): Promise<IOSPe
     const stringRegex = /<key>(NS[^<]*)<\/key>\s*<string>([^<]*)<\/string>/g;
     const boolRegex = /<key>(NS[^<]*)<\/key>\s*<(true|false)\/>/g;
 
-    console.log('iOS plist content length:', plistContent.length);
-    console.log('allPermissions length:', allPermissions.length);
+    logger.debug('iOS permission extraction started', { plistLength: plistContent.length, catalogCount: allPermissions.length });
 
     let match;
     while ((match = stringRegex.exec(plistContent)) !== null) {
@@ -52,7 +52,7 @@ export async function getUsedIOSPermissions(plistContent: string): Promise<IOSPe
         if (permissionInfo) {
             usedPermissions.push({ ...permissionInfo, value });
         } else {
-            console.log('Permission not found in allPermissions:', permissionName);
+            logger.debug('iOS permission key not in catalog', { key: permissionName });
         }
     }
 
@@ -63,11 +63,11 @@ export async function getUsedIOSPermissions(plistContent: string): Promise<IOSPe
         if (permissionInfo) {
             usedPermissions.push({ ...permissionInfo, value });
         } else {
-            console.log('Permission not found in allPermissions:', permissionName);
+            logger.debug('iOS boolean permission key not in catalog', { key: permissionName });
         }
     }
 
-    console.log('used iOS permissions:', usedPermissions.length);
+    logger.debug('iOS permissions extracted', { count: usedPermissions.length });
     return usedPermissions;
 }
 
@@ -124,6 +124,7 @@ export async function getPermissionMapping(): Promise<PermissionMapping> {
 export function flattenAndroidPermissions(
     raw: AndroidPermission[] | Record<string, AndroidPermission[]>
 ): AndroidPermission[] {
+    if (!raw) {return [];}
     if (Array.isArray(raw)) {
         return raw;
     }
@@ -136,13 +137,14 @@ export function flattenAndroidPermissions(
 export function flattenIOSPermissions(
     raw: IOSPermission[] | Record<string, IOSPermission[]>
 ): IOSPermission[] {
+    if (!raw) {return [];}
     if (Array.isArray(raw)) {
         return raw;
     }
     return Object.values(raw).flat();
 }
 
-function enrichAndroidPermissionsWithEquivalents(
+export function enrichAndroidPermissionsWithEquivalents(
     permissions: AndroidPermission[],
     mapping: PermissionMapping
 ): AndroidPermission[] {
@@ -152,7 +154,7 @@ function enrichAndroidPermissionsWithEquivalents(
     }));
 }
 
-function enrichIOSPermissionsWithEquivalents(
+export function enrichIOSPermissionsWithEquivalents(
     permissions: IOSPermission[],
     mapping: PermissionMapping
 ): IOSPermission[] {

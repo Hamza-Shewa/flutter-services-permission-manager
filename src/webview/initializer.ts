@@ -125,7 +125,7 @@ export async function initializePermissionWebview(
     services: existingServices,
     availableServices: servicesConfigFile?.services ?? [],
     platformDetails,
-    appName: appNameData,
+    appName: appNameData ?? { defaultName: '', localizations: {} },
     languages: languagesConfig?.languages ?? [],
   };
 

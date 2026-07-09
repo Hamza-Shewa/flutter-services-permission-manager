@@ -246,7 +246,7 @@
    * Dismisses a toast with animation
    */
   function dismissToast(toast) {
-    if (!toast || toast.classList.contains("hiding")) return;
+    if (!toast || toast.classList.contains("hiding")) {return;}
 
     toast.classList.add("hiding");
     toast.addEventListener("animationend", () => {
@@ -256,7 +256,7 @@
 
   // Legacy setStatus function - now uses toast
   function setStatus(message, type) {
-    if (!message) return;
+    if (!message) {return;}
 
     // Map old types to toast types
     const toastType =
@@ -479,7 +479,7 @@
   }
 
   function renderMacOSCategoryOptions() {
-    if (!macosCategoryFilter) return;
+    if (!macosCategoryFilter) {return;}
     const categories = Array.from(
       new Set(
         (state.macosPermissions || [])
@@ -499,7 +499,7 @@
   }
 
   function renderMacOSTable() {
-    if (!macosTableBody) return;
+    if (!macosTableBody) {return;}
     macosTableBody.innerHTML = "";
     const filtered = utils.filterPermissions(
       state.macosPermissions || [],
@@ -580,7 +580,7 @@
   }
 
   function renderDetailCards(container, details, emptyMessage, sectionName) {
-    if (!container) return;
+    if (!container) {return;}
 
     if (!details || details.length === 0) {
       container.innerHTML = `
@@ -1053,9 +1053,9 @@
       ? state.macosPermissions.length
       : 0;
     if (androidCountChip)
-      androidCountChip.textContent = `Android: ${androidCount}`;
-    if (iosCountChip) iosCountChip.textContent = `iOS: ${iosCount}`;
-    if (macosCountChip) macosCountChip.textContent = `macOS: ${macosCount}`;
+      {androidCountChip.textContent = `Android: ${androidCount}`;}
+    if (iosCountChip) {iosCountChip.textContent = `iOS: ${iosCount}`;}
+    if (macosCountChip) {macosCountChip.textContent = `macOS: ${macosCount}`;}
   }
 
   function openModal(mode) {
@@ -1098,9 +1098,9 @@
     const isApplePlatform = isIos || isMacos;
 
     let targetPermissions;
-    if (isIos) targetPermissions = state.iosPermissions;
-    else if (isMacos) targetPermissions = state.macosPermissions;
-    else targetPermissions = state.androidPermissions;
+    if (isIos) {targetPermissions = state.iosPermissions;}
+    else if (isMacos) {targetPermissions = state.macosPermissions;}
+    else {targetPermissions = state.androidPermissions;}
 
     const usedKeys = new Set(
       targetPermissions.map((permission) =>
@@ -1228,9 +1228,9 @@
     let targetPermissions;
     const isMacos = state.modalMode === "macos";
 
-    if (isIos) targetPermissions = state.iosPermissions;
-    else if (isMacos) targetPermissions = state.macosPermissions;
-    else targetPermissions = state.androidPermissions;
+    if (isIos) {targetPermissions = state.iosPermissions;}
+    else if (isMacos) {targetPermissions = state.macosPermissions;}
+    else {targetPermissions = state.androidPermissions;}
 
     const existing = targetPermissions.some(
       (permission) =>
@@ -1424,11 +1424,11 @@
                 value = valueInput ? valueInput.value.trim() : "";
                 if (!value || value === "TODO: Provide usage description.") {
                   if (valueInput)
-                    valueInput.style.borderColor = "var(--danger)";
+                    {valueInput.style.borderColor = "var(--danger)";}
                   errors.push(permissionName);
                   return; // Skip this permission
                 }
-                if (valueInput) valueInput.style.borderColor = "";
+                if (valueInput) {valueInput.style.borderColor = "";}
               }
               state.iosPermissions = [
                 ...state.iosPermissions,
@@ -1697,11 +1697,11 @@
                 value = valueInput ? valueInput.value.trim() : "";
                 if (!value || value === "TODO: Provide usage description.") {
                   if (valueInput)
-                    valueInput.style.borderColor = "var(--danger)";
+                    {valueInput.style.borderColor = "var(--danger)";}
                   errors.push(permissionName);
                   return; // Skip this permission
                 }
-                if (valueInput) valueInput.style.borderColor = "";
+                if (valueInput) {valueInput.style.borderColor = "";}
               }
               state.iosPermissions = [
                 ...state.iosPermissions,
@@ -1761,24 +1761,24 @@
   // ==================== App Name Functions ====================
 
   function renderAppName() {
-    if (!appNameDefault) return;
+    if (!appNameDefault) {return;}
 
     appNameDefault.value = state.appName.defaultName || "";
     renderAppNameLangList();
   }
 
   function renderLanguageDropdown() {
-    if (!appNameLangOptions || !state.languages) return;
+    if (!appNameLangOptions || !state.languages) {return;}
 
     const searchTerm = (appNameLangSearch?.value || "").toLowerCase();
     const existingCodes = Object.keys(state.appName.localizations || {});
 
     const filteredLangs = state.languages.filter(lang => {
       // Don't show already added languages
-      if (existingCodes.includes(lang.code)) return false;
+      if (existingCodes.includes(lang.code)) {return false;}
 
       // Filter by search term
-      if (!searchTerm) return true;
+      if (!searchTerm) {return true;}
       return (
         lang.name.toLowerCase().includes(searchTerm) ||
         lang.nativeName.toLowerCase().includes(searchTerm) ||
@@ -1815,15 +1815,15 @@
   }
 
   function openAppNameLangDropdown() {
-    if (!appNameLangDropdownMenu) return;
+    if (!appNameLangDropdownMenu) {return;}
     appNameLangDropdownMenu.classList.add('active');
     appNameLangDropdownTrigger.classList.add('active');
     renderLanguageDropdown();
-    if (appNameLangSearch) appNameLangSearch.focus();
+    if (appNameLangSearch) {appNameLangSearch.focus();}
   }
 
   function closeAppNameLangDropdown() {
-    if (!appNameLangDropdownMenu) return;
+    if (!appNameLangDropdownMenu) {return;}
     appNameLangDropdownMenu.classList.remove('active');
     appNameLangDropdownTrigger.classList.remove('active');
   }
@@ -1837,7 +1837,7 @@
   }
 
   function addAppNameLanguageDirect(code) {
-    if (!code) return;
+    if (!code) {return;}
 
     // Check if already added
     if (state.appName.localizations && state.appName.localizations[code] !== undefined) {
@@ -1856,7 +1856,7 @@
     // Reset dropdown trigger text
     appNameLangDropdownTrigger.innerHTML = `<span>Select a language...</span><span>▼</span>`;
     // Clear search
-    if (appNameLangSearch) appNameLangSearch.value = "";
+    if (appNameLangSearch) {appNameLangSearch.value = "";}
 
     renderAppNameLangList();
     showToast("Language added. Enter the app name for this language.", "info");
@@ -1877,7 +1877,7 @@
   }
 
   function renderAppNameLangList() {
-    if (!appNameLangList) return;
+    if (!appNameLangList) {return;}
 
     const locs = state.appName.localizations || {};
     const entries = Object.entries(locs);
@@ -1928,13 +1928,13 @@
   // ==================== Services Functions ====================
 
   function renderServices() {
-    if (!servicesContainer) return;
+    if (!servicesContainer) {return;}
 
     // Filter services based on search
     const searchTerm = state.serviceSearch.toLowerCase();
     const filteredServices = state.services.filter((service) => {
       const config = state.availableServices.find((s) => s.id === service.id);
-      if (!config) return false;
+      if (!config) {return false;}
 
       // Match by service name, description, or values
       const matchesName = config.name.toLowerCase().includes(searchTerm);
@@ -1970,7 +1970,7 @@
     servicesContainer.innerHTML = filteredServices
       .map((service) => {
         const config = state.availableServices.find((s) => s.id === service.id);
-        if (!config) return "";
+        if (!config) {return "";}
 
         return `
                 <div class="service-card" data-service-id="${service.id}">
@@ -2018,7 +2018,7 @@
         e.stopPropagation();
         e.preventDefault();
         const serviceId = btn.dataset.serviceId;
-        if (!serviceId) return;
+        if (!serviceId) {return;}
 
         const config = state.availableServices.find((s) => s.id === serviceId);
         const serviceName = config ? config.name : serviceId;
@@ -2033,7 +2033,7 @@
   }
 
   function openAddServiceModal() {
-    if (!addServiceModalBackdrop || !addServiceList) return;
+    if (!addServiceModalBackdrop || !addServiceList) {return;}
 
     const configuredIds = state.services.map((s) => s.id);
 
@@ -2072,7 +2072,7 @@
 
   function openServiceModal(serviceId, existingValues = {}) {
     const config = state.availableServices.find((s) => s.id === serviceId);
-    if (!config || !serviceModalBackdrop) return;
+    if (!config || !serviceModalBackdrop) {return;}
 
     state.currentEditingService = serviceId;
     serviceModalTitle.textContent = `Configure ${config.name}`;
@@ -2160,7 +2160,7 @@
           const container = serviceModalContent.querySelector(
             `.service-list-inputs[data-list-id="${fieldId}"]`,
           );
-          if (!container) return;
+          if (!container) {return;}
           const row = document.createElement("div");
           row.className = "service-list-input-row";
           row.innerHTML = `
@@ -2171,7 +2171,7 @@
             `;
           container.appendChild(row);
           const input = row.querySelector("input");
-          if (input) input.focus();
+          if (input) {input.focus();}
         });
       });
 
@@ -2180,15 +2180,15 @@
       .forEach((container) => {
         container.addEventListener("click", (event) => {
           const target = event.target;
-          if (!target || !target.classList.contains("remove-list-item")) return;
+          if (!target || !target.classList.contains("remove-list-item")) {return;}
           const row = target.closest(".service-list-input-row");
-          if (!row) return;
+          if (!row) {return;}
           const listInputs = container.querySelectorAll(
             ".service-list-input-row",
           );
           if (listInputs.length <= 1) {
             const input = row.querySelector("input");
-            if (input) input.value = "";
+            if (input) {input.value = "";}
             return;
           }
           row.remove();
@@ -2224,7 +2224,7 @@
     const config = state.availableServices.find(
       (s) => s.id === state.currentEditingService,
     );
-    if (!config) return;
+    if (!config) {return;}
 
     const values = {};
     let hasError = false;
@@ -2246,9 +2246,9 @@
 
         if (field.required && items.length === 0) {
           hasError = true;
-          if (container) container.style.borderColor = "var(--danger)";
+          if (container) {container.style.borderColor = "var(--danger)";}
         } else {
-          if (container) container.style.borderColor = "";
+          if (container) {container.style.borderColor = "";}
           values[field.id] = value;
         }
         return;

@@ -29,6 +29,7 @@ import {
   updateIOSPlistWithServices,
   removeServicesFromIOSPlist,
   updateIOSPodfile,
+  updateIOSPodfileWithServices,
   updateAppDelegateWithServices,
   removeServicesFromAppDelegate,
   updateIOSEntitlementsWithServices,
@@ -661,22 +662,33 @@ export async function savePermissions(
       }
     }
 
-    // Update Podfile if we have iOS permissions with macros
-    if (
-      iosPodfileUri &&
-      categorizedIosPermissions &&
-      iosPermissions.length > 0
-    ) {
+    // Update Podfile with macros and service targets
+    if (iosPodfileUri) {
       try {
-        const podDoc = await vscode.workspace.openTextDocument(iosPodfileUri);
-        const podEdit = await updateIOSPodfile(
-          podDoc,
-          iosPermissions,
-          categorizedIosPermissions,
-        );
-        if (podEdit) {
-          await vscode.workspace.applyEdit(podEdit);
-          await podDoc.save();
+        if (categorizedIosPermissions && iosPermissions.length > 0) {
+          const podDoc = await vscode.workspace.openTextDocument(iosPodfileUri);
+          const podEdit = await updateIOSPodfile(
+            podDoc,
+            iosPermissions,
+            categorizedIosPermissions,
+          );
+          if (podEdit) {
+            await vscode.workspace.applyEdit(podEdit);
+            await podDoc.save();
+          }
+        }
+
+        if (services && servicesConfig) {
+          const updatedPodDoc = await vscode.workspace.openTextDocument(iosPodfileUri);
+          const podfileContent = updatedPodDoc.getText();
+          const podfileWithServices = updateIOSPodfileWithServices(
+            podfileContent,
+            services,
+            servicesConfig
+          );
+          if (podfileWithServices !== podfileContent) {
+            await replaceDocumentContent(iosPodfileUri, podfileWithServices);
+          }
         }
       } catch (podError) {
         // Don't fail the entire save if Podfile update fails

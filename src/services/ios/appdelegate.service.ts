@@ -52,11 +52,11 @@ export function updateAppDelegateWithServices(
 
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
-        if (!config) continue;
+        if (!config) {continue;}
 
         // Check for appDelegate config
-        const appDelegateConfig = (config.ios as { appDelegate?: AppDelegateConfig }).appDelegate;
-        if (!appDelegateConfig) continue;
+        const appDelegateConfig = config.ios.appDelegate;
+        if (!appDelegateConfig) {continue;}
 
         // Add import if needed
         if (appDelegateConfig.import) {
@@ -97,7 +97,7 @@ export function updateAppDelegateWithServices(
                 const updateRegex = new RegExp(
                     appDelegateConfig.code
                         .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                        .replace(/\\\{\\w+\\\}/g, '[^"\']+')
+                        .replace(/\\\{\w+\\\}/g, '[^"\']+')
                         .replace(/\\"/g, '["\'"]')
                 );
                 result = result.replace(updateRegex, codeToInsert);
@@ -144,10 +144,10 @@ export function removeServicesFromAppDelegate(
     
     for (const serviceId of removedServiceIds) {
         const config = servicesConfig.find(c => c.id === serviceId);
-        if (!config) continue;
+        if (!config) {continue;}
         
-        const appDelegateConfig = (config.ios as { appDelegate?: AppDelegateConfig }).appDelegate;
-        if (!appDelegateConfig) continue;
+        const appDelegateConfig = config.ios.appDelegate;
+        if (!appDelegateConfig) {continue;}
         
         // Remove the code line
         if (appDelegateConfig.code) {

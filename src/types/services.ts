@@ -68,12 +68,19 @@ export interface AndroidXmlElement {
     children?: AndroidXmlElement[];
 }
 
+/** iOS Podfile target configuration */
+export interface IOSPodfileTarget {
+    targetName: string;
+    code: string;
+}
+
 /** iOS service configuration */
 export interface IOSServiceConfig {
     plistEntries: IOSPlistEntry[];
     urlSchemes?: IOSUrlScheme[];
     entitlements?: IOSEntitlement[];
-    appDelegate?: IOSAppDelegateConfig;
+    appDelegate?: IOSAppDelegateConfig & { import?: string; code?: string; };
+    podfileTargets?: IOSPodfileTarget[];
 }
 
 /** Android service configuration */

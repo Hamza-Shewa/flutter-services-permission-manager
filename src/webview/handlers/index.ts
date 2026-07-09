@@ -115,7 +115,7 @@ export async function handleRefresh(
     services: existingServices,
     availableServices: servicesConfig ?? [],
     platformDetails,
-    appName: appNameData,
+    appName: appNameData ?? { defaultName: '', localizations: {} },
     languages: languagesConfig?.languages ?? [],
   };
 

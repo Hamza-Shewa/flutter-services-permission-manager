@@ -12,6 +12,7 @@ import {
 import { createPermissionPanel } from "./webview/index.js";
 import { discoverProjectFilesWithContent } from "./services/workspace.js";
 import { FlutterConfigSidebarProvider } from "./providers/sidebar.provider.js";
+import { enableDebug, disableDebug } from "./shared/index.js";
 
 // Re-export for backward compatibility and testing
 export {
@@ -34,6 +35,24 @@ export { getExtensionBaseUri as extensionBaseUri } from "./utils/file.js";
 export function activate(context: vscode.ExtensionContext): void {
   setExtensionBaseUri(context.extensionUri);
 
+  // Apply debug logging preference
+  const applyDebugConfig = (): void => {
+    const cfg = vscode.workspace.getConfiguration("flutterConfigManager");
+    if (cfg.get<boolean>("enableDebug")) {
+      enableDebug();
+    } else {
+      disableDebug();
+    }
+  };
+  applyDebugConfig();
+
+  // React to settings changes at runtime
+  const configChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
+    if (e.affectsConfiguration("flutterConfigManager.enableDebug")) {
+      applyDebugConfig();
+    }
+  });
+
   // Register edit command
   const editDisposable = vscode.commands.registerCommand(
     "flutter-config-manager.edit",
@@ -49,7 +68,7 @@ export function activate(context: vscode.ExtensionContext): void {
     sidebarProvider,
   );
 
-  context.subscriptions.push(editDisposable, sidebarDisposable);
+  context.subscriptions.push(editDisposable, sidebarDisposable, configChangeDisposable);
 }
 
 /**
@@ -59,6 +78,15 @@ async function handleEditCommand(
   context: vscode.ExtensionContext,
 ): Promise<void> {
   const files = await discoverProjectFilesWithContent();
+
+  // Warn if no platform files were detected
+  if (!files.androidManifestUri && !files.iosPlistUri && !files.macosPlistUri) {
+    vscode.window.showWarningMessage(
+      "Flutter Config Manager: No AndroidManifest.xml, Info.plist, or macOS Info.plist found. " +
+      "Make sure this workspace contains a Flutter project with Android and/or iOS folders.",
+    );
+    return;
+  }
 
   const [usedAndroidPermissions, usedIOSPermissions, usedMacOSPermissions] =
     await Promise.all([

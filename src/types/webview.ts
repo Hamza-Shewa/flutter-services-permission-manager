@@ -88,8 +88,8 @@ export interface PermissionsPayload {
   hasPodfile: boolean;
   services: ServiceEntry[];
   availableServices: ServiceConfig[];
-  platformDetails?: PlatformDetails;
-  appName?: AppNameLocalization;
+  platformDetails: PlatformDetails;
+  appName: AppNameLocalization;
   languages?: LanguageInfo[];
 }
 

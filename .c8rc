@@ -1,0 +1,11 @@
+{
+  "reporter": ["text", "html"],
+  "exclude": [
+    "src/test/**",
+    "out/test/**",
+    "src/webview/**",
+    "src/webview.js",
+    "src/webview-utils.js"
+  ],
+  "src": ["out/services", "out/utils", "out/shared"]
+}

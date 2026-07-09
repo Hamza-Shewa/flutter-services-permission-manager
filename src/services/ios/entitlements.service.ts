@@ -8,7 +8,7 @@ const APPLINKS_START = '<!-- start applinks configuration -->';
 const APPLINKS_END = '<!-- end applinks configuration -->';
 
 function normalizeDomains(raw?: string): string[] {
-    if (!raw) return [];
+    if (!raw) {return [];}
     return raw
         .split(/[,;\n]+/)
         .map(value => value.trim())
@@ -71,11 +71,11 @@ export function updateIOSEntitlementsWithServices(
         }
 
         const config = servicesConfig.find(c => c.id === service.id);
-        if (!config?.ios?.entitlements || config.ios.entitlements.length === 0) continue;
+        if (!config?.ios?.entitlements || config.ios.entitlements.length === 0) {continue;}
 
         for (const entitlement of config.ios.entitlements) {
-            if (entitlement.type !== 'array' || !('staticValue' in entitlement)) continue;
-            if (result.includes(`<key>${entitlement.key}</key>`)) continue;
+            if (entitlement.type !== 'array' || !('staticValue' in entitlement)) {continue;}
+            if (result.includes(`<key>${entitlement.key}</key>`)) {continue;}
 
             const arrayItems = (entitlement.staticValue as unknown[])
                 .map(value => `\t\t<string>${value}</string>`)
@@ -106,7 +106,7 @@ export function removeServicesFromIOSEntitlements(
 
     for (const serviceId of removedServiceIds) {
         const config = servicesConfig.find(c => c.id === serviceId);
-        if (!config?.ios?.entitlements) continue;
+        if (!config?.ios?.entitlements) {continue;}
 
         for (const entitlement of config.ios.entitlements) {
             const arrayRegex = new RegExp(

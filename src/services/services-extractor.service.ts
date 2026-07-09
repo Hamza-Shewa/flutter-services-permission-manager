@@ -47,8 +47,8 @@ function extractApplinkIntents(content: string): { hosts: string[]; schemes: str
                 continue;
             }
 
-            if (host) hosts.push(host);
-            if (scheme) schemes.push(scheme);
+            if (host) {hosts.push(host);}
+            if (scheme) {schemes.push(scheme);}
         }
     }
 
@@ -434,7 +434,7 @@ export async function extractServicesFromIOS(
                         
                         while ((stringMatch = stringRegex.exec(arrayContent)) !== null) {
                             const schemeValue = stringMatch[1].trim();
-                            if (!schemeValue) continue;
+                            if (!schemeValue) {continue;}
                             
                             if (prefix && schemeValue.startsWith(prefix)) {
                                 foundService = true;
@@ -496,7 +496,7 @@ export async function extractServicesFromIOSEntitlements(
         const services: ServiceEntry[] = [];
 
         for (const serviceConfig of servicesConfig) {
-            if (serviceConfig.id !== 'applinks') continue;
+            if (serviceConfig.id !== 'applinks') {continue;}
 
             const extractedValues: Record<string, string> = {};
             let foundService = false;
@@ -552,7 +552,7 @@ export async function extractServicesFromAppDelegate(
 
             // Check for appDelegate config
             const appDelegateConfig = (serviceConfig.ios as { appDelegate?: { import?: string; code?: string } }).appDelegate;
-            if (!appDelegateConfig) continue;
+            if (!appDelegateConfig) {continue;}
             
             // Check if import exists
             if (appDelegateConfig.import && content.includes(`import ${appDelegateConfig.import}`)) {
@@ -628,7 +628,7 @@ export async function extractServicesFromAppDelegate(
 function findPlatformRoot(filePath: string, platformDirName: string): string | undefined {
     const segments = filePath.split(path.sep);
     const index = segments.lastIndexOf(platformDirName);
-    if (index === -1) return undefined;
+    if (index === -1) {return undefined;}
     return segments.slice(0, index + 1).join(path.sep);
 }
 
@@ -731,7 +731,7 @@ async function extractAppNameService(
     androidManifestUri: vscode.Uri | undefined,
     iosPlistUri: vscode.Uri | undefined
 ): Promise<ServiceEntry | undefined> {
-    if (!workspaceRoot) return undefined;
+    if (!workspaceRoot) {return undefined;}
     
     let defaultName: string | undefined;
     const allLocalizations: Record<string, string> = {};
@@ -785,7 +785,7 @@ async function extractAppNameService(
         }
     }
     
-    if (!defaultName) return undefined;
+    if (!defaultName) {return undefined;}
     
     return {
         id: 'appName',

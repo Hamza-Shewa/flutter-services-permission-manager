@@ -11,7 +11,8 @@ export {
 
 export {
     extractPodfileMacros,
-    updateIOSPodfile
+    updateIOSPodfile,
+    updateIOSPodfileWithServices
 } from './podfile.service.js';
 
 export {

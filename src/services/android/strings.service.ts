@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
+import { logger } from '../../shared/index.js';
 
 /**
  * Gets or creates the strings.xml file URI
@@ -34,7 +35,7 @@ export async function getOrCreateStringsFile(workspaceRoot: vscode.Uri): Promise
             await vscode.workspace.fs.writeFile(stringsPath, Buffer.from(defaultContent, 'utf-8'));
             return stringsPath;
         } catch (createError) {
-            console.error('Failed to create strings.xml:', createError);
+            logger.error('Failed to create strings.xml', createError instanceof Error ? createError : new Error(String(createError)));
             return undefined;
         }
     }
@@ -52,11 +53,11 @@ export function updateAndroidStringsWithServices(
     
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
-        if (!config?.android?.stringResources) continue;
+        if (!config?.android?.stringResources) {continue;}
         
         for (const stringRes of config.android.stringResources) {
             let value = (service.values || {})[stringRes.valueField] || '';
-            if (!value) continue;
+            if (!value) {continue;}
             
             // Apply prefix if defined
             if (stringRes.prefix) {
@@ -108,7 +109,7 @@ export function removeServicesFromAndroidStrings(
     
     for (const serviceId of removedServiceIds) {
         const config = servicesConfig.find(c => c.id === serviceId);
-        if (!config?.android?.stringResources) continue;
+        if (!config?.android?.stringResources) {continue;}
         
         for (const stringRes of config.android.stringResources) {
             const stringRegex = new RegExp(

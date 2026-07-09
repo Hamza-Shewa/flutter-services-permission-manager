@@ -1,3 +1,4 @@
+import { logger } from '../../shared/index.js';
 /**
  * iOS localization service for app name management
  */
@@ -64,7 +65,7 @@ export async function createInfoPlistStringsFile(
         await vscode.workspace.fs.writeFile(stringsPath, Buffer.from(defaultContent, 'utf-8'));
         return stringsPath;
     } catch (error) {
-        console.error(`Failed to create InfoPlist.strings for ${languageCode}:`, error);
+        logger.error(`Failed to create InfoPlist.strings for ${languageCode}`, error instanceof Error ? error : new Error(String(error)));
         return undefined;
     }
 }
@@ -184,7 +185,7 @@ export async function getAvailableLanguages(
             }
         }
     } catch (error) {
-        console.error('Failed to read Runner directory:', error);
+        logger.error('Failed to read Runner directory', error instanceof Error ? error : new Error(String(error)));
     }
     
     return languages;
@@ -260,7 +261,7 @@ export async function extractIOSAppNameLocalizations(
             const appNames = extractAppNameFromInfoPlist(doc.getText());
             defaultName = appNames.displayName || appNames.bundleName;
         } catch (error) {
-            console.error('Failed to read Info.plist:', error);
+            logger.error('Failed to read Info.plist', error instanceof Error ? error : new Error(String(error)));
         }
     }
     
