@@ -47,6 +47,15 @@
   const previewLoading = document.getElementById("previewLoading");
   const previewAddButton = document.getElementById("previewAddButton");
 
+  // Validator Elements
+  const validatorHeaderActions = document.getElementById("validatorHeaderActions");
+  const validatorLoadingIndicator = document.getElementById("validatorLoadingIndicator");
+  const validatorLoadingText = document.getElementById("validatorLoadingText");
+  const validatorTableContainer = document.getElementById("validatorTableContainer");
+  const validatorTableBody = document.getElementById("validatorTableBody");
+  const validatorNotInstalledContainer = document.getElementById("validatorNotInstalledContainer");
+  const installValidatorButton = document.getElementById("installValidatorButton");
+
   const modalBackdrop = document.getElementById("modalBackdrop");
   const modalSearch = document.getElementById("modalSearch");
   const modalResults = document.getElementById("modalResults");
@@ -117,6 +126,10 @@
   const syncModalError = document.getElementById("syncModalError");
   const syncModalCancel = document.getElementById("syncModalCancel");
   const syncModalConfirm = document.getElementById("syncModalConfirm");
+  
+  const deleteSafetyModalBackdrop = document.getElementById("deleteSafetyModalBackdrop");
+  const deleteSafetyCancel = document.getElementById("deleteSafetyCancel");
+  const deleteSafetyConfirm = document.getElementById("deleteSafetyConfirm");
 
   // Service modal elements
   const addServiceButton = document.getElementById("addServiceButton");
@@ -188,6 +201,11 @@
     },
     packages: [],
     showTransitive: false,
+    validatorState: {
+      isInstalled: false,
+      issues: null,
+      loading: false
+    },
     platformDetails: {
       android: [],
       ios: [],
@@ -3030,6 +3048,164 @@
   renderPopularPackages();
   // -----------------------------------
 
+  // --- Dependency Validator Logic ---
+  let pendingDeletePackages = []; // Array of package names to delete
+
+  function showDeleteSafetyModal(packages) {
+    pendingDeletePackages = packages;
+    if (deleteSafetyModalBackdrop) {
+      deleteSafetyModalBackdrop.style.display = "flex";
+    }
+  }
+
+  function hideDeleteSafetyModal() {
+    pendingDeletePackages = [];
+    if (deleteSafetyModalBackdrop) {
+      deleteSafetyModalBackdrop.style.display = "none";
+    }
+  }
+
+  if (deleteSafetyCancel) deleteSafetyCancel.addEventListener("click", hideDeleteSafetyModal);
+  if (deleteSafetyConfirm) {
+    deleteSafetyConfirm.addEventListener("click", () => {
+      if (pendingDeletePackages.length > 0) {
+        if (validatorLoadingIndicator) {
+          validatorLoadingIndicator.style.display = "block";
+          validatorLoadingText.textContent = `Removing ${pendingDeletePackages.length} package(s)...`;
+        }
+        if (validatorTableContainer) validatorTableContainer.style.display = "none";
+        
+        vscode.postMessage({ type: "removeAllFlaggedPackages", packages: pendingDeletePackages });
+        hideDeleteSafetyModal();
+      }
+    });
+  }
+
+  if (installValidatorButton) {
+    installValidatorButton.addEventListener("click", () => {
+      if (validatorNotInstalledContainer) validatorNotInstalledContainer.style.display = "none";
+      if (validatorLoadingIndicator) {
+        validatorLoadingIndicator.style.display = "block";
+        validatorLoadingText.textContent = "Installing dependency_validator... Please wait.";
+      }
+      vscode.postMessage({ type: "installDependencyValidator" });
+    });
+  }
+
+  function renderValidatorHeaderActions() {
+    if (!validatorHeaderActions) return;
+    validatorHeaderActions.innerHTML = "";
+    if (state.validatorState.isInstalled) {
+      const runBtn = document.createElement("button");
+      runBtn.type = "button";
+      runBtn.className = "btn-secondary";
+      runBtn.textContent = "🔍 Analyze Unused";
+      runBtn.addEventListener("click", () => {
+        if (validatorLoadingIndicator) {
+          validatorLoadingIndicator.style.display = "block";
+          validatorLoadingText.textContent = "Running dependency_validator...";
+        }
+        if (validatorTableContainer) validatorTableContainer.style.display = "none";
+        vscode.postMessage({ type: "runDependencyValidator" });
+      });
+      validatorHeaderActions.appendChild(runBtn);
+
+      if (state.validatorState.issues && state.validatorState.issues.length > 0) {
+        const delAllBtn = document.createElement("button");
+        delAllBtn.type = "button";
+        delAllBtn.className = "btn-primary";
+        delAllBtn.style.background = "#d32f2f";
+        delAllBtn.style.borderColor = "#d32f2f";
+        delAllBtn.style.color = "white";
+        delAllBtn.textContent = "🗑 Delete All Flagged";
+        delAllBtn.addEventListener("click", () => {
+          const pkgs = state.validatorState.issues.map(i => i.package);
+          showDeleteSafetyModal(pkgs);
+        });
+        validatorHeaderActions.appendChild(delAllBtn);
+      }
+    }
+  }
+
+  function renderValidatorTable() {
+    if (!validatorTableBody || !validatorTableContainer) return;
+    validatorTableBody.innerHTML = "";
+
+    if (!state.validatorState.issues) {
+      validatorTableContainer.style.display = "none";
+      return;
+    }
+
+    if (state.validatorState.issues.length === 0) {
+      validatorTableContainer.style.display = "block";
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 3;
+      td.className = "empty-state";
+      td.textContent = "No unused dependencies found! 🎉";
+      tr.appendChild(td);
+      validatorTableBody.appendChild(tr);
+      return;
+    }
+
+    validatorTableContainer.style.display = "block";
+
+    state.validatorState.issues.forEach(issue => {
+      const tr = document.createElement("tr");
+
+      // Package Name
+      const tdName = document.createElement("td");
+      tdName.textContent = issue.package;
+      tr.appendChild(tdName);
+
+      // Issue Type
+      const tdType = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = "issue-badge";
+      if (issue.issueType === 'unused') {
+        badge.textContent = "Unused";
+        badge.classList.add("issue-unused");
+      } else if (issue.issueType === 'downgrade') {
+        badge.textContent = "Downgrade to Dev";
+        badge.classList.add("issue-downgrade");
+      } else {
+        badge.textContent = "May be unused";
+        badge.classList.add("issue-maybe");
+      }
+      tdType.appendChild(badge);
+      tr.appendChild(tdType);
+
+      // Action
+      const tdAction = document.createElement("td");
+      const btn = document.createElement("button");
+      btn.className = "btn-upgrade-single";
+      
+      if (issue.issueType === 'downgrade') {
+        btn.textContent = "Downgrade";
+        btn.addEventListener("click", () => {
+          if (validatorLoadingIndicator) {
+            validatorLoadingIndicator.style.display = "block";
+            validatorLoadingText.textContent = `Downgrading ${issue.package}...`;
+          }
+          if (validatorTableContainer) validatorTableContainer.style.display = "none";
+          vscode.postMessage({ type: "downgradePackage", packageName: issue.package });
+        });
+      } else {
+        btn.textContent = "Remove";
+        btn.style.borderColor = "#d32f2f";
+        btn.style.color = "#d32f2f";
+        btn.addEventListener("click", () => {
+          showDeleteSafetyModal([issue.package]);
+        });
+      }
+      tdAction.appendChild(btn);
+      tr.appendChild(tdAction);
+
+      validatorTableBody.appendChild(tr);
+    });
+  }
+  // -----------------------------------
+
   // Auto-refresh when the webview regains focus to pick up file changes
   window.addEventListener("focus", () => {
     scheduleRefresh();
@@ -3083,6 +3259,9 @@
         if (!hasAnalyzedPackages && analyzePackagesButton) {
           hasAnalyzedPackages = true;
           analyzePackagesButton.click();
+          
+          // Check dependency validator state on first load too
+          vscode.postMessage({ type: "checkDependencyValidator" });
         }
         break;
       case "allAndroidPermissions":
@@ -3200,6 +3379,27 @@
             if (previewAddButton) previewAddButton.style.display = "inline-block";
           }
         }
+        break;
+      case "dependencyValidatorState":
+        if (validatorLoadingIndicator) validatorLoadingIndicator.style.display = "none";
+        state.validatorState.isInstalled = message.isInstalled;
+        if (message.isInstalled) {
+          if (validatorNotInstalledContainer) validatorNotInstalledContainer.style.display = "none";
+        } else {
+          if (validatorNotInstalledContainer) validatorNotInstalledContainer.style.display = "block";
+          if (validatorTableContainer) validatorTableContainer.style.display = "none";
+        }
+        renderValidatorHeaderActions();
+        break;
+      case "dependencyValidationResult":
+        if (validatorLoadingIndicator) validatorLoadingIndicator.style.display = "none";
+        if (message.error) {
+          setStatus(`Dependency validator error: ${message.error}`, "error");
+        } else {
+          state.validatorState.issues = message.issues || [];
+          renderValidatorTable();
+        }
+        renderValidatorHeaderActions();
         break;
       default:
         break;

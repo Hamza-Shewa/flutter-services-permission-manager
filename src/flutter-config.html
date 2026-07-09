@@ -1842,7 +1842,9 @@
     </div>
   </section>
 
-  <!-- Toast Container for Notifications -->
+
+
+  <!-- Modals -->
   <div class="toast-container" id="toastContainer"></div>
 
   <!-- Hidden status for backwards compatibility -->
@@ -2122,6 +2124,60 @@
     </div>
   </div>
 
+  <section id="validatorSection" class="section platform-details">
+    <div class="section-header">
+      <div class="section-header-with-button">
+        <h2>🧹 Dependency Validator</h2>
+        <div id="validatorHeaderActions" style="display:flex; gap:8px;">
+          <!-- Buttons dynamically injected -->
+        </div>
+      </div>
+    </div>
+    
+    <div id="validatorLoadingIndicator" style="display: none; padding: 20px; text-align: center; color: var(--text-secondary);">
+      <div id="validatorLoadingText" style="margin-bottom: 10px;">Running dependency_validator...</div>
+      <div class="spinner" style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid var(--vscode-button-background); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+    </div>
+    
+    <div id="validatorTableContainer" style="display: none; margin-top: 15px;">
+      <table class="permissions-table">
+        <thead>
+          <tr>
+            <th>Package</th>
+            <th>Issue</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="validatorTableBody">
+          <!-- Rows will be injected here -->
+        </tbody>
+      </table>
+    </div>
+    
+    <div id="validatorNotInstalledContainer" style="display: none; padding: 20px; text-align: center; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--vscode-editorGroup-border); margin-top: 15px;">
+      <h3 style="margin-top: 0; color: var(--text-primary); font-size: 14px;">Keep your project clean</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;">
+        The <code>dependency_validator</code> package analyzes your codebase to find unused dependencies and packages that should be downgraded to `dev_dependencies`. Installing it will help you reduce your app's size and improve build times.
+      </p>
+      <button id="installValidatorButton" type="button" class="btn-primary" style="margin: 0 auto; padding: 8px 16px;">
+        Install Dependency Validator
+      </button>
+    </div>
+
+    <style>
+      .issue-badge {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .issue-unused { background: rgba(244, 67, 54, 0.2); color: #e57373; }
+      .issue-downgrade { background: rgba(255, 152, 0, 0.2); color: #ffb74d; }
+      .issue-maybe { background: rgba(158, 158, 158, 0.2); color: #bdbdbd; }
+    </style>
+  </section>
+
   <section id="packagesSection" class="section platform-details">
     <div class="section-header">
       <div class="section-header-with-button">
@@ -2268,6 +2324,25 @@
       }
     </style>
   </section>
+  <div class="modal-backdrop" id="deleteSafetyModalBackdrop" style="display: none">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 style="color: #e57373;">⚠️ Warning: Asset or Native Usage</h3>
+      <p style="color: var(--text-secondary); margin: 0 0 12px">
+        Some packages (like <code style="color:#bdbdbd">cupertino_icons</code> or <code style="color:#bdbdbd">firebase_analytics</code>) are flagged as "May be unused" because they don't contain Dart code imports, but they are crucial for assets or native Android/iOS integration.
+      </p>
+      <p style="color: var(--text-primary); margin: 0 0 16px; font-weight: bold;">
+        Are you sure you want to remove these packages?
+      </p>
+      <div class="modal-actions">
+        <button id="deleteSafetyCancel" type="button" class="btn-secondary">
+          Cancel
+        </button>
+        <button id="deleteSafetyConfirm" type="button" class="btn-primary" style="background: #d32f2f; border-color: #d32f2f; color: white;">
+          Yes, Delete Anyway
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="{{utilsUri}}"></script>
   <script src="{{scriptUri}}"></script>

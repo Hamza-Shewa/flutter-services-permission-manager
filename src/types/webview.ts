@@ -80,6 +80,21 @@ export type WebviewMessage =
   | {
     type: "addPackage";
     packageName: string;
+  }
+  | { type: "checkDependencyValidator" }
+  | { type: "installDependencyValidator" }
+  | { type: "runDependencyValidator" }
+  | {
+    type: "removePackage";
+    packageName: string;
+  }
+  | {
+    type: "downgradePackage";
+    packageName: string;
+  }
+  | {
+    type: "removeAllFlaggedPackages";
+    packages: string[];
   };
 
 /** Language info */
@@ -146,7 +161,9 @@ export type WebviewOutgoingMessage =
   | SaveResultMessage
   | PackagesAnalysisResultMessage
   | SearchPackagesResultMessage
-  | PackageDetailsResultMessage;
+  | PackageDetailsResultMessage
+  | DependencyValidatorStateMessage
+  | DependencyValidationResultMessage;
 
 /** Result of a save operation */
 export interface SaveResult {
@@ -190,5 +207,21 @@ export interface PackageDetailsResultMessage {
   packageName: string;
   description?: string;
   latestVersion?: string;
+  error?: string;
+}
+
+export interface DependencyValidationIssue {
+  package: string;
+  issueType: "unused" | "downgrade" | "may_be_unused";
+}
+
+export interface DependencyValidatorStateMessage {
+  type: "dependencyValidatorState";
+  isInstalled: boolean;
+}
+
+export interface DependencyValidationResultMessage {
+  type: "dependencyValidationResult";
+  issues: DependencyValidationIssue[];
   error?: string;
 }

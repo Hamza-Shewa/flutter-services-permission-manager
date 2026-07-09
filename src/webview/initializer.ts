@@ -46,6 +46,12 @@ import {
   handleSearchPackages,
   handleRequestPackageDetails,
   handleAddPackage,
+  handleCheckDependencyValidator,
+  handleInstallDependencyValidator,
+  handleRunDependencyValidator,
+  handleRemovePackage,
+  handleDowngradePackage,
+  handleRemoveAllFlaggedPackages,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -273,6 +279,36 @@ function setupMessageHandler(
       case "addPackage":
         if (message.packageName) {
           await handleAddPackage(ref as any, message.packageName);
+        }
+        break;
+
+      case "checkDependencyValidator":
+        await handleCheckDependencyValidator(ref as any);
+        break;
+
+      case "installDependencyValidator":
+        await handleInstallDependencyValidator(ref as any);
+        break;
+
+      case "runDependencyValidator":
+        await handleRunDependencyValidator(ref as any);
+        break;
+
+      case "removePackage":
+        if (message.packageName) {
+          await handleRemovePackage(ref as any, message.packageName);
+        }
+        break;
+
+      case "downgradePackage":
+        if (message.packageName) {
+          await handleDowngradePackage(ref as any, message.packageName);
+        }
+        break;
+
+      case "removeAllFlaggedPackages":
+        if (message.packages) {
+          await handleRemoveAllFlaggedPackages(ref as any, message.packages);
         }
         break;
     }

@@ -348,5 +348,11 @@ export {
     handleUpgradeSinglePackage,
     handleSearchPackages,
     handleRequestPackageDetails,
-    handleAddPackage
+    handleAddPackage,
+    handleCheckDependencyValidator,
+    handleInstallDependencyValidator,
+    handleRunDependencyValidator,
+    handleRemovePackage,
+    handleDowngradePackage,
+    handleRemoveAllFlaggedPackages
 } from './packages.js';

@@ -1,5 +1,8 @@
 import type { WebviewRef } from './index.js';
-import { analyzePackages, upgradePackage, searchPackages, getPackageDetails, addPackage } from '../../services/pub.service.js';
+import { 
+    analyzePackages, upgradePackage, searchPackages, getPackageDetails, addPackage,
+    checkDependencyValidator, installDependencyValidator, runDependencyValidator, removePackage, downgradePackage
+} from '../../services/pub.service.js';
 
 export async function handleRequestPackagesAnalysis(ref: WebviewRef): Promise<void> {
     try {
@@ -82,5 +85,95 @@ export async function handleAddPackage(ref: WebviewRef, packageName: string): Pr
     } catch (error) {
         console.error(`Add package error for ${packageName}:`, error);
         ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to add ${packageName}: ${error instanceof Error ? error.message : String(error)}` });
+    }
+}
+
+export async function handleCheckDependencyValidator(ref: WebviewRef): Promise<void> {
+    try {
+        const isInstalled = await checkDependencyValidator();
+        ref.webview.postMessage({
+            type: 'dependencyValidatorState',
+            isInstalled
+        });
+    } catch (error) {
+        console.error('Check dependency validator error:', error);
+        ref.webview.postMessage({ type: 'dependencyValidatorState', isInstalled: false });
+    }
+}
+
+export async function handleInstallDependencyValidator(ref: WebviewRef): Promise<void> {
+    try {
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Installing dependency_validator... Please wait.` });
+        await installDependencyValidator();
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Successfully installed dependency_validator!` });
+        
+        await handleCheckDependencyValidator(ref);
+        await handleRunDependencyValidator(ref);
+    } catch (error) {
+        console.error('Install dependency validator error:', error);
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to install dependency_validator: ${error instanceof Error ? error.message : String(error)}` });
+    }
+}
+
+export async function handleRunDependencyValidator(ref: WebviewRef): Promise<void> {
+    try {
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Running dependency validation...` });
+        const issues = await runDependencyValidator();
+        ref.webview.postMessage({
+            type: 'dependencyValidationResult',
+            issues
+        });
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Validation complete.` });
+    } catch (error) {
+        console.error('Run dependency validator error:', error);
+        ref.webview.postMessage({
+            type: 'dependencyValidationResult',
+            issues: [],
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+}
+
+export async function handleRemovePackage(ref: WebviewRef, packageName: string): Promise<void> {
+    try {
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Removing ${packageName}...` });
+        await removePackage(packageName);
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Removed ${packageName}.` });
+        
+        await handleRunDependencyValidator(ref);
+        await handleRequestPackagesAnalysis(ref);
+    } catch (error) {
+        console.error(`Remove package error for ${packageName}:`, error);
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to remove ${packageName}: ${error instanceof Error ? error.message : String(error)}` });
+    }
+}
+
+export async function handleDowngradePackage(ref: WebviewRef, packageName: string): Promise<void> {
+    try {
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Downgrading ${packageName}...` });
+        await downgradePackage(packageName);
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Downgraded ${packageName}.` });
+        
+        await handleRunDependencyValidator(ref);
+        await handleRequestPackagesAnalysis(ref);
+    } catch (error) {
+        console.error(`Downgrade package error for ${packageName}:`, error);
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to downgrade ${packageName}: ${error instanceof Error ? error.message : String(error)}` });
+    }
+}
+
+export async function handleRemoveAllFlaggedPackages(ref: WebviewRef, packages: string[]): Promise<void> {
+    try {
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Removing ${packages.length} packages...` });
+        for (const pkg of packages) {
+            await removePackage(pkg);
+        }
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: `Removed all flagged packages.` });
+        
+        await handleRunDependencyValidator(ref);
+        await handleRequestPackagesAnalysis(ref);
+    } catch (error) {
+        console.error('Remove all flagged packages error:', error);
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to remove some packages: ${error instanceof Error ? error.message : String(error)}` });
     }
 }
