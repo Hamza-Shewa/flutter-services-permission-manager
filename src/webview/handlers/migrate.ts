@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { exec } from 'child_process';
+import { execWithEnv, getFlutterCommand } from '../../utils/exec.js';
 import { migrateAndroidSetup } from '../../services/android/index.js';
 import type { WebviewRef } from './index.js';
 
@@ -23,7 +23,7 @@ export async function handleUpgradePackages(ref: WebviewRef): Promise<void> {
         // Send an initial status indicating it's running
         ref.webview.postMessage({ type: 'saveResult', success: true, message: "Upgrading Flutter packages... Please wait." });
 
-        exec('flutter pub upgrade', { cwd: workspaceRoot }, (error, stdout, stderr) => {
+        execWithEnv(`${getFlutterCommand()} pub upgrade`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
             if (error) {
                 console.error('Flutter pub upgrade error:', error);
                 console.error('stderr:', stderr);

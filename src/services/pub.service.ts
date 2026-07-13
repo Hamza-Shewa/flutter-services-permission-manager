@@ -1,5 +1,5 @@
-import { exec } from 'child_process';
 import * as vscode from 'vscode';
+import { execWithEnv, getFlutterCommand, getDartCommand } from '../utils/exec.js';
 import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -16,7 +16,7 @@ export async function analyzePackages(): Promise<OutdatedPackage[]> {
     }
 
     return new Promise((resolve, reject) => {
-        exec('flutter pub outdated --json', { cwd: workspaceRoot, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+        execWithEnv(`${getFlutterCommand()} pub outdated --json`, { cwd: workspaceRoot, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
             if (error && error.code !== 0 && stdout.trim() === '') {
                 return reject(new Error(`Failed to analyze packages: ${error.message} - ${stderr}`));
             }
@@ -38,7 +38,7 @@ export async function upgradePackage(packageName: string): Promise<void> {
     }
 
     return new Promise((resolve, reject) => {
-        exec(`flutter pub upgrade ${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
+        execWithEnv(`${getFlutterCommand()} pub upgrade ${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
             if (error) {
                 return reject(new Error(`Failed to upgrade package ${packageName}: ${error.message} - ${stderr}`));
             }
@@ -54,7 +54,7 @@ export async function addPackage(packageName: string): Promise<void> {
     }
 
     return new Promise((resolve, reject) => {
-        exec(`flutter pub add ${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
+        execWithEnv(`${getFlutterCommand()} pub add ${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
             if (error) {
                 return reject(new Error(`Failed to add package ${packageName}: ${error.message} - ${stderr}`));
             }
@@ -136,7 +136,7 @@ export async function installDependencyValidator(): Promise<void> {
     if (!workspaceRoot) throw new Error('No workspace root found');
 
     return new Promise((resolve, reject) => {
-        exec('flutter pub add dev:dependency_validator', { cwd: workspaceRoot }, (error, stdout, stderr) => {
+        execWithEnv(`${getFlutterCommand()} pub add dev:dependency_validator`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
             if (error) {
                 return reject(new Error(`Failed to install dependency_validator: ${error.message} - ${stderr}`));
             }
@@ -150,7 +150,7 @@ export async function runDependencyValidator(): Promise<DependencyValidationIssu
     if (!workspaceRoot) throw new Error('No workspace root found');
 
     return new Promise((resolve, reject) => {
-        exec('dart run dependency_validator', { cwd: workspaceRoot }, (error, stdout, stderr) => {
+        execWithEnv(`${getDartCommand()} run dependency_validator`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
             // Note: dependency_validator exits with code 1 if it finds unused dependencies,
             // so we ignore `error` and rely on stdout for parsing.
             const output = stdout.toString() + '\n' + stderr.toString();
@@ -194,7 +194,7 @@ export async function removePackage(packageName: string): Promise<void> {
     if (!workspaceRoot) throw new Error('No workspace root found');
 
     return new Promise((resolve, reject) => {
-        exec(`flutter pub remove ${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
+        execWithEnv(`${getFlutterCommand()} pub remove ${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
             if (error) {
                 return reject(new Error(`Failed to remove package ${packageName}: ${error.message} - ${stderr}`));
             }
@@ -208,7 +208,7 @@ export async function downgradePackage(packageName: string): Promise<void> {
     if (!workspaceRoot) throw new Error('No workspace root found');
 
     return new Promise((resolve, reject) => {
-        exec(`flutter pub add dev:${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
+        execWithEnv(`${getFlutterCommand()} pub add dev:${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
             if (error) {
                 return reject(new Error(`Failed to downgrade package ${packageName}: ${error.message} - ${stderr}`));
             }
