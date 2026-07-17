@@ -18,6 +18,10 @@ export async function analyzePackages(): Promise<OutdatedPackage[]> {
     return new Promise((resolve, reject) => {
         execWithEnv(`${getFlutterCommand()} pub outdated --json`, { cwd: workspaceRoot, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
             if (error && error.code !== 0 && stdout.trim() === '') {
+                const errorMessage = error.message + stderr;
+                if (errorMessage.includes('No pubspec.yaml file found')) {
+                    return reject(new Error("the current project is not a flutter project or it doesn't have a pubspec.yaml file"));
+                }
                 return reject(new Error(`Failed to analyze packages: ${error.message} - ${stderr}`));
             }
 
@@ -120,7 +124,7 @@ export async function getPackageDetails(packageName: string): Promise<{ descript
 
 export async function checkDependencyValidator(): Promise<boolean> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) return false;
+    if (!workspaceRoot) {return false;}
 
     try {
         const pubspecPath = path.join(workspaceRoot, 'pubspec.yaml');
@@ -133,7 +137,7 @@ export async function checkDependencyValidator(): Promise<boolean> {
 
 export async function installDependencyValidator(): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) throw new Error('No workspace root found');
+    if (!workspaceRoot) {throw new Error('No workspace root found');}
 
     return new Promise((resolve, reject) => {
         execWithEnv(`${getFlutterCommand()} pub add dev:dependency_validator`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
@@ -147,7 +151,7 @@ export async function installDependencyValidator(): Promise<void> {
 
 export async function runDependencyValidator(): Promise<DependencyValidationIssue[]> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) throw new Error('No workspace root found');
+    if (!workspaceRoot) {throw new Error('No workspace root found');}
 
     return new Promise((resolve, reject) => {
         execWithEnv(`${getDartCommand()} run dependency_validator`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
@@ -162,7 +166,7 @@ export async function runDependencyValidator(): Promise<DependencyValidationIssu
                 const lines = downgradeMatch[1].split('\n');
                 for (const line of lines) {
                     const pkg = line.trim().replace(/^\*\s*/, '').trim();
-                    if (pkg) issues.push({ package: pkg, issueType: 'downgrade' });
+                    if (pkg) {issues.push({ package: pkg, issueType: 'downgrade' });}
                 }
             }
 
@@ -171,7 +175,7 @@ export async function runDependencyValidator(): Promise<DependencyValidationIssu
                 const lines = mayBeUnusedMatch[1].split('\n');
                 for (const line of lines) {
                     const pkg = line.trim().replace(/^\*\s*/, '').trim();
-                    if (pkg) issues.push({ package: pkg, issueType: 'may_be_unused' });
+                    if (pkg) {issues.push({ package: pkg, issueType: 'may_be_unused' });}
                 }
             }
 
@@ -180,7 +184,7 @@ export async function runDependencyValidator(): Promise<DependencyValidationIssu
                 const lines = unusedMatch[1].split('\n');
                 for (const line of lines) {
                     const pkg = line.trim().replace(/^\*\s*/, '').trim();
-                    if (pkg) issues.push({ package: pkg, issueType: 'unused' });
+                    if (pkg) {issues.push({ package: pkg, issueType: 'unused' });}
                 }
             }
 
@@ -191,7 +195,7 @@ export async function runDependencyValidator(): Promise<DependencyValidationIssu
 
 export async function removePackage(packageName: string): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) throw new Error('No workspace root found');
+    if (!workspaceRoot) {throw new Error('No workspace root found');}
 
     return new Promise((resolve, reject) => {
         execWithEnv(`${getFlutterCommand()} pub remove ${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
@@ -205,7 +209,7 @@ export async function removePackage(packageName: string): Promise<void> {
 
 export async function downgradePackage(packageName: string): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) throw new Error('No workspace root found');
+    if (!workspaceRoot) {throw new Error('No workspace root found');}
 
     return new Promise((resolve, reject) => {
         execWithEnv(`${getFlutterCommand()} pub add dev:${packageName}`, { cwd: workspaceRoot }, (error, stdout, stderr) => {

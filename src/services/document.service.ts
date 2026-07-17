@@ -431,7 +431,7 @@ async function updateAppNameLocalizations(
 
     // Update Info.plist to use localized app name
     const plistDoc = await vscode.workspace.openTextDocument(iosPlistUri);
-    const updatedPlist = updateInfoPlistToUseLocalizedAppName(plistDoc.getText());
+    const updatedPlist = updateInfoPlistToUseLocalizedAppName(plistDoc.getText(), appName.defaultName);
     await replaceDocumentContent(iosPlistUri, updatedPlist);
   }
 }

@@ -5,6 +5,19 @@ All notable changes to the "Flutter Config Manager" extension will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.10] - 2026-07-17
+
+### Fixed
+- **iOS App Name Localization**: Fixed a bug where `Info.plist` was erroneously modified to use `$(PRODUCT_NAME)`. It now correctly writes the default app name, relying on native iOS behavior where `InfoPlist.strings` automatically overrides the name based on the device locale.
+- **Facebook Display Name**: Added support for localizing `FacebookDisplayName` inside `InfoPlist.strings` when configured.
+- **Error Handling**: Improved the error message presented when attempting to analyze packages in a directory that is not a Flutter project or is missing a `pubspec.yaml` file.
+
+## [1.0.9] - 2026-07-13
+
+### Changed
+- **Robust Executable Resolution**: Integrated with the VS Code Dart extension to resolve the exact paths for `flutter` and `dart` executables (`flutterSdkPath` and `sdkPath`). This prevents errors when Flutter is not globally available in the system PATH.
+- **Environment Variables**: Enhanced child process execution (`execWithEnv`) to properly inherit paths across different OS environments (including macOS/Linux brew paths).
+
 ## [1.0.8] - 2026-07-09
 
 ### Added

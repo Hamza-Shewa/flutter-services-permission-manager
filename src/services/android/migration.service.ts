@@ -29,9 +29,9 @@ export async function migrateAndroidSetup(): Promise<void> {
     // ----- 1. PRE-CHECK APP BUILD.GRADLE FOR FIREBASE PLUGINS -----
     if (fs.existsSync(appBuildGradlePath)) {
         const appContent = fs.readFileSync(appBuildGradlePath, 'utf8');
-        if (appContent.includes('com.google.gms.google-services')) usesGoogleServices = true;
-        if (appContent.includes('com.google.firebase.firebase-perf')) usesFirebasePerf = true;
-        if (appContent.includes('com.google.firebase.crashlytics')) usesCrashlytics = true;
+        if (appContent.includes('com.google.gms.google-services')) {usesGoogleServices = true;}
+        if (appContent.includes('com.google.firebase.firebase-perf')) {usesFirebasePerf = true;}
+        if (appContent.includes('com.google.firebase.crashlytics')) {usesCrashlytics = true;}
     }
 
     // ----- 2. MIGRATE SETTINGS.GRADLE -----
@@ -83,7 +83,7 @@ export async function migrateAndroidSetup(): Promise<void> {
             const openBraceIndex = content.indexOf('{', startIndex);
             if (openBraceIndex !== -1) {
                 for (let i = openBraceIndex; i < content.length; i++) {
-                    if (content[i] === '{') braceCount++;
+                    if (content[i] === '{') {braceCount++;}
                     if (content[i] === '}') {
                         braceCount--;
                         if (braceCount === 0) {
@@ -115,7 +115,7 @@ export async function migrateAndroidSetup(): Promise<void> {
             const openBrace = content.indexOf('{', kotlinOptionsStart);
             if (openBrace !== -1) {
                 for (let i = openBrace; i < content.length; i++) {
-                    if (content[i] === '{') braceCount++;
+                    if (content[i] === '{') {braceCount++;}
                     if (content[i] === '}') {
                         braceCount--;
                         if (braceCount === 0) {

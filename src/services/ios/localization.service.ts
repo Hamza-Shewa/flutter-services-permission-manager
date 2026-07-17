@@ -106,6 +106,12 @@ export function updateAppNameInInfoPlistStrings(stringsContent: string, appName:
         // Add CFBundleName
         stringsContent += `\n"CFBundleName" = "${appName}";`;
     }
+
+    // Update FacebookDisplayName if it exists
+    const fbDisplayNameRegex = /"FacebookDisplayName"\s*=\s*"[^"]*";/i;
+    if (fbDisplayNameRegex.test(stringsContent)) {
+        stringsContent = stringsContent.replace(fbDisplayNameRegex, `"FacebookDisplayName" = "${appName}";`);
+    }
     
     return stringsContent;
 }
@@ -121,14 +127,14 @@ export function extractAppNameFromInfoPlist(plistContent: string): { displayName
     // Extract CFBundleDisplayName
     const displayNameRegex = /<key>CFBundleDisplayName<\/key>\s*<string>([^<]*)<\/string>/i;
     const displayMatch = plistContent.match(displayNameRegex);
-    if (displayMatch?.[1]) {
+    if (displayMatch?.[1] && displayMatch[1] !== '$(PRODUCT_NAME)') {
         result.displayName = displayMatch[1];
     }
     
     // Extract CFBundleName
     const bundleNameRegex = /<key>CFBundleName<\/key>\s*<string>([^<]*)<\/string>/i;
     const bundleMatch = plistContent.match(bundleNameRegex);
-    if (bundleMatch?.[1]) {
+    if (bundleMatch?.[1] && bundleMatch[1] !== '$(PRODUCT_NAME)') {
         result.bundleName = bundleMatch[1];
     }
     
@@ -141,24 +147,23 @@ export function extractAppNameFromInfoPlist(plistContent: string): { displayName
  * @param plistContent - Content of Info.plist
  * @returns Updated content
  */
-export function updateInfoPlistToUseLocalizedAppName(plistContent: string): string {
-    // Replace CFBundleDisplayName hardcoded value with placeholder that triggers localization
-    const displayNameRegex = /(<key>CFBundleDisplayName<\/key>\s*<string>)([^<$][^<]*)(<\/string>)/i;
+export function updateInfoPlistToUseLocalizedAppName(plistContent: string, defaultName: string): string {
+    // Replace CFBundleDisplayName hardcoded value with the default app name
+    const displayNameRegex = /(<key>CFBundleDisplayName<\/key>\s*<string>)([^<]*)(<\/string>)/i;
     if (displayNameRegex.test(plistContent)) {
-        plistContent = plistContent.replace(displayNameRegex, '$1$(PRODUCT_NAME)$3');
+        plistContent = plistContent.replace(displayNameRegex, `$1${defaultName}$3`);
     }
     
-    // Replace CFBundleName hardcoded value with placeholder
-    const bundleNameRegex = /(<key>CFBundleName<\/key>\s*<string>)([^<$][^<]*)(<\/string>)/i;
+    // Replace CFBundleName hardcoded value with the default app name
+    const bundleNameRegex = /(<key>CFBundleName<\/key>\s*<string>)([^<]*)(<\/string>)/i;
     if (bundleNameRegex.test(plistContent)) {
-        plistContent = plistContent.replace(bundleNameRegex, '$1$(PRODUCT_NAME)$3');
+        plistContent = plistContent.replace(bundleNameRegex, `$1${defaultName}$3`);
     }
     
     // Also update FacebookDisplayName if present
-    const fbDisplayNameRegex = /(<key>FacebookDisplayName<\/key>\s*<string>)([^<$][^<]*)(<\/string>)/i;
+    const fbDisplayNameRegex = /(<key>FacebookDisplayName<\/key>\s*<string>)([^<]*)(<\/string>)/i;
     if (fbDisplayNameRegex.test(plistContent)) {
-        // Keep Facebook display name hardcoded or could reference a different key
-        // For now, we leave it as is since it's typically the same across languages
+        plistContent = plistContent.replace(fbDisplayNameRegex, `$1${defaultName}$3`);
     }
     
     return plistContent;

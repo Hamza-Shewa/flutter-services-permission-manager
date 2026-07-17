@@ -10,13 +10,13 @@ function detectPlistIndent(plistContent: string): string {
     let spaces2 = 0;
     let spaces4 = 0;
     for (const line of lines) {
-        if (line.match(/^\t+<key>/)) tabs++;
-        else if (line.match(/^  <key>/)) spaces2++;
-        else if (line.match(/^    <key>/)) spaces4++;
+        if (line.match(/^\t+<key>/)) {tabs++;}
+        else if (line.match(/^  <key>/)) {spaces2++;}
+        else if (line.match(/^    <key>/)) {spaces4++;}
     }
-    if (tabs > spaces2 && tabs > spaces4) return '\t';
-    if (spaces4 > tabs && spaces4 > spaces2) return '    ';
-    if (spaces2 > tabs && spaces2 > spaces4) return '  ';
+    if (tabs > spaces2 && tabs > spaces4) {return '\t';}
+    if (spaces4 > tabs && spaces4 > spaces2) {return '    ';}
+    if (spaces2 > tabs && spaces2 > spaces4) {return '  ';}
     return '\t';
 }
 
@@ -31,7 +31,7 @@ function findMatchingArrayBounds(xml: string, arrayStart: number): ArrayBounds |
     while (pos < xml.length) {
         const nextOpen = xml.indexOf(openTag, pos);
         const nextClose = xml.indexOf(closeTag, pos);
-        if (nextClose === -1) return null;
+        if (nextClose === -1) {return null;}
 
         if (nextOpen !== -1 && nextOpen < nextClose) {
             depth++;
@@ -251,7 +251,7 @@ export function updateIOSPlistWithServices(
     
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
-        if (!config?.ios) continue;
+        if (!config?.ios) {continue;}
 
         if (service.id === 'applinks') {
             const bundleId = (service.values || {}).bundleId || '';
@@ -286,7 +286,7 @@ export function updateIOSPlistWithServices(
             for (const entry of config.ios.plistEntries) {
                 if (entry.type === 'string' && entry.valueField) {
                     const value = (service.values || {})[entry.valueField];
-                    if (!value) continue;
+                    if (!value) {continue;}
                     
                     // Check if key already exists
                     const existingKeyRegex = new RegExp(
@@ -310,7 +310,7 @@ export function updateIOSPlistWithServices(
                     }
                 } else if (entry.type === 'boolean' && 'staticValue' in entry) {
                     // Skip if already exists
-                    if (result.includes(`<key>${entry.key}</key>`)) continue;
+                    if (result.includes(`<key>${entry.key}</key>`)) {continue;}
                     
                     const boolValue = entry.staticValue ? 'true' : 'false';
                     const entryXml = `${baseIndent}<key>${entry.key}</key>\n${baseIndent}<${boolValue}/>\n`;
@@ -320,7 +320,7 @@ export function updateIOSPlistWithServices(
                     }
                 } else if (entry.type === 'array' && entry.staticValue) {
                     // Skip if already exists
-                    if (result.includes(`<key>${entry.key}</key>`)) continue;
+                    if (result.includes(`<key>${entry.key}</key>`)) {continue;}
                     
                     const arrayItems = (entry.staticValue as unknown[]).map(v => {
                         if (typeof v === 'string') {
@@ -346,7 +346,7 @@ export function updateIOSPlistWithServices(
         if (config.ios.urlSchemes && config.ios.urlSchemes.length > 0) {
             for (const scheme of config.ios.urlSchemes) {
                 let value = (service.values || {})[scheme.valueField] || '';
-                if (!value) continue;
+                if (!value) {continue;}
                 
                 const newScheme = scheme.prefix ? scheme.prefix + value : value;
                 
@@ -433,13 +433,13 @@ export function removeServicesFromIOSPlist(
         }
 
         const config = servicesConfig.find(c => c.id === serviceId);
-        if (!config?.ios) continue;
+        if (!config?.ios) {continue;}
         
         // Remove plist entries
         if (config.ios.plistEntries) {
             for (const entry of config.ios.plistEntries) {
                 // Skip protected keys
-                if (protectedKeys.includes(entry.key)) continue;
+                if (protectedKeys.includes(entry.key)) {continue;}
                 
                 // Remove string entries: <key>xxx</key>\n\t<string>yyy</string>
                 if (entry.type === 'string') {

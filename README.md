@@ -9,7 +9,8 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 - **Service Integrations**: Quickly configure popular third-party services without diving into documentation for platform-specific setup. Supported services include:
   - Facebook SDK
   - Google Sign-In & Google Maps
-  - **App Name Localization**: Easily manage `CFBundleDisplayName` (iOS) and `strings.xml` (Android) for multiple languages.
+  - **App Name Localization**: Easily manage app display names for multiple languages using native `InfoPlist.strings` (iOS) and `strings.xml` (Android). Includes support for localizing `FacebookDisplayName` on iOS.
+- **Robust Executable Resolution**: Integrates seamlessly with the VS Code Dart extension to dynamically resolve the correct `flutter` and `dart` executables without relying on the system PATH.
 - **Gradle Declarative Migration**: One-click migration of Android projects to use declarative Gradle (replacing hardcoded paths with `flutter.minSdkVersion`, `flutter.targetSdkVersion`, and `flutter.ndkVersion`).
 - **Dependency Management**: Fully-featured Flutter dependencies table showing direct, dev, and transitive packages.
   - **Search & Add**: Integrated pub.dev API search with typeahead and live package details preview.
@@ -47,24 +48,7 @@ _macOS service configuration support is coming soon!_
 
 ## 📝 Release Notes
 
-### 1.0.7 (Latest)
-- **New Package Configuration Section**: Manage Android Application ID and iOS Bundle Identifier from a unified dashboard at the top of the UI.
-- **Gradle Standardization**: Forced `versionName` to `"flutterVersionName"` in Android build files to maintain consistency with Flutter versioning.
-- **Vibe Update**: Refined the UI/UX for a more fashionable development experience.
-
-### 1.0.6
-
-- Added section-level Save buttons so each section can be saved independently.
-- Moved the "Sync Equivalents" control into the Permissions toolbar.
-- Added app name localization editing so the display name matches the device locale.
-- Fixed duplicate applinks entries in `Info.plist` and duplicate blocks in `AppDelegate.swift`.
-
-### 1.0.0
-
-- Initial release.
-- Permission management for Android, iOS, and macOS.
-- Smart extraction that only shows relevant platform sections.
-- Service integrations for 10+ popular services.
+For a complete and detailed history of all changes, features, and fixes, please refer to the [CHANGELOG.md](CHANGELOG.md) file.
 
 ---
 

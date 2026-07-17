@@ -2804,7 +2804,7 @@
 
   // Packages Render and Listeners
   function renderPackagesTable() {
-    if (!packagesTableBody) return;
+    if (!packagesTableBody) {return;}
     packagesTableBody.innerHTML = "";
 
     if (!state.packages || state.packages.length === 0) {
@@ -2978,7 +2978,7 @@
   let currentPreviewPackage = null;
 
   function renderPopularPackages() {
-    if (!popularPackagesContainer) return;
+    if (!popularPackagesContainer) {return;}
     popularPackagesContainer.innerHTML = "";
     POPULAR_PACKAGES.forEach(pkg => {
       const chip = document.createElement("div");
@@ -3065,7 +3065,7 @@
     }
   }
 
-  if (deleteSafetyCancel) deleteSafetyCancel.addEventListener("click", hideDeleteSafetyModal);
+  if (deleteSafetyCancel) {deleteSafetyCancel.addEventListener("click", hideDeleteSafetyModal);}
   if (deleteSafetyConfirm) {
     deleteSafetyConfirm.addEventListener("click", () => {
       if (pendingDeletePackages.length > 0) {
@@ -3073,7 +3073,7 @@
           validatorLoadingIndicator.style.display = "block";
           validatorLoadingText.textContent = `Removing ${pendingDeletePackages.length} package(s)...`;
         }
-        if (validatorTableContainer) validatorTableContainer.style.display = "none";
+        if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
         
         vscode.postMessage({ type: "removeAllFlaggedPackages", packages: pendingDeletePackages });
         hideDeleteSafetyModal();
@@ -3083,7 +3083,7 @@
 
   if (installValidatorButton) {
     installValidatorButton.addEventListener("click", () => {
-      if (validatorNotInstalledContainer) validatorNotInstalledContainer.style.display = "none";
+      if (validatorNotInstalledContainer) {validatorNotInstalledContainer.style.display = "none";}
       if (validatorLoadingIndicator) {
         validatorLoadingIndicator.style.display = "block";
         validatorLoadingText.textContent = "Installing dependency_validator... Please wait.";
@@ -3093,7 +3093,7 @@
   }
 
   function renderValidatorHeaderActions() {
-    if (!validatorHeaderActions) return;
+    if (!validatorHeaderActions) {return;}
     validatorHeaderActions.innerHTML = "";
     if (state.validatorState.isInstalled) {
       const runBtn = document.createElement("button");
@@ -3105,7 +3105,7 @@
           validatorLoadingIndicator.style.display = "block";
           validatorLoadingText.textContent = "Running dependency_validator...";
         }
-        if (validatorTableContainer) validatorTableContainer.style.display = "none";
+        if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
         vscode.postMessage({ type: "runDependencyValidator" });
       });
       validatorHeaderActions.appendChild(runBtn);
@@ -3128,7 +3128,7 @@
   }
 
   function renderValidatorTable() {
-    if (!validatorTableBody || !validatorTableContainer) return;
+    if (!validatorTableBody || !validatorTableContainer) {return;}
     validatorTableBody.innerHTML = "";
 
     if (!state.validatorState.issues) {
@@ -3187,7 +3187,7 @@
             validatorLoadingIndicator.style.display = "block";
             validatorLoadingText.textContent = `Downgrading ${issue.package}...`;
           }
-          if (validatorTableContainer) validatorTableContainer.style.display = "none";
+          if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
           vscode.postMessage({ type: "downgradePackage", packageName: issue.package });
         });
       } else {
@@ -3333,7 +3333,11 @@
           packagesTableContainer.style.display = "block";
         }
         if (message.error) {
-          setStatus(`Package analysis failed: ${message.error}`, "error");
+          if (message.error.includes("the current project is not a flutter project")) {
+            setStatus(message.error, "error");
+          } else {
+            setStatus(`Package analysis failed: ${message.error}`, "error");
+          }
           state.packages = [];
         } else {
           state.packages = message.packages || [];
@@ -3370,29 +3374,29 @@
         break;
       case "packageDetailsResult":
         if (currentPreviewPackage === message.packageName) {
-          if (previewLoading) previewLoading.style.display = "none";
+          if (previewLoading) {previewLoading.style.display = "none";}
           if (message.error) {
-            if (previewPackageDescription) previewPackageDescription.textContent = `Error: ${message.error}`;
+            if (previewPackageDescription) {previewPackageDescription.textContent = `Error: ${message.error}`;}
           } else {
-            if (previewPackageVersion) previewPackageVersion.textContent = message.latestVersion || "Unknown";
-            if (previewPackageDescription) previewPackageDescription.textContent = message.description || "No description provided.";
-            if (previewAddButton) previewAddButton.style.display = "inline-block";
+            if (previewPackageVersion) {previewPackageVersion.textContent = message.latestVersion || "Unknown";}
+            if (previewPackageDescription) {previewPackageDescription.textContent = message.description || "No description provided.";}
+            if (previewAddButton) {previewAddButton.style.display = "inline-block";}
           }
         }
         break;
       case "dependencyValidatorState":
-        if (validatorLoadingIndicator) validatorLoadingIndicator.style.display = "none";
+        if (validatorLoadingIndicator) {validatorLoadingIndicator.style.display = "none";}
         state.validatorState.isInstalled = message.isInstalled;
         if (message.isInstalled) {
-          if (validatorNotInstalledContainer) validatorNotInstalledContainer.style.display = "none";
+          if (validatorNotInstalledContainer) {validatorNotInstalledContainer.style.display = "none";}
         } else {
-          if (validatorNotInstalledContainer) validatorNotInstalledContainer.style.display = "block";
-          if (validatorTableContainer) validatorTableContainer.style.display = "none";
+          if (validatorNotInstalledContainer) {validatorNotInstalledContainer.style.display = "block";}
+          if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
         }
         renderValidatorHeaderActions();
         break;
       case "dependencyValidationResult":
-        if (validatorLoadingIndicator) validatorLoadingIndicator.style.display = "none";
+        if (validatorLoadingIndicator) {validatorLoadingIndicator.style.display = "none";}
         if (message.error) {
           setStatus(`Dependency validator error: ${message.error}`, "error");
         } else {
