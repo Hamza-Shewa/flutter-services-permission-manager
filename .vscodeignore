@@ -1,10 +1,8 @@
 .vscode/**
 .vscode-test/**
-node_modules/**
 src/**/*.ts
 src/test/**
 !src/flutter-config.html
-!src/webview.js
 !src/webview-utils.js
 !src/categorized-android-permissions.json
 !src/categorized-ios-permissions.json
@@ -26,3 +24,5 @@ CONTRIBUTING.md
 .editorconfig
 .prettierrc
 flutter-service-manager.skill
+coverage/**
+test-fast-xml.js
