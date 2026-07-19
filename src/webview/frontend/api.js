@@ -1,4 +1,4 @@
-const vscode = acquireVsCodeApi();
+const vscode = window.vscode || acquireVsCodeApi();
 
 export function sendRefresh() { vscode.postMessage({ type: "refresh" }); }
 export function requestAllAndroidPermissions() { vscode.postMessage({ type: "requestAllAndroidPermissions" }); }

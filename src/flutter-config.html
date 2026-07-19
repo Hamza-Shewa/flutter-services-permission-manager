@@ -2163,6 +2163,15 @@
         Install Dependency Validator
       </button>
     </div>
+    <div id="validatorInstalledContainer" style="display: none; padding: 20px; text-align: center; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--vscode-editorGroup-border); margin-top: 15px;">
+      <h3 style="margin-top: 0; color: var(--text-primary); font-size: 14px;">Analyze project dependencies</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;">
+        The <code>dependency_validator</code> package is installed. Click below to analyze your project dependencies and find unused or misplaced packages.
+      </p>
+      <button id="runValidatorButton" type="button" class="btn-primary" style="margin: 0 auto; padding: 8px 16px;">
+        Run Dependency Analysis
+      </button>
+    </div>
 
     <style>
       .issue-badge {

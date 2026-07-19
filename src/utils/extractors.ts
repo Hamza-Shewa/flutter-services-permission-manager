@@ -39,8 +39,8 @@ export async function getUsedIOSPermissions(plistContent: string): Promise<IOSPe
     const usedPermissions: IOSPermission[] = [];
     const allPermissions = await getIOSPermissions();
 
-    const stringRegex = /<key>(NS[^<]*)<\/key>\s*<string>([^<]*)<\/string>/g;
-    const boolRegex = /<key>(NS[^<]*)<\/key>\s*<(true|false)\/>/g;
+    const stringRegex = /<key>((?:NS|ITS)[^<]*)<\/key>\s*<string>([^<]*)<\/string>/g;
+    const boolRegex = /<key>((?:NS|ITS)[^<]*)<\/key>\s*<(true|false)\/>/g;
 
     logger.debug('iOS permission extraction started', { plistLength: plistContent.length, catalogCount: allPermissions.length });
 

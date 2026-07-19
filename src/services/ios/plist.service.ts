@@ -54,11 +54,11 @@ function replaceOrInsertApplinksBlock(plistContent: string, bundleId: string, sc
     const escapedScheme = scheme ? scheme.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
 
     if (escapedBundle) {
-        const bundleDictRegex = new RegExp(`\\n?[\\t ]*<dict>[\\s\\S]*?<key>CFBundleURLName<\\/key>\\s*<string>${escapedBundle}<\\/string>[\\s\\S]*?<\\/dict>\\s*`, 'i');
+        const bundleDictRegex = new RegExp(`\\n?[\\t ]*<dict>(?:(?!<dict>)[\\s\\S])*?<key>CFBundleURLName<\\/key>\\s*<string>${escapedBundle}<\\/string>(?:(?!<\\/dict>)[\\s\\S])*?<\\/dict>\\s*`, 'i');
         cleaned = cleaned.replace(bundleDictRegex, '\n');
     }
     if (escapedScheme) {
-        const schemeDictRegex = new RegExp(`\\n?[\\t ]*<dict>[\\s\\S]*?<key>CFBundleURLSchemes<\\/key>[\\s\\S]*?<string>${escapedScheme}<\\/string>[\\s\\S]*?<\\/dict>\\s*`, 'i');
+        const schemeDictRegex = new RegExp(`\\n?[\\t ]*<dict>(?:(?!<dict>)[\\s\\S])*?<key>CFBundleURLSchemes<\\/key>(?:(?!<dict>)[\\s\\S])*?<string>${escapedScheme}<\\/string>(?:(?!<\\/dict>)[\\s\\S])*?<\\/dict>\\s*`, 'i');
         cleaned = cleaned.replace(schemeDictRegex, '\n');
     }
 
@@ -140,8 +140,8 @@ export function updateIOSPlist(
     const suffix = plistContent.slice(dictCloseIndex); // contains </dict></plist>
 
     // Extract existing permission values for potential re-use
-    const stringRegex = /<key>(NS\w*UsageDescription)<\/key>\s*<string>([^<]*)<\/string>/g;
-    const boolRegex = /<key>(NS\w*UsageDescription)<\/key>\s*<(true|false)\/>/g;
+    const stringRegex = /<key>((?:NS|ITS)\w*)<\/key>\s*<string>([^<]*)<\/string>/g;
+    const boolRegex = /<key>((?:NS|ITS)\w*)<\/key>\s*<(true|false)\/>/g;
     let match;
     while ((match = stringRegex.exec(prefix)) !== null) {
         existingStringPairs.set(match[1], match[2]);

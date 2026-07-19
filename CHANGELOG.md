@@ -5,6 +5,20 @@ All notable changes to the "Flutter Config Manager" extension will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.11] - 2026-07-19
+
+### Added
+- **Dependency Validator UI**: Added a prominent "Run Dependency Analysis" action button when the dependency validator package is installed but has not yet run.
+- **Support for ITS Keys**: Added support for extracting, managing, and preserving `ITS` compliance keys (such as `ITSAppUsesNonExemptEncryption` and `ITSEncryptionExportComplianceCode`) in `Info.plist`.
+
+### Fixed
+- **Info.plist Truncation**: Fixed a critical regex bug in the Universal Links (`applinks`) setup where matching URL schemes could match from the root `<dict>` tag, leading to file truncation.
+- **AppDelegate Preservation**: Prevented the deletion of `import home_widget` from `AppDelegate.swift` if placed inside the App Links marker block.
+- **Package Name Population**: Restored the automatic populating of package name configuration inputs on dashboard load.
+- **Deep Linking SHA-256**: Made the SHA-256 fingerprint field optional for deep linking configurations, enabling saving of Universal Links alone.
+- **Migration Save Triggers**: Automatically save all settings to disk after completing the Android Declarative AGP migration.
+- **UX Improvements**: Disabled automatic page scrolling down to the packages list after package analysis completes.
+
 ## [1.0.10] - 2026-07-17
 
 ### Fixed

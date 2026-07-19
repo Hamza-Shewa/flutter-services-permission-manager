@@ -38,6 +38,15 @@ import {
   updateInfoPlistToUseLocalizedAppName,
   updateIOSAppNameLocalizations,
 } from "./ios/index.js";
+import { extractIOSAppNameLocalizations, updateAppNameInInfoPlistStrings } from "./ios/localization.service.js";
+import { 
+  normalizeTextValue, 
+  stripApiPrefix, 
+  replaceFirst, 
+  escapeRegExp, 
+  formatGradleValue, 
+  replaceGradlePropertyLine 
+} from "./build-file-utils.js";
 import type { ProjectFiles } from "./workspace.js";
 
 const APPLINKS_SERVICE_ID = "applinks";
@@ -59,47 +68,6 @@ function findPlatformRoot(filePath: string, platformDirName: string): string | u
     return undefined;
   }
   return segments.slice(0, index + 1).join(path.sep);
-}
-
-function normalizeTextValue(value: string | undefined): string {
-  return String(value ?? "").replace(/\r\n|\r|\n/g, " ").trim();
-}
-
-function stripApiPrefix(value: string | undefined): string {
-  return normalizeTextValue(value).replace(/^API\s+/i, "");
-}
-
-function replaceFirst(content: string, regex: RegExp, replacement: string): string {
-  return regex.test(content) ? content.replace(regex, replacement) : content;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function formatGradleValue(value: string, quote: boolean): string {
-  const trimmed = value.trim();
-  if (!quote) {
-    return trimmed;
-  }
-
-  return `"${trimmed.replace(/"/g, '\\"')}"`;
-}
-
-function replaceGradlePropertyLine(
-  content: string,
-  key: string,
-  value: string,
-  quoteValue: boolean,
-): string {
-  const safeValue = normalizeTextValue(value);
-  const escapedKey = escapeRegExp(key);
-  const regex = new RegExp(`^(\\s*)${escapedKey}(\\s*=)?\\s*.*$`, "m");
-
-  return content.replace(regex, (_match, indent: string, assignment: string | undefined) => {
-    const operator = assignment ? " = " : " ";
-    return `${indent}${key}${operator}${formatGradleValue(safeValue, quoteValue)}`;
-  });
 }
 
 function updateFileIfChanged(uri: vscode.Uri | undefined, content: string | undefined, nextContent: string): Promise<void> {
@@ -377,10 +345,12 @@ async function updateAssociatedDomainFiles(
           {
             applinks: {
               apps: [],
-              details: domains.map((domain: string) => ({
-                appID: `${teamId}.${bundleId}`,
-                paths: ["*"],
-              })),
+              details: [
+                {
+                  appID: `${teamId}.${bundleId}`,
+                  paths: ["*"],
+                }
+              ],
             },
           },
           null,
@@ -669,6 +639,7 @@ export async function savePermissions(ctx: SaveContext): Promise<SaveResult> {
             podDoc,
             iosPermissions,
             categorizedIosPermissions,
+            services
           );
           if (podEdit) {
             await vscode.workspace.applyEdit(podEdit);
@@ -736,6 +707,7 @@ export async function savePermissionsOnly(
   >,
   macosPermissions?: IOSPermissionEntry[],
   macosPlistUri?: vscode.Uri,
+  activeServices?: ServiceEntry[],
 ): Promise<SaveResult> {
   try {
     if (!androidManifestUri && !iosPlistUri && !macosPlistUri) {
@@ -789,6 +761,7 @@ export async function savePermissionsOnly(
           podDoc,
           iosPermissions,
           categorizedIosPermissions,
+          activeServices
         );
         if (podEdit) {
           await vscode.workspace.applyEdit(podEdit);

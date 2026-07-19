@@ -28,6 +28,8 @@ import {
   savePlatformDetails,
   extractServices,
 } from "../../services/index.js";
+import { validateServiceEntry } from "../../services/service-validator.js";
+import { toErrorMessage } from "../../shared/errors.js";
 import { extractAndroidAppNameLocalizations } from "../../services/android/localization.service.js";
 import { extractIOSAppNameLocalizations } from "../../services/ios/localization.service.js";
 import type { ProjectFiles } from "../../services/workspace.js";
@@ -166,6 +168,18 @@ export async function handleSave(
   services: ServiceEntry[],
   files: ProjectFiles,
 ): Promise<void> {
+  const configCache = getServicesConfigCache() ?? [];
+  for (const entry of services) {
+    const config = configCache.find(c => c.id === entry.id);
+    if (config) {
+      const errors = validateServiceEntry(entry, config);
+      if (errors.length > 0) {
+        ref.webview.postMessage({ type: "saveResult", success: false, message: errors[0].message });
+        return;
+      }
+    }
+  }
+
   const result = await savePermissions({
     android: {
       manifestUri: files.androidManifestUri,
@@ -216,6 +230,7 @@ export async function handleSavePermissions(
     getCategorizedIosPermissionsCache() ?? undefined,
     macosPermissions,
     files.macosPlistUri,
+    getPreviousServicesCache() ?? [],
   );
 
   ref.webview.postMessage({ type: "saveResult", ...result });
@@ -229,6 +244,18 @@ export async function handleSaveServices(
   services: ServiceEntry[],
   files: ProjectFiles,
 ): Promise<void> {
+  const configCache = getServicesConfigCache() ?? [];
+  for (const entry of services) {
+    const config = configCache.find(c => c.id === entry.id);
+    if (config) {
+      const errors = validateServiceEntry(entry, config);
+      if (errors.length > 0) {
+        ref.webview.postMessage({ type: "saveResult", success: false, message: errors[0].message });
+        return;
+      }
+    }
+  }
+
   const result = await saveServicesOnly(
     services,
     getServicesConfigCache() ?? [],
@@ -344,7 +371,7 @@ export async function handleSavePackageNames(
     ref.webview.postMessage({
       type: "saveResult",
       success: false,
-      message: `Failed to save package names: ${error}`,
+      message: `Failed to save package names: ${toErrorMessage(error)}`,
     });
   }
 }

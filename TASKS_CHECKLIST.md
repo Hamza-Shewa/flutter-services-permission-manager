@@ -10,19 +10,19 @@
 - [x] Task 1.7 — Fix indentation inconsistency in `workspace.ts` line 26
 
 ## Phase 2 — Architecture Refactor (Weeks 3–4)
-- [ ] Task 2.1 — Split `webview.js` into ES modules
-- [ ] Task 2.2 — Introduce a typed `MessageBus` for extension ↔ webview communication
-- [ ] Task 2.3 — Extract `services-extractor.service.ts` sub-concerns
-- [ ] Task 2.4 — Add file watcher for auto-refresh on external edits
-- [ ] Task 2.5 — Add input validation before file write in service handlers
+- [x] Task 2.1 — Split `webview.js` into ES modules
+- [x] Task 2.2 — Introduce a typed `MessageBus` for extension ↔ webview communication
+- [x] Task 2.3 — Extract `services-extractor.service.ts` sub-concerns
+- [x] Task 2.4 — Add file watcher for auto-refresh on external edits
+- [x] Task 2.5 — Add input validation before file write in service handlers
 
 ## Phase 3 — Test Coverage & DX (Week 4, overlap)
-- [ ] Task 3.1 — Create fixture files for regression testing
-- [ ] Task 3.2 — Unit tests for `manifest.service.ts`
-- [ ] Task 3.3 — Unit tests for `plist.service.ts`
-- [ ] Task 3.4 — Unit tests for `podfile.service.ts`
-- [ ] Task 3.5 — Extract and unit-test `document.service.ts` build file helpers
-- [ ] Task 3.6 — Configure code coverage thresholds
+- [x] Task 3.1 — Create fixture files for regression testing
+- [x] Task 3.2 — Unit tests for `manifest.service.ts`
+- [x] Task 3.3 — Unit tests for `plist.service.ts`
+- [x] Task 3.4 — Unit tests for `podfile.service.ts`
+- [x] Task 3.5 — Extract and unit-test `document.service.ts` build file helpers
+- [x] Task 3.6 — Configure code coverage thresholds
 
 ## Phase 4 — New Features: pubspec Editor + Diagnostics (Week 5)
 - [ ] Task 4.1 — pubspec.yaml Visual Editor (new "pubspec" tab)
@@ -34,13 +34,13 @@
 - [ ] Task 5.2 — CI/CD Workflow Generator (new "CI/CD" tab)
 
 ## Technical Debt
-- [ ] TD-01: `services-extractor.service.ts` console.log() replacement
-- [ ] TD-02: `manifest.service.ts` mainActivityRegex ReDoS risk
-- [ ] TD-03: `plist.service.ts` buildApplinksPlistBlock() template literal fix
-- [ ] TD-04: `migration.service.ts` plugin versions hardcoded (covered in Task 1.5)
-- [ ] TD-05: `document.service.ts` unused domain variable in AASA map() body
-- [ ] TD-06: `pub.service.ts` any type in map callback
-- [ ] TD-07: `initializer.ts` Android localizations silent override
-- [ ] TD-08: `workspace.ts` concurrent findFiles() batching
-- [ ] TD-09: `plist.service.ts` baseIndent duplication
-- [ ] TD-10: `manifest.service.ts` remove /i flag
+- [x] TD-01: `services-extractor.service.ts` console.log() replacement
+- [x] TD-02: `manifest.service.ts` mainActivityRegex ReDoS risk
+- [x] TD-03: `plist.service.ts` buildApplinksPlistBlock() template literal fix
+- [x] TD-04: `migration.service.ts` plugin versions hardcoded (covered in Task 1.5)
+- [x] TD-05: `document.service.ts` unused domain variable in AASA map() body
+- [x] TD-06: `pub.service.ts` any type in map callback
+- [x] TD-07: `initializer.ts` Android localizations silent override
+- [x] TD-08: `workspace.ts` concurrent findFiles() batching
+- [x] TD-09: `plist.service.ts` baseIndent duplication
+- [x] TD-10: `manifest.service.ts` remove /i flag

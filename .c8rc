@@ -1,11 +1,11 @@
 {
-  "reporter": ["text", "html"],
-  "exclude": [
-    "src/test/**",
-    "out/test/**",
-    "src/webview/**",
-    "src/webview.js",
-    "src/webview-utils.js"
-  ],
-  "src": ["out/services", "out/utils", "out/shared"]
+
+  "all": true,
+  "src": ["src/**/*.ts"],
+  "exclude": ["src/test/**", "out/test/**", "src/webview/frontend/**"],
+  "lines": 70,
+  "functions": 70,
+  "branches": 60,
+  "statements": 70,
+  "reporter": ["text", "lcov", "html"]
 }

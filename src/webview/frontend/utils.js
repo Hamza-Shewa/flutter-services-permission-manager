@@ -2,6 +2,14 @@ import { state, getState, setState, on } from './state.js';
 import * as api from './api.js';
 import { androidTableBody, iosTableBody, searchInput, categoryFilter, addAndroidButton, addIosButton, saveAndroidBuildDetailsButton, saveIosBuildDetailsButton, iosSearchInput, iosCategoryFilter, saveButton, saveAppNameButton, saveServicesButton, savePackageNamesButton, saveAllButton, statusMessage, toastContainer, refreshButton, androidPackageNameInput, iosBundleIdentifierInput, analyzePackagesButton, updateAllPackagesButton, toggleTransitiveButton, packagesLoadingIndicator, packagesTableContainer, packagesTableBody, packageSearchInput, packageSearchSpinner, packageSearchDropdown, popularPackagesContainer, packagePreviewCard, previewPackageName, previewPackageVersion, previewPackageDescription, previewLoading, previewAddButton, validatorHeaderActions, validatorLoadingIndicator, validatorLoadingText, validatorTableContainer, validatorTableBody, validatorNotInstalledContainer, installValidatorButton, modalBackdrop, modalSearch, modalResults, modalError, modalValueContainer, modalValueInput, modalValueSelect, modalValueHint, androidCountChip, iosCountChip, macosCountChip, macosTableBody, macosSearchInput, macosCategoryFilter, addMacosButton, androidDetailsSection, iosDetailsSection, androidDetailsGrid, iosDetailsGrid, androidSection, iosSection, macosSection, modalCancel, modalAdd, crossPlatformModalBackdrop, crossPlatformModalTitle, crossPlatformModalMessage, crossPlatformSuggestions, crossPlatformModalError, crossPlatformModalSkip, crossPlatformModalAdd, syncPermissionsButton, equivalentModalBackdrop, equivalentModalTitle, equivalentModalMessage, equivalentSuggestions, equivalentModalError, equivalentModalCancel, equivalentModalAdd, syncModalBackdrop, syncModalList, syncModalError, syncModalCancel, syncModalConfirm, deleteSafetyModalBackdrop, deleteSafetyCancel, deleteSafetyConfirm, addServiceButton, servicesContainer, serviceSearch, serviceModalBackdrop, serviceModalTitle, serviceModalContent, serviceModalError, serviceModalCancel, serviceModalSave, addServiceModalBackdrop, addServiceList, addServiceModalCancel, appNameDefault, appNameLangDropdown, appNameLangDropdownTrigger, appNameLangDropdownMenu, appNameLangSearch, appNameLangOptions, appNameLangList } from './elements.js';
 
+let pendingRefreshTimeout = null;
+
+export const normalizeText = (...args) => window.PermissionManagerUtils.normalizeText(...args);
+export const dedupePermissions = (...args) => window.PermissionManagerUtils.dedupePermissions(...args);
+export const filterPermissions = (...args) => window.PermissionManagerUtils.filterPermissions(...args);
+export const sortPermissions = (...args) => window.PermissionManagerUtils.sortPermissions(...args);
+export const validateSelection = (...args) => window.PermissionManagerUtils.validateSelection(...args);
+
 export function escapeHtml(value) {
     return String(value || "")
       .replace(/&/g, "&amp;")
@@ -16,7 +24,7 @@ export function scheduleRefresh() {
       clearTimeout(pendingRefreshTimeout);
     }
     pendingRefreshTimeout = setTimeout(() => {
-      vscode.postMessage({ type: "refresh" });
+      api.postMessage({ type: "refresh" });
       pendingRefreshTimeout = null;
     }, 200);
   }

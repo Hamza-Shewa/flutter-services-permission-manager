@@ -15,6 +15,8 @@ export interface ServiceField {
     placeholder?: string;
     required?: boolean;
     type?: 'text' | 'list' | 'toggle';
+    pattern?: string;
+    patternError?: string;
 }
 
 /** iOS plist entry configuration */

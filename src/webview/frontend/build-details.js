@@ -31,6 +31,17 @@ export function renderPlatformDetails() {
       "No iOS build metadata detected.",
       "ios",
     );
+
+    // Populate package configuration inputs
+    const androidAppId = state.platformDetails?.android?.find((d) => d.key === "applicationId")?.value;
+    const iosBundleId = state.platformDetails?.ios?.find((d) => d.key === "bundleIdentifier")?.value;
+
+    if (androidPackageNameInput && androidAppId) {
+      androidPackageNameInput.value = androidAppId;
+    }
+    if (iosBundleIdentifierInput && iosBundleId) {
+      iosBundleIdentifierInput.value = iosBundleId;
+    }
   }
 
 export function handleSaveAndroidBuildDetails() {
@@ -40,7 +51,7 @@ export function handleSaveAndroidBuildDetails() {
       ...detail,
       value: normalizeBuildDetailValue(detail.key, detail.value),
     }));
-    vscode.postMessage({
+    api.postMessage({
       type: "saveAndroidBuildDetails",
       androidDetails,
     });
@@ -53,7 +64,7 @@ export function handleSaveIosBuildDetails() {
       ...detail,
       value: normalizeBuildDetailValue(detail.key, detail.value),
     }));
-    vscode.postMessage({
+    api.postMessage({
       type: "saveIosBuildDetails",
       iosDetails,
     });
@@ -75,7 +86,7 @@ export function handleSavePlatformDetails() {
       })),
     };
 
-    vscode.postMessage({
+    api.postMessage({
       type: "savePlatformDetails",
       platformDetails,
     });

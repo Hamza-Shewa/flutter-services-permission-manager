@@ -48,6 +48,13 @@ export class ValidationError extends PermissionManagerError {
     }
 }
 
+export class ServiceValidationError extends PermissionManagerError {
+    constructor(serviceId: string, field: string, message: string) {
+        super(message, 'SERVICE_VALIDATION_ERROR', { serviceId, field });
+        this.name = 'ServiceValidationError';
+    }
+}
+
 /**
  * Safely converts an unknown error caught in a try-catch block to a string message.
  */

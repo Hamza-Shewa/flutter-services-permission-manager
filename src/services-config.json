@@ -194,7 +194,7 @@
           "id": "sha256CertFingerprints",
           "label": "SHA-256 Cert Fingerprints",
           "placeholder": "AA:BB:... (comma separated)",
-          "required": true,
+          "required": false,
           "type": "list"
         },
         {

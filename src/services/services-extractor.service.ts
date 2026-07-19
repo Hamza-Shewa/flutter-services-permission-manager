@@ -562,8 +562,10 @@ async function extractAssociatedApplinksFiles(
                 values['sha256CertFingerprints'] = firstTarget.sha256_cert_fingerprints.join(', ');
             }
         }
-    } catch (error) {
-        console.log('[Services Extractor] assetlinks.json not found or unreadable:', error);
+    } catch (error: any) {
+        if (error?.code !== 'FileNotFound') {
+            console.log('[Services Extractor] assetlinks.json unreadable:', error);
+        }
     }
 
     try {
@@ -596,8 +598,10 @@ async function extractAssociatedApplinksFiles(
                 }
             }
         }
-    } catch (error) {
-        console.log('[Services Extractor] apple-app-site-association not found or unreadable:', error);
+    } catch (error: any) {
+        if (error?.code !== 'FileNotFound') {
+            console.log('[Services Extractor] apple-app-site-association unreadable:', error);
+        }
     }
 
     try {

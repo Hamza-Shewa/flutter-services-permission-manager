@@ -734,11 +734,11 @@ export function syncEquivalents() {
     // Ensure all permissions are loaded, queue modal until both arrive
     if (state.allAndroidPermissions.length === 0) {
       state.pendingSyncModal = true;
-      vscode.postMessage({ type: "requestAllAndroidPermissions" });
+      api.postMessage({ type: "requestAllAndroidPermissions" });
     }
     if (state.allIosPermissions.length === 0) {
       state.pendingSyncModal = true;
-      vscode.postMessage({ type: "requestAllIOSPermissions" });
+      api.postMessage({ type: "requestAllIOSPermissions" });
     }
 
     if (
@@ -921,9 +921,9 @@ export function addSelectedPermission() {
     if (equivalents && equivalents.length > 0 && hasCrossPlatformFile) {
       // Ensure we have the target platform permissions loaded
       if (!isIos && state.allIosPermissions.length === 0) {
-        vscode.postMessage({ type: "requestAllIOSPermissions" });
+        api.postMessage({ type: "requestAllIOSPermissions" });
       } else if (isIos && state.allAndroidPermissions.length === 0) {
-        vscode.postMessage({ type: "requestAllAndroidPermissions" });
+        api.postMessage({ type: "requestAllAndroidPermissions" });
       }
       // Show cross-platform suggestion modal
       showCrossPlatformModal(selected, equivalents, isIos);
@@ -1015,7 +1015,7 @@ export function showCrossPlatformModal(selected, equivalents, isSourceIos) {
       const messageType = isSourceIos
         ? "requestAllAndroidPermissions"
         : "requestAllIOSPermissions";
-      vscode.postMessage({ type: messageType });
+      api.postMessage({ type: messageType });
 
       // Store the modal data and show modal after permissions load
       state.pendingCrossPlatformModal = { selected, equivalents, isSourceIos };
@@ -1207,7 +1207,7 @@ export function showEquivalentModal(permission, targetPlatform) {
         targetPlatform === "ios"
           ? "requestAllIOSPermissions"
           : "requestAllAndroidPermissions";
-      vscode.postMessage({ type: messageType });
+      api.postMessage({ type: messageType });
       state.pendingEquivalentModal = { permission, targetPlatform };
       return;
     }
@@ -1502,7 +1502,7 @@ export function handleSavePermissions() {
     console.log("[PermissionManager] Posting savePermissions message");
     showToast("Saving permissions...", "info");
 
-    vscode.postMessage({
+    api.postMessage({
       type: "savePermissions",
       androidPermissions: androidPermissions,
       iosPermissions: iosPermissions,
@@ -1550,16 +1550,6 @@ export function handleSaveAll() {
     } catch (e) {
       console.error('Error saving app name', e);
     }
-  }
-
-export function confirmSync() {
-    vscode.postMessage({
-      type: "savePermissions",
-      androidPermissions: state.androidPermissions,
-      iosPermissions: state.iosPermissions,
-      macosPermissions: state.macosPermissions,
-    });
-    closeSyncModal();
   }
 
 export function showDeleteSafetyModal(packages) {

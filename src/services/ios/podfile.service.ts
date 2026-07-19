@@ -83,7 +83,8 @@ function findGccBlock(content: string): { start: number; end: number } | null {
 export async function updateIOSPodfile(
     document: vscode.TextDocument,
     iosPermissions: IOSPermissionEntry[],
-    categorizedPermissions: Record<string, { permission: string; podfileMacro?: string }[]>
+    categorizedPermissions: Record<string, { permission: string; podfileMacro?: string }[]>,
+    activeServices?: ServiceEntry[]
 ): Promise<vscode.WorkspaceEdit | null> {
     const content = document.getText();
     
@@ -103,6 +104,11 @@ export async function updateIOSPodfile(
         if (macro) {
             macrosToAdd.add(macro);
         }
+    }
+    
+    // Inject PERMISSION_NOTIFICATIONS if OneSignal is active
+    if (activeServices?.some(s => s.id === 'onesignal')) {
+        macrosToAdd.add('PERMISSION_NOTIFICATIONS');
     }
     
     if (macrosToAdd.size === 0) {

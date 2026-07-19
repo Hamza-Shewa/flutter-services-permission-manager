@@ -13,7 +13,7 @@ export function handleSavePackageNames() {
 
     showToast("Saving package names...", "info");
 
-    vscode.postMessage({
+    api.postMessage({
       type: "savePackageNames",
       applicationId,
       bundleIdentifier,
@@ -128,7 +128,7 @@ export function renderPackagesTable() {
           if (packagesTableContainer) {
             packagesTableContainer.style.display = "none";
           }
-          vscode.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package });
+          api.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package });
         });
         actionCell.appendChild(upgradeBtn);
       }
@@ -174,7 +174,7 @@ export function loadPackagePreview(packageName) {
     previewAddButton.style.display = "none";
     previewLoading.style.display = "block";
 
-    vscode.postMessage({ type: "requestPackageDetails", packageName });
+    api.postMessage({ type: "requestPackageDetails", packageName });
   }
 
 export function renderValidatorHeaderActions() {
@@ -191,7 +191,7 @@ export function renderValidatorHeaderActions() {
           validatorLoadingText.textContent = "Running dependency_validator...";
         }
         if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
-        vscode.postMessage({ type: "runDependencyValidator" });
+        api.postMessage({ type: "runDependencyValidator" });
       });
       validatorHeaderActions.appendChild(runBtn);
 
@@ -273,7 +273,7 @@ export function renderValidatorTable() {
             validatorLoadingText.textContent = `Downgrading ${issue.package}...`;
           }
           if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
-          vscode.postMessage({ type: "downgradePackage", packageName: issue.package });
+          api.postMessage({ type: "downgradePackage", packageName: issue.package });
         });
       } else {
         btn.textContent = "Remove";

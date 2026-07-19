@@ -383,7 +383,7 @@ export function handleSaveServices() {
     console.log("[PermissionManager] Posting saveServices message");
     showToast("Saving services...", "info");
 
-    vscode.postMessage({
+    api.postMessage({
       type: "saveServices",
       services: state.services,
     });

@@ -1,6 +1,6 @@
 import { state, getState, setState, on } from './state.js';
 import * as api from './api.js';
-import { androidTableBody, iosTableBody, searchInput, categoryFilter, addAndroidButton, addIosButton, saveAndroidBuildDetailsButton, saveIosBuildDetailsButton, iosSearchInput, iosCategoryFilter, saveButton, saveAppNameButton, saveServicesButton, savePackageNamesButton, saveAllButton, statusMessage, toastContainer, refreshButton, androidPackageNameInput, iosBundleIdentifierInput, analyzePackagesButton, updateAllPackagesButton, toggleTransitiveButton, packagesLoadingIndicator, packagesTableContainer, packagesTableBody, packageSearchInput, packageSearchSpinner, packageSearchDropdown, popularPackagesContainer, packagePreviewCard, previewPackageName, previewPackageVersion, previewPackageDescription, previewLoading, previewAddButton, validatorHeaderActions, validatorLoadingIndicator, validatorLoadingText, validatorTableContainer, validatorTableBody, validatorNotInstalledContainer, installValidatorButton, modalBackdrop, modalSearch, modalResults, modalError, modalValueContainer, modalValueInput, modalValueSelect, modalValueHint, androidCountChip, iosCountChip, macosCountChip, macosTableBody, macosSearchInput, macosCategoryFilter, addMacosButton, androidDetailsSection, iosDetailsSection, androidDetailsGrid, iosDetailsGrid, androidSection, iosSection, macosSection, modalCancel, modalAdd, crossPlatformModalBackdrop, crossPlatformModalTitle, crossPlatformModalMessage, crossPlatformSuggestions, crossPlatformModalError, crossPlatformModalSkip, crossPlatformModalAdd, syncPermissionsButton, equivalentModalBackdrop, equivalentModalTitle, equivalentModalMessage, equivalentSuggestions, equivalentModalError, equivalentModalCancel, equivalentModalAdd, syncModalBackdrop, syncModalList, syncModalError, syncModalCancel, syncModalConfirm, deleteSafetyModalBackdrop, deleteSafetyCancel, deleteSafetyConfirm, addServiceButton, servicesContainer, serviceSearch, serviceModalBackdrop, serviceModalTitle, serviceModalContent, serviceModalError, serviceModalCancel, serviceModalSave, addServiceModalBackdrop, addServiceList, addServiceModalCancel, appNameDefault, appNameLangDropdown, appNameLangDropdownTrigger, appNameLangDropdownMenu, appNameLangSearch, appNameLangOptions, appNameLangList } from './elements.js';
+import { androidTableBody, iosTableBody, searchInput, categoryFilter, addAndroidButton, addIosButton, saveAndroidBuildDetailsButton, saveIosBuildDetailsButton, iosSearchInput, iosCategoryFilter, saveButton, saveAppNameButton, saveServicesButton, savePackageNamesButton, saveAllButton, statusMessage, toastContainer, refreshButton, androidPackageNameInput, iosBundleIdentifierInput, analyzePackagesButton, updateAllPackagesButton, toggleTransitiveButton, packagesLoadingIndicator, packagesTableContainer, packagesTableBody, packageSearchInput, packageSearchSpinner, packageSearchDropdown, popularPackagesContainer, packagePreviewCard, previewPackageName, previewPackageVersion, previewPackageDescription, previewLoading, previewAddButton, validatorHeaderActions, validatorLoadingIndicator, validatorLoadingText, validatorTableContainer, validatorTableBody, validatorNotInstalledContainer, installValidatorButton, validatorInstalledContainer, runValidatorButton, modalBackdrop, modalSearch, modalResults, modalError, modalValueContainer, modalValueInput, modalValueSelect, modalValueHint, androidCountChip, iosCountChip, macosCountChip, macosTableBody, macosSearchInput, macosCategoryFilter, addMacosButton, androidDetailsSection, iosDetailsSection, androidDetailsGrid, iosDetailsGrid, androidSection, iosSection, macosSection, modalCancel, modalAdd, crossPlatformModalBackdrop, crossPlatformModalTitle, crossPlatformModalMessage, crossPlatformSuggestions, crossPlatformModalError, crossPlatformModalSkip, crossPlatformModalAdd, syncPermissionsButton, equivalentModalBackdrop, equivalentModalTitle, equivalentModalMessage, equivalentSuggestions, equivalentModalError, equivalentModalCancel, equivalentModalAdd, syncModalBackdrop, syncModalList, syncModalError, syncModalCancel, syncModalConfirm, deleteSafetyModalBackdrop, deleteSafetyCancel, deleteSafetyConfirm, addServiceButton, servicesContainer, serviceSearch, serviceModalBackdrop, serviceModalTitle, serviceModalContent, serviceModalError, serviceModalCancel, serviceModalSave, addServiceModalBackdrop, addServiceList, addServiceModalCancel, appNameDefault, appNameLangDropdown, appNameLangDropdownTrigger, appNameLangDropdownMenu, appNameLangSearch, appNameLangOptions, appNameLangList } from './elements.js';
 
 import * as permissions from './permissions.js';
 import * as services from './services.js';
@@ -18,6 +18,16 @@ Object.assign(window, localization);
 Object.assign(window, buildDetails);
 Object.assign(window, utils);
 Object.assign(window, router);
+
+// Also map the module namespaces themselves so qualified calls (like utils.foo()) work
+window.permissions = permissions;
+window.services = services;
+window.packages = packages;
+window.localization = localization;
+window.buildDetails = buildDetails;
+window.utils = utils;
+window.router = router;
+window.api = api;
 
   searchInput.addEventListener("input", (event) => {
     state.search = event.target.value;
@@ -54,12 +64,12 @@ Object.assign(window, router);
 
   addAndroidButton.addEventListener("click", () => {
     openModal("android");
-    vscode.postMessage({ type: "requestAllAndroidPermissions" });
+    api.postMessage({ type: "requestAllAndroidPermissions" });
   });
 
   addIosButton.addEventListener("click", () => {
     openModal("ios");
-    vscode.postMessage({ type: "requestAllIOSPermissions" });
+    api.postMessage({ type: "requestAllIOSPermissions" });
   });
 
   // macOS event listeners
@@ -78,14 +88,14 @@ Object.assign(window, router);
   if (addMacosButton) {
     addMacosButton.addEventListener("click", () => {
       openModal("macos");
-      vscode.postMessage({ type: "requestAllIOSPermissions" });
+      api.postMessage({ type: "requestAllIOSPermissions" });
     });
   }
 
   // Service event listeners
   if (addServiceButton) {
     addServiceButton.addEventListener("click", () => {
-      vscode.postMessage({ type: "requestServices" });
+      api.postMessage({ type: "requestServices" });
       openAddServiceModal();
     });
   }
@@ -233,20 +243,20 @@ Object.assign(window, router);
   const migrateAndroidButton = document.getElementById("migrateAndroidButton");
   if (migrateAndroidButton) {
     migrateAndroidButton.addEventListener("click", () => {
-      vscode.postMessage({ type: "migrateAndroid" });
+      api.postMessage({ type: "migrateAndroid" });
     });
   }
 
   const upgradePackagesButton = document.getElementById("upgradePackagesButton");
   if (upgradePackagesButton) {
     upgradePackagesButton.addEventListener("click", () => {
-      vscode.postMessage({ type: "upgradePackages" });
+      api.postMessage({ type: "upgradePackages" });
     });
   }
 
   if (refreshButton) {
     refreshButton.addEventListener("click", () => {
-      vscode.postMessage({ type: "refresh" });
+      api.postMessage({ type: "refresh" });
     });
   }
   if (syncPermissionsButton) {
@@ -324,7 +334,7 @@ Object.assign(window, router);
   equivalentModalAdd.addEventListener("click", addEquivalentPermissions);
   
   function confirmSync() {
-    vscode.postMessage({
+    api.postMessage({
       type: "savePermissions",
       androidPermissions: state.androidPermissions,
       iosPermissions: state.iosPermissions,
@@ -451,7 +461,7 @@ Object.assign(window, router);
           if (packagesTableContainer) {
             packagesTableContainer.style.display = "none";
           }
-          vscode.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package });
+          api.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package });
         });
         actionCell.appendChild(upgradeBtn);
       }
@@ -481,7 +491,7 @@ Object.assign(window, router);
       if (packagesTableContainer) {
         packagesTableContainer.style.display = "none";
       }
-      vscode.postMessage({ type: "requestPackagesAnalysis" });
+      api.postMessage({ type: "requestPackagesAnalysis" });
     });
   }
 
@@ -494,7 +504,7 @@ Object.assign(window, router);
       if (packagesTableContainer) {
         packagesTableContainer.style.display = "none";
       }
-      vscode.postMessage({ type: "upgradePackages" });
+      api.postMessage({ type: "upgradePackages" });
     });
   }
 
@@ -542,7 +552,7 @@ Object.assign(window, router);
     previewAddButton.style.display = "none";
     previewLoading.style.display = "block";
 
-    vscode.postMessage({ type: "requestPackageDetails", packageName });
+    api.postMessage({ type: "requestPackageDetails", packageName });
   }
 
   if (packageSearchInput) {
@@ -559,7 +569,7 @@ Object.assign(window, router);
 
       packageSearchSpinner.style.display = "block";
       searchTimeout = setTimeout(() => {
-        vscode.postMessage({ type: "searchPackages", query });
+        api.postMessage({ type: "searchPackages", query });
       }, 400); // 400ms debounce
     });
 
@@ -578,7 +588,7 @@ Object.assign(window, router);
           packagesLoadingIndicator.style.display = "block";
           packagesLoadingIndicator.querySelector("div").textContent = `Adding ${currentPreviewPackage}...`;
         }
-        vscode.postMessage({ type: "addPackage", packageName: currentPreviewPackage });
+        api.postMessage({ type: "addPackage", packageName: currentPreviewPackage });
         packagePreviewCard.style.display = "none";
         packageSearchInput.value = "";
       }
@@ -615,7 +625,7 @@ Object.assign(window, router);
         }
         if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
         
-        vscode.postMessage({ type: "removeAllFlaggedPackages", packages: pendingDeletePackages });
+        api.postMessage({ type: "removeAllFlaggedPackages", packages: pendingDeletePackages });
         hideDeleteSafetyModal();
       }
     });
@@ -628,7 +638,19 @@ Object.assign(window, router);
         validatorLoadingIndicator.style.display = "block";
         validatorLoadingText.textContent = "Installing dependency_validator... Please wait.";
       }
-      vscode.postMessage({ type: "installDependencyValidator" });
+      api.postMessage({ type: "installDependencyValidator" });
+    });
+  }
+
+  if (runValidatorButton) {
+    runValidatorButton.addEventListener("click", () => {
+      if (validatorInstalledContainer) {validatorInstalledContainer.style.display = "none";}
+      if (validatorLoadingIndicator) {
+        validatorLoadingIndicator.style.display = "block";
+        validatorLoadingText.textContent = "Running dependency_validator...";
+      }
+      if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
+      api.postMessage({ type: "runDependencyValidator" });
     });
   }
 
@@ -646,7 +668,7 @@ Object.assign(window, router);
           validatorLoadingText.textContent = "Running dependency_validator...";
         }
         if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
-        vscode.postMessage({ type: "runDependencyValidator" });
+        api.postMessage({ type: "runDependencyValidator" });
       });
       validatorHeaderActions.appendChild(runBtn);
 
@@ -673,7 +695,16 @@ Object.assign(window, router);
 
     if (!state.validatorState.issues) {
       validatorTableContainer.style.display = "none";
+      if (state.validatorState.isInstalled && validatorInstalledContainer) {
+        validatorInstalledContainer.style.display = "block";
+      } else if (validatorInstalledContainer) {
+        validatorInstalledContainer.style.display = "none";
+      }
       return;
+    }
+
+    if (validatorInstalledContainer) {
+      validatorInstalledContainer.style.display = "none";
     }
 
     if (state.validatorState.issues.length === 0) {
@@ -728,7 +759,7 @@ Object.assign(window, router);
             validatorLoadingText.textContent = `Downgrading ${issue.package}...`;
           }
           if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
-          vscode.postMessage({ type: "downgradePackage", packageName: issue.package });
+          api.postMessage({ type: "downgradePackage", packageName: issue.package });
         });
       } else {
         btn.textContent = "Remove";
@@ -787,7 +818,7 @@ bus.on("permissions", (message) => {
   
   if (message.appName) {
     state.appName = message.appName;
-    renderAppNameSection();
+    renderAppName();
   }
 
   if (message.platformDetails) {
@@ -797,7 +828,7 @@ bus.on("permissions", (message) => {
 
   if (message.languages) {
     state.languages = message.languages;
-    renderAppNameLangDropdown();
+    renderLanguageDropdown();
   }
 
   updateView();
@@ -805,6 +836,13 @@ bus.on("permissions", (message) => {
   if (androidSection) {androidSection.style.display = state.hasAndroidManifest ? "block" : "none";}
   if (iosSection) {iosSection.style.display = state.hasIOSPlist ? "block" : "none";}
   if (macosSection) {macosSection.style.display = state.hasMacOSPlist ? "block" : "none";}
+
+  // Auto-run packages analysis on first load
+  if (!hasAnalyzedPackages && analyzePackagesButton) {
+    hasAnalyzedPackages = true;
+    analyzePackagesButton.click();
+    api.checkDependencyValidator();
+  }
 });
 
 bus.on("allAndroidPermissions", (message) => {
@@ -839,6 +877,9 @@ bus.on("saveResult", (message) => {
   if (packagesLoadingIndicator) {
     packagesLoadingIndicator.style.display = "none";
   }
+  if (message.success && message.message && message.message.includes("migrated to declarative plugins")) {
+    handleSaveAll();
+  }
 });
 
 bus.on("packagesAnalysisResult", (message) => {
@@ -853,7 +894,6 @@ bus.on("packagesAnalysisResult", (message) => {
     state.packages = [];
   } else {
     state.packages = message.packages || [];
-    if (packagesTableContainer) {packagesTableContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });}
   }
   renderPackagesTable();
 });
@@ -899,15 +939,20 @@ bus.on("dependencyValidatorState", (message) => {
   state.validatorState.isInstalled = message.isInstalled;
   if (message.isInstalled) {
     if (validatorNotInstalledContainer) {validatorNotInstalledContainer.style.display = "none";}
+    if (!state.validatorState.issues && validatorInstalledContainer) {
+      validatorInstalledContainer.style.display = "block";
+    }
   } else {
     if (validatorNotInstalledContainer) {validatorNotInstalledContainer.style.display = "block";}
     if (validatorTableContainer) {validatorTableContainer.style.display = "none";}
+    if (validatorInstalledContainer) {validatorInstalledContainer.style.display = "none";}
   }
   renderValidatorHeaderActions();
 });
 
 bus.on("dependencyValidationResult", (message) => {
   if (validatorLoadingIndicator) {validatorLoadingIndicator.style.display = "none";}
+  if (validatorInstalledContainer) {validatorInstalledContainer.style.display = "none";}
   if (message.error) {
     setStatus(`Dependency validator error: ${message.error}`, "error");
   } else {

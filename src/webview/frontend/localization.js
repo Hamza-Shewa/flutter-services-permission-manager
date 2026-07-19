@@ -183,7 +183,7 @@ export function handleSaveAppName() {
     console.log("[PermissionManager] Posting saveAppName message");
     showToast("Saving app name localization...", "info");
 
-    vscode.postMessage({
+    api.postMessage({
       type: "saveAppName",
       appName: {
         defaultName: state.appName.defaultName,

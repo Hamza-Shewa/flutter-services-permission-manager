@@ -92,6 +92,34 @@ import Flutter
             const matches = updated.match(/import app_links/g);
             assert.strictEqual(matches?.length, 1);
         });
+
+        test('preserves import home_widget if inside applinks block', () => {
+            const appDelegateWithHomeWidget = `import UIKit
+import Flutter
+
+// start applinks configuration
+import home_widget
+import app_links
+// end applinks configuration
+
+@UIApplicationMain
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}`;
+            const updated = updateAppDelegateWithServices(
+                appDelegateWithHomeWidget,
+                [{ id: 'applinks', values: { domains: 'new.com' } }],
+                []
+            );
+            assert.ok(updated.includes('import home_widget'));
+            assert.ok(updated.includes('import app_links'));
+        });
     });
 
     suite('removeServicesFromAppDelegate', () => {
@@ -123,6 +151,34 @@ import Flutter
             );
             assert.ok(!removed.includes('import app_links'));
             assert.ok(!removed.includes('AppLinks.shared.getLink'));
+        });
+
+        test('preserves import home_widget when removing applinks block', () => {
+            const appDelegateWithHomeWidget = `import UIKit
+import Flutter
+
+// start applinks configuration
+import home_widget
+import app_links
+// end applinks configuration
+
+@UIApplicationMain
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}`;
+            const removed = removeServicesFromAppDelegate(
+                appDelegateWithHomeWidget,
+                ['applinks'],
+                []
+            );
+            assert.ok(removed.includes('import home_widget'));
+            assert.ok(!removed.includes('import app_links'));
         });
     });
 });

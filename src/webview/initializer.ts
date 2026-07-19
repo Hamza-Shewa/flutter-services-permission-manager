@@ -21,13 +21,15 @@ import { getWebviewContent } from "./content.js";
 import { readJsonFile } from "../utils/file.js";
 import { discoverProjectPlatformDetails } from "../services/workspace.js";
 import type { ProjectFiles } from "../services/workspace.js";
+
 import {
   setCategorizedIosPermissionsCache,
   setServicesConfigCache,
   setPreviousServicesCache,
   getServicesConfigCache,
 } from "./state.js";
-import { MessageBus } from "../shared/message-bus.js";
+import { debounce } from "../utils/debounce.js";
+import { MessageBus } from "./message-bus.js";
 import {
   handleRefresh,
   handleRequestAllAndroid,
@@ -76,12 +78,6 @@ export async function initializePermissionWebview(
   macosPermissions: IOSPermission[],
   files: ProjectFiles,
 ): Promise<void> {
-  const webview =
-    target.type === "panel" ? target.panel.webview : target.view.webview;
-
-  // Set webview HTML content
-  webview.html = await getWebviewContent(webview, extensionUri);
-
   // Load and cache data
   const [categorizedPermissions, servicesConfigFile, languagesConfig] = await Promise.all([
     getCategorizedIOSPermissions(),
@@ -143,6 +139,8 @@ export async function initializePermissionWebview(
     languages: languagesConfig?.languages ?? [],
   };
 
+  const webview = target.type === "panel" ? target.panel.webview : target.view.webview;
+
   // Set up message handler
   const ref: WebviewRef = target.type === "panel" 
     ? { kind: 'panel', panel: target.panel, webview }
@@ -164,6 +162,28 @@ export async function initializePermissionWebview(
     });
   }
 
+  // Set up file watcher
+  if (workspaceFolder) {
+    const watcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(
+        workspaceFolder,
+        '{**/AndroidManifest.xml,**/Info.plist,**/Podfile,**/pubspec.yaml}'
+      )
+    );
+    const debouncedRefresh = debounce(() => handleRefresh(ref, files), 1500);
+    watcher.onDidChange(debouncedRefresh);
+    watcher.onDidCreate(debouncedRefresh);
+
+    if (target.type === "panel") {
+      target.panel.onDidDispose(() => watcher.dispose());
+    } else {
+      target.view.onDidDispose(() => watcher.dispose());
+    }
+  }
+
+  // Set webview HTML content
+  webview.html = await getWebviewContent(webview, extensionUri);
+
   // Send initial payload
   webview.postMessage(payload);
 }
@@ -178,39 +198,42 @@ function setupMessageHandler(
 ): void {
   const bus = new MessageBus(ref.webview);
 
-  bus.on("ready", () => ref.webview.postMessage(initialPayload));
-  bus.on("refresh", async () => await handleRefresh(ref, files));
-  bus.on("requestAllAndroidPermissions", async () => await handleRequestAllAndroid(ref));
-  bus.on("requestAllIOSPermissions", async () => await handleRequestAllIOS(ref));
-  bus.on("requestServices", () => handleRequestServices(ref));
-  
-  bus.on("savePermissions", async (message: any) => 
-    await handleSavePermissions(ref, message.androidPermissions ?? [], message.iosPermissions ?? [], message.macosPermissions ?? [], files)
-  );
-  bus.on("saveAppName", async (message: any) => await handleSaveAppName(ref, message.appName, files));
-  bus.on("savePlatformDetails", async (message: any) => await handleSavePlatformDetails(ref, message.platformDetails, files));
-  bus.on("saveServices", async (message: any) => await handleSaveServices(ref, message.services ?? [], files));
-  
-  bus.on("savePackageNames", async (message: any) => 
-    await handleSavePackageNames(ref, { applicationId: message.applicationId || "", bundleIdentifier: message.bundleIdentifier || "" }, files)
-  );
-  
-  bus.on("saveAndroidBuildDetails", async (message: any) => await handleSaveAndroidBuildDetails(ref, message.androidDetails ?? [], files));
-  bus.on("saveIosBuildDetails", async (message: any) => await handleSaveIosBuildDetails(ref, message.iosDetails ?? [], files));
-  
-  bus.on("migrateAndroid", async () => await handleMigrateAndroid(ref));
-  bus.on("upgradePackages", async () => await handleUpgradePackages(ref));
-  bus.on("requestPackagesAnalysis", async () => await handleRequestPackagesAnalysis(ref));
-  bus.on("upgradeSinglePackage", async (message: any) => { if (message.packageName) {await handleUpgradeSinglePackage(ref, message.packageName);} });
-  bus.on("searchPackages", async (message: any) => { if (message.query !== undefined) {await handleSearchPackages(ref, message.query);} });
-  bus.on("requestPackageDetails", async (message: any) => { if (message.packageName) {await handleRequestPackageDetails(ref, message.packageName);} });
-  bus.on("addPackage", async (message: any) => { if (message.packageName) {await handleAddPackage(ref, message.packageName);} });
-  
-  bus.on("checkDependencyValidator", async () => await handleCheckDependencyValidator(ref));
-  bus.on("installDependencyValidator", async () => await handleInstallDependencyValidator(ref));
-  bus.on("runDependencyValidator", async () => await handleRunDependencyValidator(ref));
-  
-  bus.on("removePackage", async (message: any) => { if (message.packageName) {await handleRemovePackage(ref, message.packageName);} });
-  bus.on("downgradePackage", async (message: any) => { if (message.packageName) {await handleDowngradePackage(ref, message.packageName);} });
-  bus.on("removeAllFlaggedPackages", async (message: any) => { if (message.packages) {await handleRemoveAllFlaggedPackages(ref, message.packages);} });
+  bus
+    .register("ready", () => {
+      console.log("[Extension Backend] Received 'ready' from webview. Sending initial payload...");
+      ref.webview.postMessage(initialPayload);
+    })
+    .register("refresh", async () => {
+      console.log("[Extension Backend] Received 'refresh' from webview. Reloading data...");
+      await handleRefresh(ref, files);
+    })
+    .register("requestAllAndroidPermissions", async () => await handleRequestAllAndroid(ref))
+    .register("requestAllIOSPermissions", async () => await handleRequestAllIOS(ref))
+    .register("requestServices", () => handleRequestServices(ref))
+    .register("savePermissions", async (msg) => 
+      await handleSavePermissions(ref, msg.androidPermissions ?? [], msg.iosPermissions ?? [], msg.macosPermissions ?? [], files)
+    )
+    .register("saveAppName", async (msg) => await handleSaveAppName(ref, msg.appName, files))
+    .register("savePlatformDetails", async (msg) => await handleSavePlatformDetails(ref, msg.platformDetails, files))
+    .register("saveServices", async (msg) => await handleSaveServices(ref, msg.services ?? [], files))
+    .register("savePackageNames", async (msg) => 
+      await handleSavePackageNames(ref, { applicationId: msg.applicationId || "", bundleIdentifier: msg.bundleIdentifier || "" }, files)
+    )
+    .register("saveAndroidBuildDetails", async (msg) => await handleSaveAndroidBuildDetails(ref, msg.androidDetails ?? [], files))
+    .register("saveIosBuildDetails", async (msg) => await handleSaveIosBuildDetails(ref, msg.iosDetails ?? [], files))
+    .register("migrateAndroid", async () => await handleMigrateAndroid(ref))
+    .register("upgradePackages", async () => await handleUpgradePackages(ref))
+    .register("requestPackagesAnalysis", async () => await handleRequestPackagesAnalysis(ref))
+    .register("upgradeSinglePackage", async (msg) => { if (msg.packageName) {await handleUpgradeSinglePackage(ref, msg.packageName);} })
+    .register("searchPackages", async (msg) => { if (msg.query !== undefined) {await handleSearchPackages(ref, msg.query);} })
+    .register("requestPackageDetails", async (msg) => { if (msg.packageName) {await handleRequestPackageDetails(ref, msg.packageName);} })
+    .register("addPackage", async (msg) => { if (msg.packageName) {await handleAddPackage(ref, msg.packageName);} })
+    .register("checkDependencyValidator", async () => await handleCheckDependencyValidator(ref))
+    .register("installDependencyValidator", async () => await handleInstallDependencyValidator(ref))
+    .register("runDependencyValidator", async () => await handleRunDependencyValidator(ref))
+    .register("removePackage", async (msg) => { if (msg.packageName) {await handleRemovePackage(ref, msg.packageName);} })
+    .register("downgradePackage", async (msg) => { if (msg.packageName) {await handleDowngradePackage(ref, msg.packageName);} })
+    .register("removeAllFlaggedPackages", async (msg) => { if (msg.packages) {await handleRemoveAllFlaggedPackages(ref, msg.packages);} })
+    .register("webview_error", (msg) => { console.error("[WEBVIEW ERROR]:", JSON.stringify(msg, null, 2)); })
+    .register("webview_log", (msg) => { console.log("[WEBVIEW LOG]:", msg.message); });
 }

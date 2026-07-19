@@ -95,6 +95,18 @@ export type WebviewMessage =
   | {
     type: "removeAllFlaggedPackages";
     packages: string[];
+  }
+  | {
+    type: "webview_error";
+    message: string;
+    filename?: string;
+    lineno?: number;
+    colno?: number;
+    error?: string;
+  }
+  | {
+    type: "webview_log";
+    message: string;
   };
 
 /** Language info */

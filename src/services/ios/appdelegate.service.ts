@@ -22,7 +22,12 @@ export function updateAppDelegateWithServices(
     const applinksService = services.find(s => s.id === 'applinks');
     if (applinksService) {
         const applinksBlockRegex = /\/\/\s*start applinks configuration[\s\S]*?\/\/\s*end applinks configuration/gi;
-        const desiredImportBlock = `// start applinks configuration\nimport app_links\n// end applinks configuration`;
+        const blockMatch = result.match(applinksBlockRegex);
+        const hasHomeWidget = !!(blockMatch && /import\s+home_widget/i.test(blockMatch[0]));
+
+        const desiredImportBlock = hasHomeWidget
+            ? `// start applinks configuration\nimport home_widget\nimport app_links\n// end applinks configuration`
+            : `// start applinks configuration\nimport app_links\n// end applinks configuration`;
         const desiredCodeBlock = `        // start applinks configuration\n        if let url = AppLinks.shared.getLink(launchOptions: launchOptions) {\n            print("AppLinks: Got initial link: \\(url)")\n            AppLinks.shared.handleLink(url: url)\n            return true\n        }\n        // end applinks configuration`;
 
         // Clean all existing applinks markers and stray imports to avoid duplication
@@ -139,7 +144,9 @@ export function removeServicesFromAppDelegate(
 
     if (removedServiceIds.includes('applinks')) {
         const applinksBlockRegex = /\n?\/\/\s*start applinks configuration[\s\S]*?\/\/\s*end applinks configuration\n?/gi;
-        result = result.replace(applinksBlockRegex, '\n');
+        const blockMatch = result.match(applinksBlockRegex);
+        const hasHomeWidget = blockMatch && /import\s+home_widget/i.test(blockMatch[0]);
+        result = result.replace(applinksBlockRegex, hasHomeWidget ? '\nimport home_widget\n' : '\n');
     }
     
     for (const serviceId of removedServiceIds) {
