@@ -66,6 +66,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const sidebarDisposable = vscode.window.registerWebviewViewProvider(
     FlutterConfigSidebarProvider.viewType,
     sidebarProvider,
+    { webviewOptions: { retainContextWhenHidden: true } }
   );
 
   context.subscriptions.push(editDisposable, sidebarDisposable, configChangeDisposable);

@@ -29,10 +29,23 @@ export class FlutterConfigSidebarProvider
 
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(this._extensionUri, "src")],
+      localResourceRoots: [
+        vscode.Uri.joinPath(this._extensionUri, "src"),
+        vscode.Uri.joinPath(this._extensionUri, "images"),
+      ],
     };
 
-    await this.initializeView(webviewView);
+    try {
+      await this.initializeView(webviewView);
+    } catch (error) {
+      console.error("[FlutterConfigSidebar] Error initializing sidebar view:", error);
+      webviewView.webview.html = `<!DOCTYPE html>
+        <html><body style="color: #e0e0e0; padding: 16px; font-family: sans-serif;">
+          <h3>⚠️ Error loading Flutter Config Manager</h3>
+          <p>${error instanceof Error ? error.message : String(error)}</p>
+          <p>Try reopening the sidebar or running the command from the palette.</p>
+        </body></html>`;
+    }
   }
 
   private async initializeView(webviewView: vscode.WebviewView): Promise<void> {
