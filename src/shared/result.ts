@@ -1,3 +1,5 @@
+import { toError } from './errors.js';
+
 /**
  * Result type utilities for explicit error handling
  * Avoids throwing exceptions in domain logic
@@ -46,7 +48,7 @@ export async function tryCatch<T>(
         return ok(value);
     } catch (error) {
         const message = errorMessage ?? 'Operation failed';
-        return err(error instanceof Error ? error : new Error(`${message}: ${String(error)}`));
+        return err(toError(error));
     }
 }
 
@@ -59,6 +61,6 @@ export function tryCatchSync<T>(
         return ok(value);
     } catch (error) {
         const message = errorMessage ?? 'Operation failed';
-        return err(error instanceof Error ? error : new Error(`${message}: ${String(error)}`));
+        return err(toError(error));
     }
 }

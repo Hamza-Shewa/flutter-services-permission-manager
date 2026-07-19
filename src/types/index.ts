@@ -48,3 +48,11 @@ export type {
     AppNameLocalization,
     LanguageInfo
 } from './webview.js';
+
+// Save Context types
+export type {
+    AndroidSaveContext,
+    IOSSaveContext,
+    MacOSSaveContext,
+    SaveContext
+} from './save-context.js';

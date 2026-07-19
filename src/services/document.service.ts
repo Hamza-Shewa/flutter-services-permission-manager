@@ -12,8 +12,9 @@ import type {
   AppNameLocalization,
   PlatformDetails,
   PlatformDetailItem,
+  SaveContext,
 } from "../types/index.js";
-import { logger } from "../shared/index.js";
+import { logger, toError } from "../shared/index.js";
 import {
   updateAndroidManifest,
   updateAndroidManifestWithServices,
@@ -353,7 +354,7 @@ async function updateAssociatedDomainFiles(
         );
       }
     } catch (e) {
-      logger.error("Failed to write assetlinks.json:", e instanceof Error ? e : new Error(String(e)));
+      logger.error("Failed to write assetlinks.json:", toError(e));
     }
   }
 
@@ -392,7 +393,7 @@ async function updateAssociatedDomainFiles(
         );
       }
     } catch (e) {
-      logger.error("Failed to write apple-app-site-association:", e instanceof Error ? e : new Error(String(e)));
+      logger.error("Failed to write apple-app-site-association:", toError(e));
     }
   }
 }
@@ -454,25 +455,22 @@ export async function replaceDocumentContent(
 /**
  * Saves permissions to both Android and iOS platform files (legacy, saves everything)
  */
-export async function savePermissions(
-  androidPermissions: string[],
-  iosPermissions: IOSPermissionEntry[],
-  androidManifestUri?: vscode.Uri,
-  iosPlistUri?: vscode.Uri,
-  iosPodfileUri?: vscode.Uri,
-  iosAppDelegateUri?: vscode.Uri,
-  iosEntitlementsUri?: vscode.Uri,
-  categorizedIosPermissions?: Record<
-    string,
-    { permission: string; podfileMacro?: string }[]
-  >,
-  services?: ServiceEntry[],
-  servicesConfig?: ServiceConfig[],
-  previousServices?: ServiceEntry[],
-  macosPermissions?: IOSPermissionEntry[],
-  macosPlistUri?: vscode.Uri,
-  appName?: AppNameLocalization,
-): Promise<SaveResult> {
+export async function savePermissions(ctx: SaveContext): Promise<SaveResult> {
+  const androidPermissions = ctx.android?.permissions || [];
+  const iosPermissions = ctx.ios?.permissions || [];
+  const androidManifestUri = ctx.android?.manifestUri;
+  const iosPlistUri = ctx.ios?.plistUri;
+  const iosPodfileUri = ctx.ios?.podfileUri;
+  const iosAppDelegateUri = ctx.ios?.appDelegateUri;
+  const iosEntitlementsUri = ctx.ios?.entitlementsUri;
+  const categorizedIosPermissions = ctx.categorizedIosPermissions;
+  const services = ctx.android?.services || ctx.ios?.services;
+  const servicesConfig = ctx.servicesConfig;
+  const previousServices = ctx.previousServices;
+  const macosPermissions = ctx.macos?.permissions;
+  const macosPlistUri = ctx.macos?.plistUri;
+  const appName = ctx.appName;
+
   try {
     if (!androidManifestUri && !iosPlistUri) {
       return {
@@ -543,7 +541,7 @@ export async function savePermissions(
               await replaceDocumentContent(stringsUri, updatedStrings);
             }
           } catch (stringsError) {
-            logger.error("strings.xml update error:", stringsError instanceof Error ? stringsError : new Error(String(stringsError)));
+            logger.error("strings.xml update error:", toError(stringsError));
           }
         }
       }
@@ -612,7 +610,7 @@ export async function savePermissions(
           await replaceDocumentContent(iosEntitlementsUri, updatedEntitlements);
         }
       } catch (entitlementsError) {
-        logger.error("Entitlements update error:", entitlementsError instanceof Error ? entitlementsError : new Error(String(entitlementsError)));
+        logger.error("Entitlements update error:", toError(entitlementsError));
       }
     }
 
@@ -658,7 +656,7 @@ export async function savePermissions(
           await replaceDocumentContent(iosAppDelegateUri, updated);
         }
       } catch (appDelegateError) {
-        logger.error("AppDelegate update error:", appDelegateError instanceof Error ? appDelegateError : new Error(String(appDelegateError)));
+        logger.error("AppDelegate update error:", toError(appDelegateError));
       }
     }
 
@@ -692,7 +690,7 @@ export async function savePermissions(
         }
       } catch (podError) {
         // Don't fail the entire save if Podfile update fails
-        logger.error("Podfile update error:", podError instanceof Error ? podError : new Error(String(podError)));
+        logger.error("Podfile update error:", toError(podError));
       }
     }
 
@@ -797,7 +795,7 @@ export async function savePermissionsOnly(
           await podDoc.save();
         }
       } catch (podError) {
-        logger.error("Podfile update error:", podError instanceof Error ? podError : new Error(String(podError)));
+        logger.error("Podfile update error:", toError(podError));
       }
     }
 
@@ -889,7 +887,7 @@ export async function saveServicesOnly(
               await replaceDocumentContent(stringsUri, updatedStrings);
             }
           } catch (stringsError) {
-            logger.error("strings.xml update error:", stringsError instanceof Error ? stringsError : new Error(String(stringsError)));
+            logger.error("strings.xml update error:", toError(stringsError));
           }
         }
       }
@@ -948,7 +946,7 @@ export async function saveServicesOnly(
           await replaceDocumentContent(iosEntitlementsUri, updatedEntitlements);
         }
       } catch (entitlementsError) {
-        logger.error("Entitlements update error:", entitlementsError instanceof Error ? entitlementsError : new Error(String(entitlementsError)));
+        logger.error("Entitlements update error:", toError(entitlementsError));
       }
     }
 
@@ -981,7 +979,7 @@ export async function saveServicesOnly(
           await replaceDocumentContent(iosAppDelegateUri, updated);
         }
       } catch (appDelegateError) {
-        logger.error("AppDelegate update error:", appDelegateError instanceof Error ? appDelegateError : new Error(String(appDelegateError)));
+        logger.error("AppDelegate update error:", toError(appDelegateError));
       }
     }
 

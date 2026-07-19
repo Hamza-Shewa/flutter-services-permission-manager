@@ -4,7 +4,7 @@
 
 import * as vscode from 'vscode';
 import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
-import { logger } from '../../shared/index.js';
+import { logger, toError } from '../../shared/index.js';
 
 /**
  * Gets or creates the strings.xml file URI
@@ -35,7 +35,7 @@ export async function getOrCreateStringsFile(workspaceRoot: vscode.Uri): Promise
             await vscode.workspace.fs.writeFile(stringsPath, Buffer.from(defaultContent, 'utf-8'));
             return stringsPath;
         } catch (createError) {
-            logger.error('Failed to create strings.xml', createError instanceof Error ? createError : new Error(String(createError)));
+            logger.error('Failed to create strings.xml', toError(createError));
             return undefined;
         }
     }

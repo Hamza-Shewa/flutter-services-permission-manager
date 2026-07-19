@@ -16,7 +16,7 @@ export async function getWebviewContent(
     const html = rawData.toString();
 
     const scriptUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(extensionUri, 'src', 'webview.js')
+        vscode.Uri.joinPath(extensionUri, 'src', 'webview', 'frontend', 'index.js')
     );
     const utilsUri = webview.asWebviewUri(
         vscode.Uri.joinPath(extensionUri, 'src', 'webview-utils.js')

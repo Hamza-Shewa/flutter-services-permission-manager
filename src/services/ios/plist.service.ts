@@ -3,22 +3,7 @@
  */
 
 import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../../types/index.js';
-
-function detectPlistIndent(plistContent: string): string {
-    const lines = plistContent.split('\n');
-    let tabs = 0;
-    let spaces2 = 0;
-    let spaces4 = 0;
-    for (const line of lines) {
-        if (line.match(/^\t+<key>/)) {tabs++;}
-        else if (line.match(/^  <key>/)) {spaces2++;}
-        else if (line.match(/^    <key>/)) {spaces4++;}
-    }
-    if (tabs > spaces2 && tabs > spaces4) {return '\t';}
-    if (spaces4 > tabs && spaces4 > spaces2) {return '    ';}
-    if (spaces2 > tabs && spaces2 > spaces4) {return '  ';}
-    return '\t';
-}
+import { PlistDocument, detectPlistIndent } from '../../shared/plist-parser.js';
 
 type ArrayBounds = { openEnd: number; closeStart: number };
 
@@ -187,22 +172,11 @@ export function updateIOSPlist(
     }
 
     // Remove all permission keys (they'll be re-added if still in permissionEntries)
-    let cleanedPrefix = prefix;
+    let doc = new PlistDocument(plistContent);
     for (const key of keysToRemove) {
-        // Remove existing string entry for this permission
-        const keyStringRegex = new RegExp(
-            `\\s*<key>${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</key>\\s*<string>[^<]*</string>`,
-            'g'
-        );
-        cleanedPrefix = cleanedPrefix.replace(keyStringRegex, '');
-        
-        // Remove existing boolean entry for this permission
-        const keyBoolRegex = new RegExp(
-            `\\s*<key>${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</key>\\s*<(?:true|false)/>`,
-            'g'
-        );
-        cleanedPrefix = cleanedPrefix.replace(keyBoolRegex, '');
+        doc = doc.removeKey(key);
     }
+    const cleanedPrefix = doc.source.slice(0, doc.source.lastIndexOf('</dict>'));
 
     const entries = Array.from(uniqueEntries.values())
         .map(entry => {

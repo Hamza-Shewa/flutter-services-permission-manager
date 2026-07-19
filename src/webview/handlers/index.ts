@@ -40,9 +40,9 @@ import {
 } from "../state.js";
 
 /** Webview reference that works for both Panel and View */
-export interface WebviewRef {
-  webview: vscode.Webview;
-}
+export type WebviewRef =
+  | { kind: 'panel'; panel: vscode.WebviewPanel; webview: vscode.Webview }
+  | { kind: 'view';  view:  vscode.WebviewView;  webview: vscode.Webview };
 
 /**
  * Handle refresh request - reload permissions and services from files
@@ -166,22 +166,29 @@ export async function handleSave(
   services: ServiceEntry[],
   files: ProjectFiles,
 ): Promise<void> {
-  const result = await savePermissions(
-    androidPermissions,
-    iosPermissions,
-    files.androidManifestUri,
-    files.iosPlistUri,
-    files.iosPodfileUri,
-    files.iosAppDelegateUri,
-    files.iosEntitlementsUri,
-    getCategorizedIosPermissionsCache() ?? undefined,
-    services,
-    getServicesConfigCache() ?? [],
-    getPreviousServicesCache(),
-    macosPermissions,
-    files.macosPlistUri,
+  const result = await savePermissions({
+    android: {
+      manifestUri: files.androidManifestUri,
+      permissions: androidPermissions,
+      services: services
+    },
+    ios: {
+      plistUri: files.iosPlistUri,
+      podfileUri: files.iosPodfileUri,
+      appDelegateUri: files.iosAppDelegateUri,
+      entitlementsUri: files.iosEntitlementsUri,
+      permissions: iosPermissions,
+      services: services
+    },
+    macos: {
+      plistUri: files.macosPlistUri,
+      permissions: macosPermissions
+    },
     appName,
-  );
+    servicesConfig: getServicesConfigCache() ?? [],
+    previousServices: getPreviousServicesCache(),
+    categorizedIosPermissions: getCategorizedIosPermissionsCache() ?? undefined
+  });
 
   if (result.success) {
     setPreviousServicesCache(services);

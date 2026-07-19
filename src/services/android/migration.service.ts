@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
+import { getRecommendedVersions } from './version-fetcher.js';
 
 /**
  * Automatically migrates the Android project from the legacy imperative setup
@@ -11,6 +12,8 @@ export async function migrateAndroidSetup(): Promise<void> {
     if (!workspaceRoot) {
         throw new Error('No workspace root found');
     }
+
+    const versions = await getRecommendedVersions();
 
     const androidDir = path.join(workspaceRoot, 'android');
     if (!fs.existsSync(androidDir)) {
@@ -40,31 +43,31 @@ export async function migrateAndroidSetup(): Promise<void> {
         
         // Ensure plugins block exists
         if (!content.includes('plugins {')) {
-            content += `\nplugins {\n    id "dev.flutter.flutter-plugin-loader" version "1.0.0"\n    id "com.android.application" version "8.13.2" apply false\n    id "org.jetbrains.kotlin.android" version "2.2.21" apply false\n}\n`;
+            content += `\nplugins {\n    id "dev.flutter.flutter-plugin-loader" version "1.0.0"\n    id "com.android.application" version "${versions.agp}" apply false\n    id "org.jetbrains.kotlin.android" version "${versions.kotlin}" apply false\n}\n`;
         } else {
             // Update AGP
             if (content.match(/id\s+"com\.android\.application"/)) {
-                content = content.replace(/id\s+"com\.android\.application".*/g, `id "com.android.application" version "8.13.2" apply false`);
+                content = content.replace(/id\s+"com\.android\.application".*/g, `id "com.android.application" version "${versions.agp}" apply false`);
             } else {
-                content = content.replace(/plugins\s*\{/, `plugins {\n    id "com.android.application" version "8.13.2" apply false`);
+                content = content.replace(/plugins\s*\{/, `plugins {\n    id "com.android.application" version "${versions.agp}" apply false`);
             }
 
             // Update Kotlin
             if (content.match(/id\s+"org\.jetbrains\.kotlin\.android"/)) {
-                content = content.replace(/id\s+"org\.jetbrains\.kotlin\.android".*/g, `id "org.jetbrains.kotlin.android" version "2.2.21" apply false`);
+                content = content.replace(/id\s+"org\.jetbrains\.kotlin\.android".*/g, `id "org.jetbrains.kotlin.android" version "${versions.kotlin}" apply false`);
             } else {
-                content = content.replace(/plugins\s*\{/, `plugins {\n    id "org.jetbrains.kotlin.android" version "2.2.21" apply false`);
+                content = content.replace(/plugins\s*\{/, `plugins {\n    id "org.jetbrains.kotlin.android" version "${versions.kotlin}" apply false`);
             }
 
             // Add Firebase plugins if needed
             if (usesGoogleServices && !content.includes('com.google.gms.google-services')) {
-                content = content.replace(/plugins\s*\{/, `plugins {\n    id "com.google.gms.google-services" version "4.4.4" apply false`);
+                content = content.replace(/plugins\s*\{/, `plugins {\n    id "com.google.gms.google-services" version "${versions.googleServices}" apply false`);
             }
             if (usesFirebasePerf && !content.includes('com.google.firebase.firebase-perf')) {
-                content = content.replace(/plugins\s*\{/, `plugins {\n    id "com.google.firebase.firebase-perf" version "1.4.1" apply false`);
+                content = content.replace(/plugins\s*\{/, `plugins {\n    id "com.google.firebase.firebase-perf" version "${versions.firebasePerf}" apply false`);
             }
             if (usesCrashlytics && !content.includes('com.google.firebase.crashlytics')) {
-                content = content.replace(/plugins\s*\{/, `plugins {\n    id "com.google.firebase.crashlytics" version "2.8.1" apply false`);
+                content = content.replace(/plugins\s*\{/, `plugins {\n    id "com.google.firebase.crashlytics" version "${versions.crashlytics}" apply false`);
             }
         }
         fs.writeFileSync(settingsGradlePath, content);
@@ -137,14 +140,14 @@ export async function migrateAndroidSetup(): Promise<void> {
         }
 
         // Update SDK versions
-        content = content.replace(/compileSdkVersion\s+\d+/g, 'compileSdk 37');
-        content = content.replace(/targetSdkVersion\s+\d+/g, 'targetSdkVersion 37');
+        content = content.replace(/compileSdkVersion\s+\d+/g, `compileSdk ${versions.compileSdk}`);
+        content = content.replace(/targetSdkVersion\s+\d+/g, `targetSdkVersion ${versions.targetSdk}`);
 
         // Update or add ndkVersion using flutter's variable
         if (content.includes('ndkVersion')) {
             content = content.replace(/ndkVersion\s+["'][^"']+["']/g, 'ndkVersion flutter.ndkVersion');
         } else {
-            content = content.replace(/compileSdk\s+37/, `compileSdk 37\n    ndkVersion flutter.ndkVersion`);
+            content = content.replace(new RegExp(`compileSdk\\s+${versions.compileSdk}`), `compileSdk ${versions.compileSdk}\n    ndkVersion flutter.ndkVersion`);
         }
 
         // Inject useLibrary

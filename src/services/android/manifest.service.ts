@@ -4,6 +4,7 @@
 
 import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
 import { findXmlElementBounds } from '../../shared/xml.js';
+import { removeXmlElements } from '../../shared/xml-parser.js';
 
 const APPLINKS_START = '<!-- start applinks configuration -->';
 const APPLINKS_END = '<!-- end applinks configuration -->';
@@ -123,11 +124,8 @@ export function updateAndroidManifest(manifestContent: string, permissionNames: 
     // Extract and preserve <queries> block before cleaning
     const queriesMatch = manifestContent.match(/(\s*<queries>[\s\S]*?<\/queries>\s*)/);
 
-    // Remove all uses-permission tags with their surrounding whitespace
-    let cleaned = manifestContent.replace(
-        /[ \t]*<uses-permission\b[^>]*android:name="[^"]+"[^>]*\/?>(?:\s*<\/uses-permission>)?[ \t]*\r?\n?/g,
-        ''
-    );
+    // Use position-safe removal powered by fast-xml-parser
+    let cleaned = removeXmlElements(manifestContent, 'uses-permission', 'android:name');
 
     // Clean up multiple consecutive blank lines (more than one newline in a row)
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n');

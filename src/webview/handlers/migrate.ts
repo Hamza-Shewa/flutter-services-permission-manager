@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { execWithEnv, getFlutterCommand } from '../../utils/exec.js';
-import { migrateAndroidSetup } from '../../services/android/index.js';
+import { migrateAndroidSetup } from '../../services/android/migration.service.js';
+import { toErrorMessage } from '../../shared/index.js';
 import type { WebviewRef } from './index.js';
 
 export async function handleMigrateAndroid(ref: WebviewRef): Promise<void> {
@@ -9,7 +10,7 @@ export async function handleMigrateAndroid(ref: WebviewRef): Promise<void> {
         ref.webview.postMessage({ type: 'saveResult', success: true, message: "Android setup successfully migrated to declarative plugins!" });
     } catch (error) {
         console.error('Migration error:', error);
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to migrate Android setup: ${error instanceof Error ? error.message : String(error)}` });
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to migrate Android setup: ${toErrorMessage(error)}` });
     }
 }
 
@@ -36,6 +37,6 @@ export async function handleUpgradePackages(ref: WebviewRef): Promise<void> {
         });
     } catch (error) {
         console.error('Upgrade packages error:', error);
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to upgrade packages: ${error instanceof Error ? error.message : String(error)}` });
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to upgrade packages: ${toErrorMessage(error)}` });
     }
 }

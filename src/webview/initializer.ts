@@ -27,6 +27,7 @@ import {
   setPreviousServicesCache,
   getServicesConfigCache,
 } from "./state.js";
+import { MessageBus } from "../shared/message-bus.js";
 import {
   handleRefresh,
   handleRequestAllAndroid,
@@ -143,7 +144,9 @@ export async function initializePermissionWebview(
   };
 
   // Set up message handler
-  const ref: WebviewRef = { webview };
+  const ref: WebviewRef = target.type === "panel" 
+    ? { kind: 'panel', panel: target.panel, webview }
+    : { kind: 'view', view: target.view, webview };
   setupMessageHandler(ref, payload, files);
 
   // Set up visibility change handler
@@ -173,144 +176,41 @@ function setupMessageHandler(
   initialPayload: PermissionsPayload,
   files: ProjectFiles,
 ): void {
-  ref.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
-    switch (message.type) {
-      case "ready":
-        ref.webview.postMessage(initialPayload);
-        break;
+  const bus = new MessageBus(ref.webview);
 
-      case "refresh":
-        await handleRefresh(ref, files);
-        break;
-
-      case "requestAllAndroidPermissions":
-        await handleRequestAllAndroid(ref);
-        break;
-
-      case "requestAllIOSPermissions":
-        await handleRequestAllIOS(ref);
-        break;
-
-      case "requestServices":
-        handleRequestServices(ref);
-        break;
-
-      case "savePermissions":
-        await handleSavePermissions(
-          ref,
-          message.androidPermissions ?? [],
-          message.iosPermissions ?? [],
-          message.macosPermissions ?? [],
-          files,
-        );
-        break;
-
-      case "saveAppName":
-        await handleSaveAppName(ref, message.appName, files);
-        break;
-
-      case "savePlatformDetails":
-        await handleSavePlatformDetails(ref, message.platformDetails, files);
-        break;
-
-      case "saveServices":
-        await handleSaveServices(ref, message.services ?? [], files);
-        break;
-
-      case "savePackageNames":
-        await handleSavePackageNames(
-          ref,
-          {
-            applicationId: message.applicationId || "",
-            bundleIdentifier: message.bundleIdentifier || "",
-          },
-          files,
-        );
-        break;
-
-      case "saveAndroidBuildDetails":
-        await handleSaveAndroidBuildDetails(
-          ref,
-          message.androidDetails ?? [],
-          files,
-        );
-        break;
-
-      case "saveIosBuildDetails":
-        await handleSaveIosBuildDetails(ref, message.iosDetails ?? [], files);
-        break;
-
-      case "migrateAndroid":
-        if ((ref.webview as any).__panel) {
-          await handleMigrateAndroid((ref.webview as any).__panel);
-        } else {
-          // If it's a view, it doesn't have a panel to show the progress. We can just run it.
-          // Wait, the handler expects a WebviewPanel to send status updates. Let's just create a dummy object with webview: ref.webview
-          await handleMigrateAndroid(ref as any);
-        }
-        break;
-
-      case "upgradePackages":
-        await handleUpgradePackages(ref as any);
-        break;
-
-      case "requestPackagesAnalysis":
-        await handleRequestPackagesAnalysis(ref as any);
-        break;
-
-      case "upgradeSinglePackage":
-        if (message.packageName) {
-          await handleUpgradeSinglePackage(ref as any, message.packageName);
-        }
-        break;
-
-      case "searchPackages":
-        if (message.query !== undefined) {
-          await handleSearchPackages(ref as any, message.query);
-        }
-        break;
-
-      case "requestPackageDetails":
-        if (message.packageName) {
-          await handleRequestPackageDetails(ref as any, message.packageName);
-        }
-        break;
-
-      case "addPackage":
-        if (message.packageName) {
-          await handleAddPackage(ref as any, message.packageName);
-        }
-        break;
-
-      case "checkDependencyValidator":
-        await handleCheckDependencyValidator(ref as any);
-        break;
-
-      case "installDependencyValidator":
-        await handleInstallDependencyValidator(ref as any);
-        break;
-
-      case "runDependencyValidator":
-        await handleRunDependencyValidator(ref as any);
-        break;
-
-      case "removePackage":
-        if (message.packageName) {
-          await handleRemovePackage(ref as any, message.packageName);
-        }
-        break;
-
-      case "downgradePackage":
-        if (message.packageName) {
-          await handleDowngradePackage(ref as any, message.packageName);
-        }
-        break;
-
-      case "removeAllFlaggedPackages":
-        if (message.packages) {
-          await handleRemoveAllFlaggedPackages(ref as any, message.packages);
-        }
-        break;
-    }
-  });
+  bus.on("ready", () => ref.webview.postMessage(initialPayload));
+  bus.on("refresh", async () => await handleRefresh(ref, files));
+  bus.on("requestAllAndroidPermissions", async () => await handleRequestAllAndroid(ref));
+  bus.on("requestAllIOSPermissions", async () => await handleRequestAllIOS(ref));
+  bus.on("requestServices", () => handleRequestServices(ref));
+  
+  bus.on("savePermissions", async (message: any) => 
+    await handleSavePermissions(ref, message.androidPermissions ?? [], message.iosPermissions ?? [], message.macosPermissions ?? [], files)
+  );
+  bus.on("saveAppName", async (message: any) => await handleSaveAppName(ref, message.appName, files));
+  bus.on("savePlatformDetails", async (message: any) => await handleSavePlatformDetails(ref, message.platformDetails, files));
+  bus.on("saveServices", async (message: any) => await handleSaveServices(ref, message.services ?? [], files));
+  
+  bus.on("savePackageNames", async (message: any) => 
+    await handleSavePackageNames(ref, { applicationId: message.applicationId || "", bundleIdentifier: message.bundleIdentifier || "" }, files)
+  );
+  
+  bus.on("saveAndroidBuildDetails", async (message: any) => await handleSaveAndroidBuildDetails(ref, message.androidDetails ?? [], files));
+  bus.on("saveIosBuildDetails", async (message: any) => await handleSaveIosBuildDetails(ref, message.iosDetails ?? [], files));
+  
+  bus.on("migrateAndroid", async () => await handleMigrateAndroid(ref));
+  bus.on("upgradePackages", async () => await handleUpgradePackages(ref));
+  bus.on("requestPackagesAnalysis", async () => await handleRequestPackagesAnalysis(ref));
+  bus.on("upgradeSinglePackage", async (message: any) => { if (message.packageName) {await handleUpgradeSinglePackage(ref, message.packageName);} });
+  bus.on("searchPackages", async (message: any) => { if (message.query !== undefined) {await handleSearchPackages(ref, message.query);} });
+  bus.on("requestPackageDetails", async (message: any) => { if (message.packageName) {await handleRequestPackageDetails(ref, message.packageName);} });
+  bus.on("addPackage", async (message: any) => { if (message.packageName) {await handleAddPackage(ref, message.packageName);} });
+  
+  bus.on("checkDependencyValidator", async () => await handleCheckDependencyValidator(ref));
+  bus.on("installDependencyValidator", async () => await handleInstallDependencyValidator(ref));
+  bus.on("runDependencyValidator", async () => await handleRunDependencyValidator(ref));
+  
+  bus.on("removePackage", async (message: any) => { if (message.packageName) {await handleRemovePackage(ref, message.packageName);} });
+  bus.on("downgradePackage", async (message: any) => { if (message.packageName) {await handleDowngradePackage(ref, message.packageName);} });
+  bus.on("removeAllFlaggedPackages", async (message: any) => { if (message.packages) {await handleRemoveAllFlaggedPackages(ref, message.packages);} });
 }

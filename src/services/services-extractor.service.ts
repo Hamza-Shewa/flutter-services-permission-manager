@@ -7,6 +7,8 @@ import * as path from 'path';
 import type { ServiceEntry, ServiceConfig } from '../types/index.js';
 import { extractAndroidAppNameLocalizations, extractAppNameFromManifest } from './android/localization.service.js';
 import { extractIOSAppNameLocalizations, extractAppNameFromInfoPlist } from './ios/localization.service.js';
+import { extractApplinkIntents } from './android/intent-parser.js';
+import { resolveStringReference } from './android/string-resolver.js';
 
 function joinDomains(domains: string[]): string {
     return Array.from(new Set(domains)).join(', ');
@@ -14,110 +16,6 @@ function joinDomains(domains: string[]): string {
 
 function joinUnique(values: string[]): string {
     return Array.from(new Set(values)).join(', ');
-}
-
-function extractApplinkIntents(content: string): { hosts: string[]; schemes: string[] } {
-    const intentRegex = /<intent-filter[^>]*>([\s\S]*?)<\/intent-filter>/gi;
-    const hosts: string[] = [];
-    const schemes: string[] = [];
-
-    let intentMatch: RegExpExecArray | null;
-    while ((intentMatch = intentRegex.exec(content)) !== null) {
-        const body = intentMatch[1];
-
-        // Require VIEW action and both DEFAULT and BROWSABLE categories to reduce false positives
-        const hasViewAction = /<action[^>]*android:name=["']android\.intent\.action\.VIEW["'][^>]*>/i.test(body);
-        const hasDefaultCategory = /<category[^>]*android:name=["']android\.intent\.category\.DEFAULT["'][^>]*>/i.test(body);
-        const hasBrowsableCategory = /<category[^>]*android:name=["']android\.intent\.category\.BROWSABLE["'][^>]*>/i.test(body);
-        if (!hasViewAction || !hasDefaultCategory || !hasBrowsableCategory) {
-            continue;
-        }
-
-        const dataRegex = /<data[^>]*>/gi;
-        let dataMatch: RegExpExecArray | null;
-        while ((dataMatch = dataRegex.exec(body)) !== null) {
-            const dataTag = dataMatch[0];
-            const hostMatch = dataTag.match(/android:host=["']([^"']+)["']/i);
-            const schemeMatch = dataTag.match(/android:scheme=["']([^"']+)["']/i);
-            const host = hostMatch?.[1];
-            const scheme = schemeMatch?.[1];
-
-            // Skip OAuth-style authorize hosts
-            if (host && host.toLowerCase() === 'authorize') {
-                continue;
-            }
-
-            if (host) {hosts.push(host);}
-            if (scheme) {schemes.push(scheme);}
-        }
-    }
-
-    return { hosts: Array.from(new Set(hosts)), schemes: Array.from(new Set(schemes)) };
-}
-
-/**
- * Resolves @string/xxx or @values/xxx references by loading the appropriate XML resource file
- */
-async function resolveStringReference(
-    reference: string,
-    androidManifestUri: vscode.Uri
-): Promise<string | null> {
-    // Check if it's a resource reference
-    const match = reference.match(/^@(\w+)\/(\w+)$/);
-    if (!match) {
-        return reference; // Not a reference, return as-is
-    }
-
-    const [, resourceType, resourceName] = match;
-    
-    // Get workspace folder from manifest path using path module for cross-platform support
-    // AndroidManifest is typically at: android/app/src/main/AndroidManifest.xml
-    // strings.xml is at: android/app/src/main/res/values/strings.xml
-    const manifestDir = path.dirname(androidManifestUri.fsPath);
-    
-    // Determine the resource file name based on type
-    let resourceFileName: string;
-    switch (resourceType) {
-        case 'string':
-            resourceFileName = 'strings.xml';
-            break;
-        case 'values':
-            resourceFileName = 'values.xml';
-            break;
-        case 'color':
-            resourceFileName = 'colors.xml';
-            break;
-        case 'dimen':
-            resourceFileName = 'dimens.xml';
-            break;
-        default:
-            resourceFileName = `${resourceType}s.xml`;
-    }
-
-    const resourcePath = path.join(manifestDir, 'res', 'values', resourceFileName);
-    console.log(`[Services Extractor] Looking for resource ${resourceName} in ${resourcePath}`);
-    
-    try {
-        const resourceUri = vscode.Uri.file(resourcePath);
-        const doc = await vscode.workspace.openTextDocument(resourceUri);
-        const content = doc.getText();
-        
-        // Parse the XML to find the string value
-        // Looking for: <string name="xxx">value</string>
-        const regex = new RegExp(`<string\\s+name="${resourceName}"[^>]*>([^<]*)</string>`, 'i');
-        const valueMatch = content.match(regex);
-        
-        if (valueMatch) {
-            console.log(`[Services Extractor] Resolved ${reference} to ${valueMatch[1]}`);
-            return valueMatch[1];
-        }
-        
-        console.log(`[Services Extractor] Could not find ${resourceName} in ${resourceFileName}`);
-        return null;
-    } catch (err) {
-        console.log(`[Services Extractor] Error reading resource file: ${err}`);
-        return null;
-    }
 }
 
 /**

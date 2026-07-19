@@ -2,6 +2,7 @@
  * XML manipulation utilities
  * Safer alternatives to regex-based XML parsing
  */
+import { parseXmlSafe } from './xml-parser.js';
 
 export interface XmlAttribute {
     name: string;
@@ -53,77 +54,92 @@ export function findXmlElementBounds(
     tagName: string,
     attributeMatch: { name: string; value: string }
 ): XmlElementBounds | null {
-    // Build pattern to find the attribute
-    const attrPattern = `${attributeMatch.name}\\s*=\\s*["']${escapeRegex(attributeMatch.value)}["']`;
-    const attrRegex = new RegExp(attrPattern, 'g');
+    let currentIndex = 0;
+    
+    while (currentIndex < content.length) {
+        const startIdx = content.indexOf(`<${tagName}`, currentIndex);
+        if (startIdx === -1) {
+            break;
+        }
 
-    let match: RegExpExecArray | null;
-    while ((match = attrRegex.exec(content)) !== null) {
-        const attrPos = match.index;
-
-        // Find the opening tag start by searching backwards for <tagName
-        let tagStart = -1;
-        for (let i = attrPos; i >= 0; i--) {
-            if (content[i] === '<') {
-                const afterBracket = content.slice(i + 1, i + 1 + tagName.length + 1);
-                if (afterBracket.startsWith(tagName) && /[\s>\/]/.test(afterBracket[tagName.length] || '')) {
-                    tagStart = i;
-                    break;
+        let inQuotes = false;
+        let quoteChar = '';
+        let tagOpenEndIdx = -1;
+        
+        for (let i = startIdx + `<${tagName}`.length; i < content.length; i++) {
+            const char = content[i];
+            if ((char === '"' || char === "'") && content[i-1] !== '\\') {
+                if (!inQuotes) {
+                    inQuotes = true;
+                    quoteChar = char;
+                } else if (char === quoteChar) {
+                    inQuotes = false;
                 }
+            } else if (!inQuotes && char === '>') {
+                tagOpenEndIdx = i;
+                break;
             }
         }
 
-        if (tagStart === -1) {
+        if (tagOpenEndIdx === -1) {
+            currentIndex = startIdx + 1;
             continue;
         }
 
-        // Find the end of this element
-        const afterTagStart = content.slice(tagStart);
-        const selfCloseMatch = afterTagStart.match(new RegExp(`^<${tagName}[^>]*/>`));
-        
-        if (selfCloseMatch) {
-            return {
-                start: tagStart,
-                end: tagStart + selfCloseMatch[0].length,
-                isSelfClosing: true
-            };
-        }
+        const isSelfClosing = content[tagOpenEndIdx - 1] === '/';
+        let endIdx = tagOpenEndIdx + 1;
 
-        // Find matching closing tag with depth tracking
-        const closingTag = `</${tagName}>`;
-        const openingTagPattern = new RegExp(`<${tagName}(?:\\s|>)`, 'g');
-        
-        let depth = 1;
-        let searchPos = tagStart + tagName.length + 1;
-        
-        while (depth > 0 && searchPos < content.length) {
-            const nextClose = content.indexOf(closingTag, searchPos);
-            if (nextClose === -1) {
-                break;
-            }
-
-            // Count opening tags between searchPos and nextClose
-            openingTagPattern.lastIndex = searchPos;
-            let openMatch: RegExpExecArray | null;
-            while ((openMatch = openingTagPattern.exec(content)) !== null && openMatch.index < nextClose) {
-                // Check if it's not self-closing
-                const tagEnd = content.indexOf('>', openMatch.index);
-                if (tagEnd !== -1 && content[tagEnd - 1] !== '/') {
-                    depth++;
+        if (!isSelfClosing) {
+            // Find matching closing tag with depth tracking
+            const closingTag = `</${tagName}>`;
+            const openingTagPrefix = `<${tagName}`;
+            
+            let depth = 1;
+            let searchPos = tagOpenEndIdx + 1;
+            
+            while (depth > 0 && searchPos < content.length) {
+                const nextOpen = content.indexOf(openingTagPrefix, searchPos);
+                const nextClose = content.indexOf(closingTag, searchPos);
+                
+                if (nextClose === -1) {
+                    break; // Malformed XML
+                }
+                
+                if (nextOpen !== -1 && nextOpen < nextClose) {
+                    // Check if it's not self closing by looking for >
+                    let openTagEnd = content.indexOf('>', nextOpen);
+                    if (openTagEnd !== -1 && content[openTagEnd - 1] !== '/') {
+                        depth++;
+                    }
+                    searchPos = openTagEnd + 1;
+                } else {
+                    depth--;
+                    searchPos = nextClose + closingTag.length;
                 }
             }
+            endIdx = searchPos;
+        }
 
-            depth--;
-            searchPos = nextClose + closingTag.length;
-            
-            if (depth === 0) {
-                return {
-                    start: tagStart,
-                    end: searchPos,
-                    isSelfClosing: false
-                };
+        const tagContent = content.substring(startIdx, endIdx);
+        
+        // Validate with fast-xml-parser
+        const parsed = parseXmlSafe(tagContent);
+        
+        if (parsed && parsed.length > 0) {
+            const element = (parsed[0] as any);
+            if (element[tagName]) {
+                const attrs = element[':@'];
+                if (attrs && attrs[`@_${attributeMatch.name}`] === attributeMatch.value) {
+                    return {
+                        start: startIdx,
+                        end: endIdx,
+                        isSelfClosing
+                    };
+                }
             }
         }
+
+        currentIndex = endIdx;
     }
 
     return null;

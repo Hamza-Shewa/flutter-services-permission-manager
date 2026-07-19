@@ -47,3 +47,26 @@ export class ValidationError extends PermissionManagerError {
         this.name = 'ValidationError';
     }
 }
+
+/**
+ * Safely converts an unknown error caught in a try-catch block to a string message.
+ */
+export function toErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    if (typeof error === 'string') {
+        return error;
+    }
+    return String(error);
+}
+
+/**
+ * Safely converts an unknown error to an Error object.
+ */
+export function toError(error: unknown): Error {
+    if (error instanceof Error) {
+        return error;
+    }
+    return new Error(toErrorMessage(error));
+}

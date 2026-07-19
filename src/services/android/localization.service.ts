@@ -1,4 +1,6 @@
-import { logger } from '../../shared/index.js';
+import { logger, toError } from '../../shared/index.js';
+import type { AppNameLocalization } from '../../types/index.js';
+
 /**
  * Android localization service for app name management
  */
@@ -61,7 +63,7 @@ export async function createStringsFileForLanguage(
         await vscode.workspace.fs.writeFile(stringsPath, Buffer.from(defaultContent, 'utf-8'));
         return stringsPath;
     } catch (error) {
-        logger.error(`Failed to create strings.xml for ${languageCode}`, error instanceof Error ? error : new Error(String(error)));
+        logger.error(`Failed to create strings.xml for ${languageCode}`, toError(error));
         return undefined;
     }
 }
@@ -183,7 +185,7 @@ export async function getAvailableLanguages(
             }
         }
     } catch (error) {
-        logger.error('Failed to read res directory', error instanceof Error ? error : new Error(String(error)));
+        logger.error('Failed to read res directory', toError(error));
     }
     
     return languages;

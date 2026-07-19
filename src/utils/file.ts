@@ -3,7 +3,7 @@
  */
 
 import path from 'path';
-import { logger } from '../shared/index.js';
+import { logger, toError } from '../shared/index.js';
 import * as vscode from 'vscode';
 
 let _extensionBaseUri: vscode.Uri | undefined;
@@ -56,7 +56,7 @@ export async function readJsonFile<T>(filePath: string): Promise<T> {
 
         return JSON.parse(rawData.toString()) as T;
     } catch (error) {
-        logger.error(`Error reading or parsing JSON at ${filePath}`, error instanceof Error ? error : new Error(String(error)));
+        logger.error(`Error reading or parsing JSON at ${filePath}`, toError(error));
 
         // Show actionable error for critical data files that ship with the extension
         const criticalFiles = [

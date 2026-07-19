@@ -23,7 +23,7 @@ export interface ProjectFiles {
   iosPbxprojUri?: vscode.Uri;
   iosPodfileUri?: vscode.Uri;
   iosAppDelegateUri?: vscode.Uri;
-    androidStringsUri?: vscode.Uri;
+  androidStringsUri?: vscode.Uri;
   macosPlistUri?: vscode.Uri;
 }
 

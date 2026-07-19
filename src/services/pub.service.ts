@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { execWithEnv, getFlutterCommand, getDartCommand } from '../utils/exec.js';
+import { toErrorMessage } from '../shared/index.js';
 import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -29,7 +30,7 @@ export async function analyzePackages(): Promise<OutdatedPackage[]> {
                 const result = JSON.parse(stdout) as PubOutdatedResponse;
                 resolve(result.packages || []);
             } catch (parseError) {
-                reject(new Error(`Failed to parse pub outdated JSON output: ${parseError instanceof Error ? parseError.message : String(parseError)}`));
+                reject(new Error(`Failed to parse pub outdated JSON output: ${toErrorMessage(parseError)}`));
             }
         });
     });

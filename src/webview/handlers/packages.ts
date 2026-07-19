@@ -1,4 +1,5 @@
 import type { WebviewRef } from './index.js';
+import { toErrorMessage } from '../../shared/index.js';
 import { 
     analyzePackages, upgradePackage, searchPackages, getPackageDetails, addPackage,
     checkDependencyValidator, installDependencyValidator, runDependencyValidator, removePackage, downgradePackage
@@ -16,7 +17,7 @@ export async function handleRequestPackagesAnalysis(ref: WebviewRef): Promise<vo
         ref.webview.postMessage({
             type: 'packagesAnalysisResult',
             packages: [],
-            error: error instanceof Error ? error.message : String(error)
+            error: toErrorMessage(error)
         });
     }
 }
@@ -33,7 +34,7 @@ export async function handleUpgradeSinglePackage(ref: WebviewRef, packageName: s
         await handleRequestPackagesAnalysis(ref);
     } catch (error) {
         console.error(`Upgrade package error for ${packageName}:`, error);
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to upgrade ${packageName}: ${error instanceof Error ? error.message : String(error)}` });
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to upgrade ${packageName}: ${toErrorMessage(error)}` });
     }
 }
 
@@ -49,7 +50,7 @@ export async function handleSearchPackages(ref: WebviewRef, query: string): Prom
         ref.webview.postMessage({
             type: 'searchPackagesResult',
             packages: [],
-            error: error instanceof Error ? error.message : String(error)
+            error: toErrorMessage(error)
         });
     }
 }
@@ -67,7 +68,7 @@ export async function handleRequestPackageDetails(ref: WebviewRef, packageName: 
         ref.webview.postMessage({
             type: 'packageDetailsResult',
             packageName,
-            error: error instanceof Error ? error.message : String(error)
+            error: toErrorMessage(error)
         });
     }
 }
@@ -84,7 +85,7 @@ export async function handleAddPackage(ref: WebviewRef, packageName: string): Pr
         await handleRequestPackagesAnalysis(ref);
     } catch (error) {
         console.error(`Add package error for ${packageName}:`, error);
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to add ${packageName}: ${error instanceof Error ? error.message : String(error)}` });
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to add ${packageName}: ${toErrorMessage(error)}` });
     }
 }
 
@@ -111,7 +112,7 @@ export async function handleInstallDependencyValidator(ref: WebviewRef): Promise
         await handleRunDependencyValidator(ref);
     } catch (error) {
         console.error('Install dependency validator error:', error);
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to install dependency_validator: ${error instanceof Error ? error.message : String(error)}` });
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to install dependency_validator: ${toErrorMessage(error)}` });
     }
 }
 
@@ -129,7 +130,7 @@ export async function handleRunDependencyValidator(ref: WebviewRef): Promise<voi
         ref.webview.postMessage({
             type: 'dependencyValidationResult',
             issues: [],
-            error: error instanceof Error ? error.message : String(error)
+            error: toErrorMessage(error)
         });
     }
 }
@@ -144,7 +145,7 @@ export async function handleRemovePackage(ref: WebviewRef, packageName: string):
         await handleRequestPackagesAnalysis(ref);
     } catch (error) {
         console.error(`Remove package error for ${packageName}:`, error);
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to remove ${packageName}: ${error instanceof Error ? error.message : String(error)}` });
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to remove ${packageName}: ${toErrorMessage(error)}` });
     }
 }
 
@@ -158,7 +159,7 @@ export async function handleDowngradePackage(ref: WebviewRef, packageName: strin
         await handleRequestPackagesAnalysis(ref);
     } catch (error) {
         console.error(`Downgrade package error for ${packageName}:`, error);
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to downgrade ${packageName}: ${error instanceof Error ? error.message : String(error)}` });
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to downgrade ${packageName}: ${toErrorMessage(error)}` });
     }
 }
 
@@ -174,6 +175,6 @@ export async function handleRemoveAllFlaggedPackages(ref: WebviewRef, packages: 
         await handleRequestPackagesAnalysis(ref);
     } catch (error) {
         console.error('Remove all flagged packages error:', error);
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to remove some packages: ${error instanceof Error ? error.message : String(error)}` });
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to remove some packages: ${toErrorMessage(error)}` });
     }
 }
