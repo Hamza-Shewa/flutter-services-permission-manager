@@ -4,6 +4,8 @@
  */
 
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import { setExtensionBaseUri } from "./utils/file.js";
 import {
   getUsedAndroidPermissions,
@@ -11,8 +13,12 @@ import {
 } from "./utils/extractors.js";
 import { createPermissionPanel } from "./webview/index.js";
 import { discoverProjectFilesWithContent } from "./services/workspace.js";
+import {
+  analyzeUnusedAssets,
+  deleteUnusedAssets,
+} from "./services/assets.service.js";
 import { FlutterConfigSidebarProvider } from "./providers/sidebar.provider.js";
-import { enableDebug, disableDebug } from "./shared/index.js";
+import { enableDebug, disableDebug, toErrorMessage } from "./shared/index.js";
 
 // Re-export for backward compatibility and testing
 export {
@@ -69,7 +75,18 @@ export function activate(context: vscode.ExtensionContext): void {
     { webviewOptions: { retainContextWhenHidden: true } }
   );
 
-  context.subscriptions.push(editDisposable, sidebarDisposable, configChangeDisposable);
+  // Register unused assets command
+  const checkAssetsDisposable = vscode.commands.registerCommand(
+    "flutter-config-manager.checkUnusedAssets",
+    () => handleCheckUnusedAssets(),
+  );
+
+  context.subscriptions.push(
+    editDisposable,
+    sidebarDisposable,
+    configChangeDisposable,
+    checkAssetsDisposable,
+  );
 }
 
 /**
@@ -105,6 +122,113 @@ async function handleEditCommand(
   );
 
   vscode.window.showInformationMessage("Flutter Config Manager opened!");
+}
+
+/**
+ * Handles the "Check Unused Assets" command - scans the Flutter project for
+ * unused asset files and lets the user review and delete them.
+ */
+async function handleCheckUnusedAssets(): Promise<void> {
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspaceRoot) {
+    vscode.window.showWarningMessage(
+      "Flutter Config Manager: No workspace folder is open.",
+    );
+    return;
+  }
+
+  if (!fs.existsSync(path.join(workspaceRoot, "pubspec.yaml"))) {
+    vscode.window.showWarningMessage(
+      "Flutter Config Manager: The current workspace is not a Flutter project (no pubspec.yaml found).",
+    );
+    return;
+  }
+
+  let result;
+  try {
+    result = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: "Scanning for unused assets...",
+      },
+      () => analyzeUnusedAssets(workspaceRoot),
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to analyze unused assets: ${toErrorMessage(error)}`,
+    );
+    return;
+  }
+
+  const { assets } = result;
+  if (assets.length === 0) {
+    vscode.window.showInformationMessage(
+      `No unused assets found (${result.totalAssets} assets scanned). 🎉`,
+    );
+    return;
+  }
+
+  type AssetQuickPickItem = vscode.QuickPickItem & {
+    deleteAll?: boolean;
+    assetPath?: string;
+  };
+
+  const deleteAllItem: AssetQuickPickItem = {
+    label: "$(trash) Delete all unused assets",
+    description: `${assets.length} files`,
+    deleteAll: true,
+  };
+
+  const items: AssetQuickPickItem[] = [
+    deleteAllItem,
+    ...assets.map((asset) => ({
+      label: "$(file-media) " + asset.path,
+      description:
+        asset.size != null ? `${(asset.size / 1024).toFixed(1)} KB` : "",
+      assetPath: asset.path,
+    })),
+  ];
+
+  const selection = await vscode.window.showQuickPick(items, {
+    placeHolder: `Found ${assets.length} unused assets. Select files to delete (or pick "Delete all").`,
+    canPickMany: true,
+    ignoreFocusOut: true,
+  });
+
+  if (!selection || selection.length === 0) {
+    vscode.window.showInformationMessage("No unused assets were deleted.");
+    return;
+  }
+
+  const toDelete = selection.some((item) => item.deleteAll)
+    ? assets.map((asset) => asset.path)
+    : selection
+      .map((item) => item.assetPath)
+      .filter((p): p is string => Boolean(p));
+
+  if (toDelete.length === 0) {
+    return;
+  }
+
+  const answer = await vscode.window.showWarningMessage(
+    `Delete ${toDelete.length} unused asset file(s)? This cannot be undone.`,
+    { modal: true },
+    "Delete",
+  );
+  if (answer !== "Delete") {
+    return;
+  }
+
+  try {
+    const deleted = await deleteUnusedAssets(workspaceRoot, toDelete);
+    vscode.window.showInformationMessage(
+      `Deleted ${deleted} unused asset file(s).`,
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to delete unused assets: ${toErrorMessage(error)}`,
+    );
+  }
 }
 
 /**

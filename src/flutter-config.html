@@ -1748,12 +1748,15 @@
     <div class="details-grid">
       <div class="detail-card" style="display:flex; flex-direction:column; gap:12px; justify-content: space-between;">
         <div>
-          <div class="detail-card-label" style="font-size: 14px; color: var(--android-accent);">🚀 Migrate to Declarative Setup</div>
+          <div class="detail-card-label" style="font-size: 14px; color: var(--android-accent);">🚀 Migrate to
+            Declarative Setup</div>
           <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
-            Automatically upgrades your Android build files to the modern declarative setup (AGP 8.13.2, Kotlin 2.2.21). Removes legacy buildscripts and syncs your NDK version.
+            Automatically upgrades your Android build files to the modern declarative setup (AGP 8.13.2, Kotlin 2.2.21).
+            Removes legacy buildscripts and syncs your NDK version.
           </div>
         </div>
-        <button id="migrateAndroidButton" type="button" class="btn-primary" style="background: var(--android-accent); border-color: var(--android-accent); color: #fff; width: 100%; justify-content: center;">
+        <button id="migrateAndroidButton" type="button" class="btn-primary"
+          style="background: var(--android-accent); border-color: var(--android-accent); color: #fff; width: 100%; justify-content: center;">
           Run Migration
         </button>
       </div>
@@ -1762,10 +1765,13 @@
         <div>
           <div class="detail-card-label" style="font-size: 14px;">📦 Upgrade Packages</div>
           <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
-            Executes <code style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">flutter pub upgrade</code> in your workspace to ensure all Flutter dependencies are updated and compatible.
+            Executes <code
+              style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">flutter pub upgrade</code> in
+            your workspace to ensure all Flutter dependencies are updated and compatible.
           </div>
         </div>
-        <button id="upgradePackagesButton" type="button" class="btn-secondary" style="width: 100%; justify-content: center;">
+        <button id="upgradePackagesButton" type="button" class="btn-secondary"
+          style="width: 100%; justify-content: center;">
           Upgrade Packages
         </button>
       </div>
@@ -2133,12 +2139,15 @@
         </div>
       </div>
     </div>
-    
-    <div id="validatorLoadingIndicator" style="display: none; padding: 20px; text-align: center; color: var(--text-secondary);">
+
+    <div id="validatorLoadingIndicator"
+      style="display: none; padding: 20px; text-align: center; color: var(--text-secondary);">
       <div id="validatorLoadingText" style="margin-bottom: 10px;">Running dependency_validator...</div>
-      <div class="spinner" style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid var(--vscode-button-background); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+      <div class="spinner"
+        style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid var(--vscode-button-background); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;">
+      </div>
     </div>
-    
+
     <div id="validatorTableContainer" style="display: none; margin-top: 15px;">
       <table class="permissions-table">
         <thead>
@@ -2153,20 +2162,27 @@
         </tbody>
       </table>
     </div>
-    
-    <div id="validatorNotInstalledContainer" style="display: none; padding: 20px; text-align: center; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--vscode-editorGroup-border); margin-top: 15px;">
+
+    <div id="validatorNotInstalledContainer"
+      style="display: none; padding: 20px; text-align: center; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--vscode-editorGroup-border); margin-top: 15px;">
       <h3 style="margin-top: 0; color: var(--text-primary); font-size: 14px;">Keep your project clean</h3>
-      <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;">
-        The <code>dependency_validator</code> package analyzes your codebase to find unused dependencies and packages that should be downgraded to `dev_dependencies`. Installing it will help you reduce your app's size and improve build times.
+      <p
+        style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;">
+        The <code>dependency_validator</code> package analyzes your codebase to find unused dependencies and packages
+        that should be downgraded to `dev_dependencies`. Installing it will help you reduce your app's size and improve
+        build times.
       </p>
       <button id="installValidatorButton" type="button" class="btn-primary" style="margin: 0 auto; padding: 8px 16px;">
         Install Dependency Validator
       </button>
     </div>
-    <div id="validatorInstalledContainer" style="display: none; padding: 20px; text-align: center; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--vscode-editorGroup-border); margin-top: 15px;">
+    <div id="validatorInstalledContainer"
+      style="display: none; padding: 20px; text-align: center; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--vscode-editorGroup-border); margin-top: 15px;">
       <h3 style="margin-top: 0; color: var(--text-primary); font-size: 14px;">Analyze project dependencies</h3>
-      <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;">
-        The <code>dependency_validator</code> package is installed. Click below to analyze your project dependencies and find unused or misplaced packages.
+      <p
+        style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;">
+        The <code>dependency_validator</code> package is installed. Click below to analyze your project dependencies and
+        find unused or misplaced packages.
       </p>
       <button id="runValidatorButton" type="button" class="btn-primary" style="margin: 0 auto; padding: 8px 16px;">
         Run Dependency Analysis
@@ -2181,9 +2197,21 @@
         font-weight: 600;
         text-transform: uppercase;
       }
-      .issue-unused { background: rgba(244, 67, 54, 0.2); color: #e57373; }
-      .issue-downgrade { background: rgba(255, 152, 0, 0.2); color: #ffb74d; }
-      .issue-maybe { background: rgba(158, 158, 158, 0.2); color: #bdbdbd; }
+
+      .issue-unused {
+        background: rgba(244, 67, 54, 0.2);
+        color: #e57373;
+      }
+
+      .issue-downgrade {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ffb74d;
+      }
+
+      .issue-maybe {
+        background: rgba(158, 158, 158, 0.2);
+        color: #bdbdbd;
+      }
     </style>
   </section>
 
@@ -2192,61 +2220,79 @@
       <div class="section-header-with-button">
         <h2>📦 Flutter Dependencies</h2>
         <div style="display:flex; gap:8px;">
-          <button id="toggleTransitiveButton" type="button" class="btn-secondary" style="border: 1px solid var(--vscode-button-background); background: transparent;">
+          <button id="toggleTransitiveButton" type="button" class="btn-secondary"
+            style="border: 1px solid var(--vscode-button-background); background: transparent;">
             👁 Show Transitive
           </button>
           <button id="analyzePackagesButton" type="button" class="btn-secondary">
             🔍 Analyze Packages
           </button>
-          <button id="updateAllPackagesButton" type="button" class="btn-primary" style="background: var(--android-accent); border-color: var(--android-accent); color: #fff;">
+          <button id="updateAllPackagesButton" type="button" class="btn-primary"
+            style="background: var(--android-accent); border-color: var(--android-accent); color: #fff;">
             🚀 Update All Outdated
           </button>
         </div>
       </div>
     </div>
-    
+
     <!-- Search & Add Packages -->
-    <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--vscode-editorGroup-border);">
-      <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 13px; color: var(--text-primary);">🔍 Search & Add Packages</h3>
-      
+    <div
+      style="background: var(--bg-secondary); border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--vscode-editorGroup-border);">
+      <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 13px; color: var(--text-primary);">🔍 Search & Add
+        Packages</h3>
+
       <!-- Search Input Container -->
       <div style="position: relative; margin-bottom: 12px;">
-        <input type="text" id="packageSearchInput" placeholder="Search pub.dev..." class="detail-card-input" style="width: 100%; padding-right: 30px;" autocomplete="off" />
-        <div id="packageSearchSpinner" class="spinner" style="display: none; position: absolute; right: 10px; top: 8px; border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid var(--vscode-button-background); width: 14px; height: 14px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        
+        <input type="text" id="packageSearchInput" placeholder="Search pub.dev..." class="detail-card-input"
+          style="width: 100%; padding-right: 30px;" autocomplete="off" />
+        <div id="packageSearchSpinner" class="spinner"
+          style="display: none; position: absolute; right: 10px; top: 8px; border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid var(--vscode-button-background); width: 14px; height: 14px; border-radius: 50%; animation: spin 1s linear infinite;">
+        </div>
+
         <!-- Typeahead Dropdown -->
-        <ul id="packageSearchDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-primary); border: 1px solid var(--vscode-editorGroup-border); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 10; margin: 4px 0 0; padding: 0; list-style: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <ul id="packageSearchDropdown"
+          style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-primary); border: 1px solid var(--vscode-editorGroup-border); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 10; margin: 4px 0 0; padding: 0; list-style: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
           <!-- List items will be generated here -->
         </ul>
       </div>
 
       <!-- Popular Suggestions -->
       <div style="margin-bottom: 12px;">
-        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Popular Suggestions</div>
+        <div
+          style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+          Popular Suggestions</div>
         <div id="popularPackagesContainer" style="display: flex; flex-wrap: wrap; gap: 6px;">
           <!-- Chips will be generated here by JS -->
         </div>
       </div>
 
       <!-- Preview Card -->
-      <div id="packagePreviewCard" style="display: none; background: var(--bg-primary); border: 1px solid var(--vscode-editorGroup-border); border-radius: 6px; padding: 12px;">
+      <div id="packagePreviewCard"
+        style="display: none; background: var(--bg-primary); border: 1px solid var(--vscode-editorGroup-border); border-radius: 6px; padding: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
           <div>
             <div id="previewPackageName" style="font-weight: bold; font-size: 14px; color: var(--text-primary);"></div>
-            <div id="previewPackageVersion" class="version-badge" style="display: inline-block; margin-top: 4px; font-size: 11px;"></div>
+            <div id="previewPackageVersion" class="version-badge"
+              style="display: inline-block; margin-top: 4px; font-size: 11px;"></div>
           </div>
-          <button id="previewAddButton" type="button" class="btn-primary" style="padding: 4px 12px; font-size: 12px;">Add to Project</button>
+          <button id="previewAddButton" type="button" class="btn-primary"
+            style="padding: 4px 12px; font-size: 12px;">Add to Project</button>
         </div>
-        <div id="previewPackageDescription" style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;"></div>
-        <div id="previewLoading" style="display: none; font-size: 12px; color: var(--text-secondary);">Fetching details...</div>
+        <div id="previewPackageDescription" style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+        </div>
+        <div id="previewLoading" style="display: none; font-size: 12px; color: var(--text-secondary);">Fetching
+          details...</div>
       </div>
     </div>
 
-    <div id="packagesLoadingIndicator" style="display: none; padding: 20px; text-align: center; color: var(--text-secondary);">
+    <div id="packagesLoadingIndicator"
+      style="display: none; padding: 20px; text-align: center; color: var(--text-secondary);">
       <div style="margin-bottom: 10px;">Analyzing flutter packages (this may take a few moments)...</div>
-      <div class="spinner" style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid var(--vscode-button-background); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+      <div class="spinner"
+        style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid var(--vscode-button-background); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;">
+      </div>
     </div>
-    
+
     <div id="packagesTableContainer" style="display: none; margin-top: 15px;">
       <table class="permissions-table">
         <thead>
@@ -2264,9 +2310,18 @@
         </tbody>
       </table>
     </div>
-    
+
     <style>
-      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
       .package-type-badge {
         font-size: 11px;
         padding: 2px 6px;
@@ -2274,20 +2329,35 @@
         text-transform: uppercase;
         font-weight: 600;
       }
-      .type-direct { background: rgba(0, 122, 204, 0.2); color: #4fc3f7; }
-      .type-dev { background: rgba(76, 175, 80, 0.2); color: #81c784; }
-      .type-transitive { background: rgba(158, 158, 158, 0.2); color: #bdbdbd; }
-      
+
+      .type-direct {
+        background: rgba(0, 122, 204, 0.2);
+        color: #4fc3f7;
+      }
+
+      .type-dev {
+        background: rgba(76, 175, 80, 0.2);
+        color: #81c784;
+      }
+
+      .type-transitive {
+        background: rgba(158, 158, 158, 0.2);
+        color: #bdbdbd;
+      }
+
       .version-badge {
         font-family: monospace;
         background: var(--bg-primary);
         padding: 2px 6px;
         border-radius: 4px;
       }
+
       .version-upgrade {
-        color: #ffb74d; /* orange highlight for upgradable */
+        color: #ffb74d;
+        /* orange highlight for upgradable */
         font-weight: bold;
       }
+
       .btn-upgrade-single {
         background: transparent;
         border: 1px solid var(--vscode-button-background);
@@ -2297,13 +2367,16 @@
         cursor: pointer;
         font-size: 12px;
       }
+
       .btn-upgrade-single:hover {
         background: var(--vscode-button-background);
         color: var(--vscode-button-foreground);
       }
+
       .row-transitive {
         opacity: 0.7;
       }
+
       .popular-chip {
         background: rgba(0, 122, 204, 0.1);
         border: 1px solid rgba(0, 122, 204, 0.3);
@@ -2314,10 +2387,12 @@
         cursor: pointer;
         transition: all 0.2s ease;
       }
+
       .popular-chip:hover {
         background: rgba(0, 122, 204, 0.3);
         border-color: rgba(0, 122, 204, 0.5);
       }
+
       .typeahead-item {
         padding: 8px 12px;
         cursor: pointer;
@@ -2325,19 +2400,88 @@
         color: var(--text-primary);
         border-bottom: 1px solid var(--vscode-editorGroup-border);
       }
+
       .typeahead-item:last-child {
         border-bottom: none;
       }
+
       .typeahead-item:hover {
-        background: var(--vscode-list-hoverBackground, rgba(255,255,255,0.05));
+        background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
       }
     </style>
   </section>
+  <section id="assetsSection" class="section platform-details">
+    <div class="section-header">
+      <div class="section-header-with-button">
+        <h2>🖼️ Unused Assets</h2>
+        <div id="assetsHeaderActions" style="display:flex; gap:8px;">
+          <!-- Buttons dynamically injected -->
+        </div>
+      </div>
+    </div>
+
+    <div id="assetsLoadingIndicator"
+      style="display: none; padding: 20px; text-align: center; color: var(--text-secondary);">
+      <div id="assetsLoadingText" style="margin-bottom: 10px;">Scanning for unused assets...</div>
+      <div class="spinner"
+        style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid var(--vscode-button-background); width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;">
+      </div>
+    </div>
+
+    <div id="assetsEmptyContainer"
+      style="display: none; padding: 20px; text-align: center; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--vscode-editorGroup-border); margin-top: 15px;">
+      <h3 style="margin-top: 0; color: var(--text-primary); font-size: 14px;">Your assets are clean! 🎉</h3>
+      <p
+        style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;">
+        No unused assets were found. Assets referenced from your Dart/JSON source (and fonts declared in
+        <code>pubspec.yaml</code>) are considered used.
+      </p>
+      <button id="scanAssetsButton" type="button" class="btn-primary" style="margin: 0 auto; padding: 8px 16px;">
+        🔍 Scan Assets
+      </button>
+    </div>
+
+    <div id="assetsTableContainer" style="display: none; margin-top: 15px;">
+      <table class="permissions-table">
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th style="width: 90px;">Size</th>
+            <th style="width: 100px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="assetsTableBody">
+          <!-- Rows will be injected here -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="modal-backdrop" id="assetsDeleteModalBackdrop" style="display: none">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 style="color: #e57373;">⚠️ Delete Unused Assets</h3>
+      <p id="assetsDeleteMessage" style="color: var(--text-primary); margin: 0 0 16px; font-weight: bold;">
+        Are you sure you want to delete these unused asset files?
+      </p>
+      <div class="modal-actions">
+        <button id="assetsDeleteCancel" type="button" class="btn-secondary">
+          Cancel
+        </button>
+        <button id="assetsDeleteConfirm" type="button" class="btn-primary"
+          style="background: #d32f2f; border-color: #d32f2f; color: white;">
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="deleteSafetyModalBackdrop" style="display: none">
     <div class="modal" role="dialog" aria-modal="true">
       <h3 style="color: #e57373;">⚠️ Warning: Asset or Native Usage</h3>
       <p style="color: var(--text-secondary); margin: 0 0 12px">
-        Some packages (like <code style="color:#bdbdbd">cupertino_icons</code> or <code style="color:#bdbdbd">firebase_analytics</code>) are flagged as "May be unused" because they don't contain Dart code imports, but they are crucial for assets or native Android/iOS integration.
+        Some packages (like <code style="color:#bdbdbd">cupertino_icons</code> or <code
+          style="color:#bdbdbd">firebase_analytics</code>) are flagged as "May be unused" because they don't contain
+        Dart code imports, but they are crucial for assets or native Android/iOS integration.
       </p>
       <p style="color: var(--text-primary); margin: 0 0 16px; font-weight: bold;">
         Are you sure you want to remove these packages?
@@ -2346,7 +2490,8 @@
         <button id="deleteSafetyCancel" type="button" class="btn-secondary">
           Cancel
         </button>
-        <button id="deleteSafetyConfirm" type="button" class="btn-primary" style="background: #d32f2f; border-color: #d32f2f; color: white;">
+        <button id="deleteSafetyConfirm" type="button" class="btn-primary"
+          style="background: #d32f2f; border-color: #d32f2f; color: white;">
           Yes, Delete Anyway
         </button>
       </div>

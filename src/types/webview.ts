@@ -7,7 +7,7 @@ import type {
   IOSPermission,
   IOSPermissionEntry,
 } from "./permissions.js";
-import type { ServiceEntry, ServiceConfig } from "./services.js";
+import type { ServiceEntry, ServiceConfig, UnusedAsset } from "./services.js";
 
 /** Platform build metadata item */
 export interface PlatformDetailItem {
@@ -96,6 +96,15 @@ export type WebviewMessage =
     type: "removeAllFlaggedPackages";
     packages: string[];
   }
+  | { type: "analyzeUnusedAssets" }
+  | {
+    type: "deleteUnusedAsset";
+    assetPath: string;
+  }
+  | {
+    type: "deleteAllUnusedAssets";
+    assetPaths: string[];
+  }
   | {
     type: "webview_error";
     message: string;
@@ -137,6 +146,15 @@ export interface PermissionsPayload {
   platformDetails: PlatformDetails;
   appName: AppNameLocalization;
   languages?: LanguageInfo[];
+}
+
+/** Unused assets scan result (extension to webview) */
+export interface UnusedAssetsPayload {
+  type: "unusedAssetsResult";
+  assets: UnusedAsset[];
+  totalAssets: number;
+  usedAssets: number;
+  error?: string;
 }
 
 /** Outgoing message for all Android permissions */

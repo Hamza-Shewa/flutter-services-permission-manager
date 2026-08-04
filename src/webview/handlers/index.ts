@@ -44,7 +44,7 @@ import {
 /** Webview reference that works for both Panel and View */
 export type WebviewRef =
   | { kind: 'panel'; panel: vscode.WebviewPanel; webview: vscode.Webview }
-  | { kind: 'view';  view:  vscode.WebviewView;  webview: vscode.Webview };
+  | { kind: 'view'; view: vscode.WebviewView; webview: vscode.Webview };
 
 /**
  * Handle refresh request - reload permissions and services from files
@@ -377,16 +377,20 @@ export async function handleSavePackageNames(
 }
 
 export { handleMigrateAndroid, handleUpgradePackages } from './migrate.js';
-export { 
-    handleRequestPackagesAnalysis, 
-    handleUpgradeSinglePackage,
-    handleSearchPackages,
-    handleRequestPackageDetails,
-    handleAddPackage,
-    handleCheckDependencyValidator,
-    handleInstallDependencyValidator,
-    handleRunDependencyValidator,
-    handleRemovePackage,
-    handleDowngradePackage,
-    handleRemoveAllFlaggedPackages
+export {
+  handleRequestPackagesAnalysis,
+  handleUpgradeSinglePackage,
+  handleSearchPackages,
+  handleRequestPackageDetails,
+  handleAddPackage,
+  handleCheckDependencyValidator,
+  handleInstallDependencyValidator,
+  handleRunDependencyValidator,
+  handleRemovePackage,
+  handleDowngradePackage,
+  handleRemoveAllFlaggedPackages
 } from './packages.js';
+export {
+  handleAnalyzeUnusedAssets,
+  handleDeleteUnusedAssets,
+} from './assets.js';

@@ -3,8 +3,8 @@ export const iosTableBody = document.getElementById("iosPermissionTable");
 export const searchInput = document.getElementById("permissionSearch");
 export const categoryFilter = document.getElementById("categoryFilter");
 export const addAndroidButton = document.getElementById(
-    "addAndroidPermissionButton",
-  );
+  "addAndroidPermissionButton",
+);
 export const addIosButton = document.getElementById("addIosPermissionButton");
 export const saveAndroidBuildDetailsButton = document.getElementById("saveAndroidBuildDetailsButton");
 export const saveIosBuildDetailsButton = document.getElementById("saveIosBuildDetailsButton");
@@ -20,14 +20,14 @@ export const toastContainer = document.getElementById("toastContainer");
 export const refreshButton = document.getElementById("refreshButton");
 export const androidPackageNameInput = document.getElementById("androidPackageNameInput");
 export const iosBundleIdentifierInput = document.getElementById("iosBundleIdentifierInput");
-  // Packages Elements
+// Packages Elements
 export const analyzePackagesButton = document.getElementById("analyzePackagesButton");
 export const updateAllPackagesButton = document.getElementById("updateAllPackagesButton");
 export const toggleTransitiveButton = document.getElementById("toggleTransitiveButton");
 export const packagesLoadingIndicator = document.getElementById("packagesLoadingIndicator");
 export const packagesTableContainer = document.getElementById("packagesTableContainer");
 export const packagesTableBody = document.getElementById("packagesTableBody");
-  // Search Elements
+// Search Elements
 export const packageSearchInput = document.getElementById("packageSearchInput");
 export const packageSearchSpinner = document.getElementById("packageSearchSpinner");
 export const packageSearchDropdown = document.getElementById("packageSearchDropdown");
@@ -38,7 +38,7 @@ export const previewPackageVersion = document.getElementById("previewPackageVers
 export const previewPackageDescription = document.getElementById("previewPackageDescription");
 export const previewLoading = document.getElementById("previewLoading");
 export const previewAddButton = document.getElementById("previewAddButton");
-  // Validator Elements
+// Validator Elements
 export const validatorHeaderActions = document.getElementById("validatorHeaderActions");
 export const validatorLoadingIndicator = document.getElementById("validatorLoadingIndicator");
 export const validatorLoadingText = document.getElementById("validatorLoadingText");
@@ -48,6 +48,18 @@ export const validatorNotInstalledContainer = document.getElementById("validator
 export const validatorInstalledContainer = document.getElementById("validatorInstalledContainer");
 export const installValidatorButton = document.getElementById("installValidatorButton");
 export const runValidatorButton = document.getElementById("runValidatorButton");
+// Unused Assets Elements
+export const assetsHeaderActions = document.getElementById("assetsHeaderActions");
+export const assetsLoadingIndicator = document.getElementById("assetsLoadingIndicator");
+export const assetsLoadingText = document.getElementById("assetsLoadingText");
+export const assetsEmptyContainer = document.getElementById("assetsEmptyContainer");
+export const scanAssetsButton = document.getElementById("scanAssetsButton");
+export const assetsTableContainer = document.getElementById("assetsTableContainer");
+export const assetsTableBody = document.getElementById("assetsTableBody");
+export const assetsDeleteModalBackdrop = document.getElementById("assetsDeleteModalBackdrop");
+export const assetsDeleteMessage = document.getElementById("assetsDeleteMessage");
+export const assetsDeleteCancel = document.getElementById("assetsDeleteCancel");
+export const assetsDeleteConfirm = document.getElementById("assetsDeleteConfirm");
 export const modalBackdrop = document.getElementById("modalBackdrop");
 export const modalSearch = document.getElementById("modalSearch");
 export const modalResults = document.getElementById("modalResults");
@@ -73,43 +85,43 @@ export const macosSection = document.getElementById("macosSection");
 export const modalCancel = document.getElementById("modalCancel");
 export const modalAdd = document.getElementById("modalAdd");
 export const crossPlatformModalBackdrop = document.getElementById(
-    "crossPlatformModalBackdrop",
-  );
+  "crossPlatformModalBackdrop",
+);
 export const crossPlatformModalTitle = document.getElementById(
-    "crossPlatformModalTitle",
-  );
+  "crossPlatformModalTitle",
+);
 export const crossPlatformModalMessage = document.getElementById(
-    "crossPlatformModalMessage",
-  );
+  "crossPlatformModalMessage",
+);
 export const crossPlatformSuggestions = document.getElementById(
-    "crossPlatformSuggestions",
-  );
+  "crossPlatformSuggestions",
+);
 export const crossPlatformModalError = document.getElementById(
-    "crossPlatformModalError",
-  );
+  "crossPlatformModalError",
+);
 export const crossPlatformModalSkip = document.getElementById(
-    "crossPlatformModalSkip",
-  );
+  "crossPlatformModalSkip",
+);
 export const crossPlatformModalAdd = document.getElementById(
-    "crossPlatformModalAdd",
-  );
+  "crossPlatformModalAdd",
+);
 export const syncPermissionsButton = document.getElementById(
-    "syncPermissionsButton",
-  );
+  "syncPermissionsButton",
+);
 export const equivalentModalBackdrop = document.getElementById(
-    "equivalentModalBackdrop",
-  );
+  "equivalentModalBackdrop",
+);
 export const equivalentModalTitle = document.getElementById("equivalentModalTitle");
 export const equivalentModalMessage = document.getElementById(
-    "equivalentModalMessage",
-  );
+  "equivalentModalMessage",
+);
 export const equivalentSuggestions = document.getElementById(
-    "equivalentSuggestions",
-  );
+  "equivalentSuggestions",
+);
 export const equivalentModalError = document.getElementById("equivalentModalError");
 export const equivalentModalCancel = document.getElementById(
-    "equivalentModalCancel",
-  );
+  "equivalentModalCancel",
+);
 export const equivalentModalAdd = document.getElementById("equivalentModalAdd");
 export const syncModalBackdrop = document.getElementById("syncModalBackdrop");
 export const syncModalList = document.getElementById("syncModalList");
@@ -119,7 +131,7 @@ export const syncModalConfirm = document.getElementById("syncModalConfirm");
 export const deleteSafetyModalBackdrop = document.getElementById("deleteSafetyModalBackdrop");
 export const deleteSafetyCancel = document.getElementById("deleteSafetyCancel");
 export const deleteSafetyConfirm = document.getElementById("deleteSafetyConfirm");
-  // Service modal elements
+// Service modal elements
 export const addServiceButton = document.getElementById("addServiceButton");
 export const servicesContainer = document.getElementById("servicesContainer");
 export const serviceSearch = document.getElementById("serviceSearch");
@@ -130,13 +142,13 @@ export const serviceModalError = document.getElementById("serviceModalError");
 export const serviceModalCancel = document.getElementById("serviceModalCancel");
 export const serviceModalSave = document.getElementById("serviceModalSave");
 export const addServiceModalBackdrop = document.getElementById(
-    "addServiceModalBackdrop",
-  );
+  "addServiceModalBackdrop",
+);
 export const addServiceList = document.getElementById("addServiceList");
 export const addServiceModalCancel = document.getElementById(
-    "addServiceModalCancel",
-  );
-  // App Name elements
+  "addServiceModalCancel",
+);
+// App Name elements
 export const appNameDefault = document.getElementById("appNameDefault");
 export const appNameLangDropdown = document.getElementById("appNameLangDropdown");
 export const appNameLangDropdownTrigger = document.getElementById("appNameLangDropdownTrigger");
@@ -144,5 +156,5 @@ export const appNameLangDropdownMenu = document.getElementById("appNameLangDropd
 export const appNameLangSearch = document.getElementById("appNameLangSearch");
 export const appNameLangOptions = document.getElementById("appNameLangOptions");
 export const appNameLangList = document.getElementById("appNameLangList");
-  // Languages data (loaded from extension)
-  let languagesData = [];
+// Languages data (loaded from extension)
+let languagesData = [];

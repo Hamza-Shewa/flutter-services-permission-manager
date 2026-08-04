@@ -2,7 +2,7 @@
   "name": "flutter-config-manager",
   "displayName": "Flutter Config Manager",
   "description": "Manage Flutter Android/iOS/macOS permissions, services, and app name localizations. Update manifests, plists, Podfile, and AppDelegate from one VS Code UI.",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "publisher": "hamza-shewa",
   "author": {
     "name": "Hamza Shewa",
@@ -63,6 +63,10 @@
           "light": "images/flutter-config.png",
           "dark": "images/flutter-config.png"
         }
+      },
+      {
+        "command": "flutter-config-manager.checkUnusedAssets",
+        "title": "Flutter Config Manager: Check Unused Assets"
       }
     ],
     "viewsContainers": {
@@ -119,6 +123,7 @@
     "typescript-eslint": "^8.52.0"
   },
   "dependencies": {
-    "fast-xml-parser": "^5.10.1"
+    "fast-xml-parser": "^5.10.1",
+    "vsce": "^2.15.0"
   }
 }

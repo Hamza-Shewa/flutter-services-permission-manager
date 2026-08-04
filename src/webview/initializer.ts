@@ -55,6 +55,8 @@ import {
   handleRemovePackage,
   handleDowngradePackage,
   handleRemoveAllFlaggedPackages,
+  handleAnalyzeUnusedAssets,
+  handleDeleteUnusedAssets,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -142,7 +144,7 @@ export async function initializePermissionWebview(
   const webview = target.type === "panel" ? target.panel.webview : target.view.webview;
 
   // Set up message handler
-  const ref: WebviewRef = target.type === "panel" 
+  const ref: WebviewRef = target.type === "panel"
     ? { kind: 'panel', panel: target.panel, webview }
     : { kind: 'view', view: target.view, webview };
   setupMessageHandler(ref, payload, files);
@@ -210,13 +212,13 @@ function setupMessageHandler(
     .register("requestAllAndroidPermissions", async () => await handleRequestAllAndroid(ref))
     .register("requestAllIOSPermissions", async () => await handleRequestAllIOS(ref))
     .register("requestServices", () => handleRequestServices(ref))
-    .register("savePermissions", async (msg) => 
+    .register("savePermissions", async (msg) =>
       await handleSavePermissions(ref, msg.androidPermissions ?? [], msg.iosPermissions ?? [], msg.macosPermissions ?? [], files)
     )
     .register("saveAppName", async (msg) => await handleSaveAppName(ref, msg.appName, files))
     .register("savePlatformDetails", async (msg) => await handleSavePlatformDetails(ref, msg.platformDetails, files))
     .register("saveServices", async (msg) => await handleSaveServices(ref, msg.services ?? [], files))
-    .register("savePackageNames", async (msg) => 
+    .register("savePackageNames", async (msg) =>
       await handleSavePackageNames(ref, { applicationId: msg.applicationId || "", bundleIdentifier: msg.bundleIdentifier || "" }, files)
     )
     .register("saveAndroidBuildDetails", async (msg) => await handleSaveAndroidBuildDetails(ref, msg.androidDetails ?? [], files))
@@ -224,16 +226,19 @@ function setupMessageHandler(
     .register("migrateAndroid", async () => await handleMigrateAndroid(ref))
     .register("upgradePackages", async () => await handleUpgradePackages(ref))
     .register("requestPackagesAnalysis", async () => await handleRequestPackagesAnalysis(ref))
-    .register("upgradeSinglePackage", async (msg) => { if (msg.packageName) {await handleUpgradeSinglePackage(ref, msg.packageName);} })
-    .register("searchPackages", async (msg) => { if (msg.query !== undefined) {await handleSearchPackages(ref, msg.query);} })
-    .register("requestPackageDetails", async (msg) => { if (msg.packageName) {await handleRequestPackageDetails(ref, msg.packageName);} })
-    .register("addPackage", async (msg) => { if (msg.packageName) {await handleAddPackage(ref, msg.packageName);} })
+    .register("upgradeSinglePackage", async (msg) => { if (msg.packageName) { await handleUpgradeSinglePackage(ref, msg.packageName); } })
+    .register("searchPackages", async (msg) => { if (msg.query !== undefined) { await handleSearchPackages(ref, msg.query); } })
+    .register("requestPackageDetails", async (msg) => { if (msg.packageName) { await handleRequestPackageDetails(ref, msg.packageName); } })
+    .register("addPackage", async (msg) => { if (msg.packageName) { await handleAddPackage(ref, msg.packageName); } })
     .register("checkDependencyValidator", async () => await handleCheckDependencyValidator(ref))
     .register("installDependencyValidator", async () => await handleInstallDependencyValidator(ref))
     .register("runDependencyValidator", async () => await handleRunDependencyValidator(ref))
-    .register("removePackage", async (msg) => { if (msg.packageName) {await handleRemovePackage(ref, msg.packageName);} })
-    .register("downgradePackage", async (msg) => { if (msg.packageName) {await handleDowngradePackage(ref, msg.packageName);} })
-    .register("removeAllFlaggedPackages", async (msg) => { if (msg.packages) {await handleRemoveAllFlaggedPackages(ref, msg.packages);} })
+    .register("removePackage", async (msg) => { if (msg.packageName) { await handleRemovePackage(ref, msg.packageName); } })
+    .register("downgradePackage", async (msg) => { if (msg.packageName) { await handleDowngradePackage(ref, msg.packageName); } })
+    .register("removeAllFlaggedPackages", async (msg) => { if (msg.packages) { await handleRemoveAllFlaggedPackages(ref, msg.packages); } })
+    .register("analyzeUnusedAssets", async () => await handleAnalyzeUnusedAssets(ref))
+    .register("deleteUnusedAsset", async (msg) => { if (msg.assetPath) { await handleDeleteUnusedAssets(ref, [msg.assetPath]); } })
+    .register("deleteAllUnusedAssets", async (msg) => { if (msg.assetPaths) { await handleDeleteUnusedAssets(ref, msg.assetPaths); } })
     .register("webview_error", (msg) => { console.error("[WEBVIEW ERROR]:", JSON.stringify(msg, null, 2)); })
     .register("webview_log", (msg) => { console.log("[WEBVIEW LOG]:", msg.message); });
 }

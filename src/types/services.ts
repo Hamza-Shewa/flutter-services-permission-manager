@@ -2,6 +2,14 @@
  * Service-related type definitions
  */
 
+/** An asset file detected as unused in the Flutter project */
+export interface UnusedAsset {
+    /** Project-relative path, e.g. `assets/images/old_logo.png` */
+    path: string;
+    /** File size in bytes, when available */
+    size?: number;
+}
+
 /** Configured service entry (user's configured values) */
 export interface ServiceEntry {
     id: string;
