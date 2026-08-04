@@ -58,6 +58,8 @@ import {
   handleRemoveAllFlaggedPackages,
   handleAnalyzeUnusedAssets,
   handleDeleteUnusedAssets,
+  handleRevealAssetReference,
+  handleUpdateIgnoredAssetPaths,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -241,6 +243,8 @@ function setupMessageHandler(
     .register("analyzeUnusedAssets", async () => await handleAnalyzeUnusedAssets(ref))
     .register("deleteUnusedAsset", async (msg) => { if (msg.assetPath) { await handleDeleteUnusedAssets(ref, [msg.assetPath]); } })
     .register("deleteAllUnusedAssets", async (msg) => { if (msg.assetPaths) { await handleDeleteUnusedAssets(ref, msg.assetPaths); } })
+    .register("revealAssetReference", async (msg) => { if (msg.file) { await handleRevealAssetReference(ref, { file: msg.file, line: msg.line, column: msg.column }); } })
+    .register("updateIgnoredAssetPaths", async (msg) => { if (msg.value) { await handleUpdateIgnoredAssetPaths(ref, { action: msg.action, kind: msg.kind, value: msg.value }); } })
     .register("webview_error", (msg) => { console.error("[WEBVIEW ERROR]:", JSON.stringify(msg, null, 2)); })
     .register("webview_log", (msg) => { console.log("[WEBVIEW LOG]:", msg.message); });
 }

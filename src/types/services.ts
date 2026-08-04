@@ -2,12 +2,35 @@
  * Service-related type definitions
  */
 
+/** A dynamic asset reference detected in a Dart file */
+export interface AssetDynamicRef {
+    /** Project-relative Dart file path, e.g. `lib/screens/settings.dart` */
+    file: string;
+    /** 1-based line of the first matching occurrence */
+    line: number;
+    /** 0-based column of the occurrence */
+    column: number;
+    /**
+     * `true` = no static anchor (could reference any asset, e.g.
+     * `Image.asset(path)`). `false` = anchored pattern such as
+     * `assets/icon/$icon`.
+     */
+    dynamic: boolean;
+    /** Detected pattern text, e.g. `assets/icon/$icon` */
+    pattern?: string;
+}
+
 /** An asset file detected as unused in the Flutter project */
 export interface UnusedAsset {
     /** Project-relative path, e.g. `assets/images/old_logo.png` */
     path: string;
     /** File size in bytes, when available */
     size?: number;
+    /**
+     * Dynamic references that may use this asset. Empty/absent means the
+     * asset has no static *or* dynamic references and is truly unused.
+     */
+    refs?: AssetDynamicRef[];
 }
 
 /** Configured service entry (user's configured values) */

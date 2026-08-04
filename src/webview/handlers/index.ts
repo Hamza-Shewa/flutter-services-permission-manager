@@ -393,4 +393,6 @@ export {
 export {
   handleAnalyzeUnusedAssets,
   handleDeleteUnusedAssets,
+  handleRevealAssetReference,
+  handleUpdateIgnoredAssetPaths,
 } from './assets.js';

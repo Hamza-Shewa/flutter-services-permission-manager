@@ -160,12 +160,22 @@ async function handleCheckUnusedAssets(): Promise<void> {
     return;
   }
 
-  const { assets } = result;
+  const { assets, maybeUsedAssets } = result;
+  const maybeUsed = maybeUsedAssets || [];
+
   if (assets.length === 0) {
-    vscode.window.showInformationMessage(
-      `No unused assets found (${result.totalAssets} assets scanned). 🎉`,
-    );
+    const message =
+      maybeUsed.length > 0
+        ? `No unused assets found (${result.totalAssets} scanned; ${maybeUsed.length} may be used via dynamic references and were left untouched).`
+        : `No unused assets found (${result.totalAssets} assets scanned). 🎉`;
+    vscode.window.showInformationMessage(message);
     return;
+  }
+
+  if (maybeUsed.length > 0) {
+    vscode.window.showInformationMessage(
+      `${maybeUsed.length} asset(s) may be used via dynamic references (e.g. assets/icon/$icon) and are excluded from this list.`,
+    );
   }
 
   type AssetQuickPickItem = vscode.QuickPickItem & {

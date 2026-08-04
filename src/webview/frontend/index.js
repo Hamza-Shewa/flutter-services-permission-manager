@@ -257,13 +257,6 @@ if (migrateAndroid16kbButton) {
   });
 }
 
-const upgradePackagesButton = document.getElementById("upgradePackagesButton");
-if (upgradePackagesButton) {
-  upgradePackagesButton.addEventListener("click", () => {
-    api.postMessage({ type: "upgradePackages" });
-  });
-}
-
 if (refreshButton) {
   refreshButton.addEventListener("click", () => {
     api.postMessage({ type: "refresh" });

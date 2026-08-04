@@ -95,6 +95,22 @@
           "type": "boolean",
           "default": false,
           "description": "Enable verbose debug logging for Flutter Config Manager in the developer console."
+        },
+        "flutter-config-manager.unusedAssets.ignoredDirectories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Project-relative directories to skip when scanning for unused assets (e.g. \"lib/widgets\"). Custom widget wrappers that load assets dynamically can be excluded here."
+        },
+        "flutter-config-manager.unusedAssets.ignoredFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Files to skip when scanning for unused assets, by project-relative path or basename (e.g. \"my_image.dart\")."
         }
       }
     }

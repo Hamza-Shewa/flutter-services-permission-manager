@@ -107,6 +107,18 @@ export type WebviewMessage =
     assetPaths: string[];
   }
   | {
+    type: "revealAssetReference";
+    file: string;
+    line: number;
+    column: number;
+  }
+  | {
+    type: "updateIgnoredAssetPaths";
+    action: "add" | "remove";
+    kind: "directory" | "file";
+    value: string;
+  }
+  | {
     type: "webview_error";
     message: string;
     filename?: string;
@@ -152,9 +164,16 @@ export interface PermissionsPayload {
 /** Unused assets scan result (extension to webview) */
 export interface UnusedAssetsPayload {
   type: "unusedAssetsResult";
+  /** Truly unused assets (no static or dynamic references) */
   assets: UnusedAsset[];
+  /** Assets not statically referenced but referenced via dynamic paths */
+  maybeUsedAssets: UnusedAsset[];
   totalAssets: number;
   usedAssets: number;
+  /** User-configured directories to skip when scanning for references */
+  ignoredDirectories?: string[];
+  /** User-configured files to skip when scanning for references */
+  ignoredFiles?: string[];
   error?: string;
 }
 

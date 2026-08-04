@@ -1798,21 +1798,6 @@
           Enable 16 KB Page Size
         </button>
       </div>
-
-      <div class="detail-card" style="display:flex; flex-direction:column; gap:12px; justify-content: space-between;">
-        <div>
-          <div class="detail-card-label" style="font-size: 14px;">📦 Upgrade Packages</div>
-          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
-            Executes <code
-              style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">flutter pub upgrade</code> in
-            your workspace to ensure all Flutter dependencies are updated and compatible.
-          </div>
-        </div>
-        <button id="upgradePackagesButton" type="button" class="btn-secondary"
-          style="width: 100%; justify-content: center;">
-          Upgrade Packages
-        </button>
-      </div>
     </div>
   </section>
 
@@ -2485,6 +2470,7 @@
           <tr>
             <th>Asset</th>
             <th style="width: 90px;">Size</th>
+            <th style="width: 200px;">Referenced by</th>
             <th style="width: 100px;">Action</th>
           </tr>
         </thead>
@@ -2493,6 +2479,72 @@
         </tbody>
       </table>
     </div>
+
+    <div id="assetsIgnoreContainer"
+      style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--vscode-editorGroup-border);">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <strong style="color: var(--text-primary); font-size: 13px;">🚫 Ignored directories &amp; files</strong>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px; line-height: 1.5;">
+        Files &amp; directories listed here are <b>not scanned</b> for asset references. Add custom wrapper widgets
+        (e.g. <code style="color:#bdbdbd">my_image.dart</code>) that load assets dynamically so they don't flag assets
+        as "maybe used". Stored in your workspace settings.
+      </p>
+      <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;">
+        <input id="assetsIgnoreDirInput" type="text" placeholder="lib/widgets"
+          style="flex:1 1 160px; min-width:120px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+        <button id="assetsIgnoreDirAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
+          Directory</button>
+        <input id="assetsIgnoreFileInput" type="text" placeholder="my_image.dart"
+          style="flex:1 1 160px; min-width:120px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+        <button id="assetsIgnoreFileAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
+          File</button>
+      </div>
+      <div id="assetsIgnoreChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+    </div>
+
+    <style>
+      .asset-ref-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin: 2px 4px 2px 0;
+        padding: 2px 8px;
+        font-size: 12px;
+        line-height: 18px;
+        border: 1px solid #4caf50;
+        border-radius: 4px;
+        cursor: pointer;
+        background: transparent;
+        color: #4caf50;
+        white-space: nowrap;
+        font-family: inherit;
+      }
+
+      .asset-ref-btn:hover {
+        background: rgba(76, 175, 80, 0.12);
+        filter: brightness(1.15);
+      }
+
+      .asset-ref-btn.weak {
+        border-style: dashed;
+        border-color: #f0ad4e;
+        color: #f0ad4e;
+      }
+
+      .asset-ref-btn.weak:hover {
+        background: rgba(240, 173, 78, 0.12);
+      }
+
+      .assets-bucket-separator td {
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary, #ccc);
+        background: var(--bg-secondary, #252526);
+        border-top: 1px solid var(--vscode-editorGroup-border, #333);
+      }
+    </style>
   </section>
 
   <div class="modal-backdrop" id="assetsDeleteModalBackdrop" style="display: none">
@@ -2506,6 +2558,33 @@
           Cancel
         </button>
         <button id="assetsDeleteConfirm" type="button" class="btn-primary"
+          style="background: #d32f2f; border-color: #d32f2f; color: white;">
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="assetsMaybeDeleteModalBackdrop" style="display: none">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 style="color: #ffb74d;">⚠️ Delete Maybe-Used Assets</h3>
+      <p id="assetsMaybeDeleteMessage" style="color: var(--text-primary); margin: 0 0 12px; font-weight: bold;"></p>
+      <p style="color: var(--text-secondary); margin: 0 0 12px; font-size: 13px; line-height: 1.5;">
+        These assets are <strong style="color:#ffb74d;">not referenced statically</strong>, but Dart files reference
+        them via dynamic paths (e.g. <code style="color:#bdbdbd">assets/icon/$icon</code>) or dynamic loaders
+        (<code style="color:#bdbdbd">Image.asset(path)</code>). Deleting them may break your app.
+      </p>
+      <p style="color: var(--text-secondary); margin: 0 0 12px; font-size: 13px;">
+        Type <strong id="assetsMaybeDeleteExpected" style="color: var(--text-primary);"></strong> to confirm.
+      </p>
+      <input id="assetsMaybeDeleteInput" type="number" min="0" step="1" style="width: 100%; padding: 8px; margin-bottom: 16px; box-sizing: border-box;
+               background: var(--bg-secondary, #1e1e1e); color: var(--text-primary, #fff);
+               border: 1px solid var(--vscode-editorGroup-border, #555); border-radius: 4px;" />
+      <div class="modal-actions">
+        <button id="assetsMaybeDeleteCancel" type="button" class="btn-secondary">
+          Cancel
+        </button>
+        <button id="assetsMaybeDeleteConfirm" type="button" class="btn-primary" disabled
           style="background: #d32f2f; border-color: #d32f2f; color: white;">
           Yes, Delete
         </button>

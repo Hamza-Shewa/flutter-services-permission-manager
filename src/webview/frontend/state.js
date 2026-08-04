@@ -13,7 +13,7 @@ const _state = {
   appName: { defaultName: "", localizations: {} },
   packages: [], showTransitive: false,
   validatorState: { isInstalled: false, issues: null, loading: false },
-  assetsState: { assets: [], totalAssets: 0, usedAssets: 0 },
+  assetsState: { assets: [], maybeUsedAssets: [], totalAssets: 0, usedAssets: 0, ignoredDirectories: [], ignoredFiles: [] },
   platformDetails: { android: [], ios: [] },
   languages: [], syncItems: []
 };

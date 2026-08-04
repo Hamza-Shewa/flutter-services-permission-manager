@@ -1,14 +1,18 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { toErrorMessage } from '../shared/index.js';
-import type { UnusedAsset } from '../types/services.js';
+import type { UnusedAsset, AssetDynamicRef } from '../types/services.js';
 
 /**
  * Result of scanning a Flutter project for unused assets.
  */
 export interface UnusedAssetsResult {
+    /** Truly unused assets (no static or dynamic references) */
     assets: UnusedAsset[];
+    /** Assets not statically referenced, but referenced via dynamic paths */
+    maybeUsedAssets: UnusedAsset[];
     totalAssets: number;
     usedAssets: number;
 }
@@ -18,7 +22,7 @@ interface UnusedAssetsScriptPayload {
     totalAssets: number;
     usedAssets: number;
     deleted: number;
-    unusedAssets: Array<{ path: string; size?: number }>;
+    unusedAssets: Array<{ path: string; size?: number; refs?: AssetDynamicRef[] }>;
 }
 
 /**
@@ -50,6 +54,33 @@ function runScript(workspaceRoot: string, extraArgs: string[]): Promise<string> 
 }
 
 /**
+ * Reads the user-configured ignored directories/files for the unused-assets
+ * scan from VS Code workspace settings.
+ */
+export function getIgnoredAssetPaths(): { ignoredDirectories: string[]; ignoredFiles: string[] } {
+    const config = vscode.workspace.getConfiguration('flutt, ...buildIgnoreArgs()er-config-manager.unusedAssets');
+    const ignoredDirectories = (config.get<string[]>('ignoredDirectories', []) ?? [])
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0);
+    const ignoredFiles = (config.get<string[]>('ignoredFiles', []) ?? [])
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0);
+    return { ignoredDirectories, ignoredFiles };
+}
+
+function buildIgnoreArgs(): string[] {
+    const { ignoredDirectories, ignoredFiles } = getIgnoredAssetPaths();
+    const args: string[] = [];
+    for (const dir of ignoredDirectories) {
+        args.push('--ignore-dirs', dir);
+    }
+    for (const file of ignoredFiles) {
+        args.push('--ignore-files', file);
+    }
+    return args;
+}
+
+/**
  * Scans the Flutter project at `workspaceRoot` and returns the list of asset
  * files that are not referenced from the project's Dart/JSON source.
  */
@@ -57,12 +88,16 @@ export async function analyzeUnusedAssets(workspaceRoot: string): Promise<Unused
     const stdout = await runScript(workspaceRoot, ['--json']);
     try {
         const data = JSON.parse(stdout) as UnusedAssetsScriptPayload;
-        const assets: UnusedAsset[] = (data.unusedAssets || []).map((a) => ({
+        const all: UnusedAsset[] = (data.unusedAssets || []).map((a) => ({
             path: a.path,
             size: a.size,
+            refs: Array.isArray(a.refs) && a.refs.length > 0 ? a.refs : undefined,
         }));
+        const assets = all.filter((a) => !a.refs);
+        const maybeUsedAssets = all.filter((a) => !!a.refs);
         return {
             assets,
+            maybeUsedAssets,
             totalAssets: data.totalAssets ?? 0,
             usedAssets: data.usedAssets ?? 0,
         };
