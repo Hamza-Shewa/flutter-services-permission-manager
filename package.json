@@ -111,6 +111,22 @@
           },
           "default": [],
           "description": "Files to skip when scanning for unused assets, by project-relative path or basename (e.g. \"my_image.dart\")."
+        },
+        "flutter-config-manager.unusedAssets.ignoredDynamicDirectories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Directories whose dynamic asset patterns (e.g. \"assets/icons/$name\", Image.asset(path)) are ignored, while literal asset references still count as used. Use for files like constants/icon maps that mix static and dynamic references."
+        },
+        "flutter-config-manager.unusedAssets.ignoredDynamicFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Files whose dynamic asset patterns are ignored (by project-relative path or basename), while literal asset references still count as used."
         }
       }
     }

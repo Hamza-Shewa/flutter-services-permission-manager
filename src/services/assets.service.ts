@@ -56,26 +56,49 @@ function runScript(workspaceRoot: string, extraArgs: string[]): Promise<string> 
 /**
  * Reads the user-configured ignored directories/files for the unused-assets
  * scan from VS Code workspace settings.
+ *
+ * - `ignoredDirectories` / `ignoredFiles`: files/dirs skipped entirely.
+ * - `ignoredDynamicDirectories` / `ignoredDynamicFiles`: only dynamic pattern
+ *   detection is suppressed for these; literal references still count.
  */
-export function getIgnoredAssetPaths(): { ignoredDirectories: string[]; ignoredFiles: string[] } {
-    const config = vscode.workspace.getConfiguration('flutt, ...buildIgnoreArgs()er-config-manager.unusedAssets');
-    const ignoredDirectories = (config.get<string[]>('ignoredDirectories', []) ?? [])
-        .map((v) => v.trim())
-        .filter((v) => v.length > 0);
-    const ignoredFiles = (config.get<string[]>('ignoredFiles', []) ?? [])
-        .map((v) => v.trim())
-        .filter((v) => v.length > 0);
-    return { ignoredDirectories, ignoredFiles };
+export function getIgnoredAssetPaths(): {
+    ignoredDirectories: string[];
+    ignoredFiles: string[];
+    ignoredDynamicDirectories: string[];
+    ignoredDynamicFiles: string[];
+} {
+    const config = vscode.workspace.getConfiguration('flutter-config-manager.unusedAssets');
+    const clean = (key: string): string[] =>
+        (config.get<string[]>(key, []) ?? [])
+            .map((v) => v.trim())
+            .filter((v) => v.length > 0);
+    return {
+        ignoredDirectories: clean('ignoredDirectories'),
+        ignoredFiles: clean('ignoredFiles'),
+        ignoredDynamicDirectories: clean('ignoredDynamicDirectories'),
+        ignoredDynamicFiles: clean('ignoredDynamicFiles'),
+    };
 }
 
 function buildIgnoreArgs(): string[] {
-    const { ignoredDirectories, ignoredFiles } = getIgnoredAssetPaths();
+    const {
+        ignoredDirectories,
+        ignoredFiles,
+        ignoredDynamicDirectories,
+        ignoredDynamicFiles,
+    } = getIgnoredAssetPaths();
     const args: string[] = [];
     for (const dir of ignoredDirectories) {
         args.push('--ignore-dirs', dir);
     }
     for (const file of ignoredFiles) {
         args.push('--ignore-files', file);
+    }
+    for (const dir of ignoredDynamicDirectories) {
+        args.push('--ignore-dynamic-dirs', dir);
+    }
+    for (const file of ignoredDynamicFiles) {
+        args.push('--ignore-dynamic-files', file);
     }
     return args;
 }
@@ -85,7 +108,7 @@ function buildIgnoreArgs(): string[] {
  * files that are not referenced from the project's Dart/JSON source.
  */
 export async function analyzeUnusedAssets(workspaceRoot: string): Promise<UnusedAssetsResult> {
-    const stdout = await runScript(workspaceRoot, ['--json']);
+    const stdout = await runScript(workspaceRoot, ['--json', ...buildIgnoreArgs()]);
     try {
         const data = JSON.parse(stdout) as UnusedAssetsScriptPayload;
         const all: UnusedAsset[] = (data.unusedAssets || []).map((a) => ({

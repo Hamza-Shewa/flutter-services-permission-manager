@@ -2501,6 +2501,27 @@
           File</button>
       </div>
       <div id="assetsIgnoreChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+
+      <div style="border-top: 1px solid var(--vscode-editorGroup-border,#333); margin-top: 12px; padding-top: 12px;">
+        <strong style="color: var(--text-primary); font-size: 13px;">♻️ Ignore dynamic references only</strong>
+        <p style="color: var(--text-secondary); font-size: 12px; margin: 6px 0 10px; line-height: 1.5;">
+          For these files &amp; directories, <b>literal asset references still count</b> as used, but their dynamic
+          patterns (e.g. <code style="color:#bdbdbd">assets/icons/$name</code> or <code
+            style="color:#bdbdbd">Image.asset(path)</code>) are ignored — so they won't flag assets as "maybe used".
+          Ideal for icon maps that mix static constants with a dynamic helper.
+        </p>
+        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;">
+          <input id="assetsIgnoreDynDirInput" type="text" placeholder="lib/utilities"
+            style="flex:1 1 160px; min-width:120px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+          <button id="assetsIgnoreDynDirAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
+            Directory</button>
+          <input id="assetsIgnoreDynFileInput" type="text" placeholder="libozzle_icons.dart"
+            style="flex:1 1 160px; min-width:120px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+          <button id="assetsIgnoreDynFileAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
+            File</button>
+        </div>
+        <div id="assetsIgnoreDynChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      </div>
     </div>
 
     <style>

@@ -115,6 +115,8 @@ export type WebviewMessage =
   | {
     type: "updateIgnoredAssetPaths";
     action: "add" | "remove";
+    /** "full" skips the file/dir entirely; "dynamic" skips only dynamic patterns */
+    mode: "full" | "dynamic";
     kind: "directory" | "file";
     value: string;
   }
@@ -174,6 +176,10 @@ export interface UnusedAssetsPayload {
   ignoredDirectories?: string[];
   /** User-configured files to skip when scanning for references */
   ignoredFiles?: string[];
+  /** Directories whose dynamic patterns are ignored (literal refs still count) */
+  ignoredDynamicDirectories?: string[];
+  /** Files whose dynamic patterns are ignored (literal refs still count) */
+  ignoredDynamicFiles?: string[];
   error?: string;
 }
 

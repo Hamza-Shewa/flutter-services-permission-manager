@@ -24,6 +24,11 @@ import {
     assetsIgnoreFileInput,
     assetsIgnoreFileAdd,
     assetsIgnoreChips,
+    assetsIgnoreDynDirInput,
+    assetsIgnoreDynDirAdd,
+    assetsIgnoreDynFileInput,
+    assetsIgnoreDynFileAdd,
+    assetsIgnoreDynChips,
 } from "./elements.js";
 
 let pendingDeleteAssets = []; // Array of project-relative asset paths
@@ -178,26 +183,38 @@ if (scanAssetsButton) {
     scanAssetsButton.addEventListener("click", scanUnusedAssets);
 }
 
-function addIgnoredPath(kind, input) {
+function getIgnoreList(mode, kind) {
+    const s = state.assetsState || {};
+    if (mode === "dynamic") {
+        return kind === "file"
+            ? (s.ignoredDynamicFiles || [])
+            : (s.ignoredDynamicDirectories || []);
+    }
+    return kind === "file"
+        ? (s.ignoredFiles || [])
+        : (s.ignoredDirectories || []);
+}
+
+function addIgnoredPath(mode, kind, input) {
     const value = input ? input.value.trim() : "";
     if (!value) { return; }
-    const list = kind === "file"
-        ? (state.assetsState.ignoredFiles || [])
-        : (state.assetsState.ignoredDirectories || []);
-    if (list.includes(value)) { return; }
-    api.updateIgnoredAssetPaths("add", kind, value);
+    if (getIgnoreList(mode, kind).includes(value)) { return; }
+    api.updateIgnoredAssetPaths("add", mode, kind, value);
 }
 
-function removeIgnoredPath(kind, value) {
-    api.updateIgnoredAssetPaths("remove", kind, value);
+function removeIgnoredPath(mode, kind, value) {
+    api.updateIgnoredAssetPaths("remove", mode, kind, value);
 }
 
-function makeIgnoreChip(kind, value) {
+function makeIgnoreChip(mode, kind, value) {
+    const dynamic = mode === "dynamic";
     const chip = document.createElement("span");
     chip.style.cssText =
         "display:inline-flex; align-items:center; gap:6px; padding:3px 8px; font-size:12px; " +
-        "background: var(--bg-primary,#1e1e1e); border:1px solid var(--vscode-editorGroup-border,#555); " +
-        "border-radius:12px; color: var(--text-primary,#fff);";
+        "background: var(--bg-primary,#1e1e1e); border:1px solid " +
+        (dynamic ? "#4fc3f7" : "var(--vscode-editorGroup-border,#555)") +
+        "; border-radius:12px; color: var(--text-primary,#fff);" +
+        (dynamic ? " border-style: dashed;" : "");
     const icon = document.createElement("span");
     icon.textContent = kind === "file" ? "📄" : "📁";
     chip.appendChild(icon);
@@ -211,41 +228,62 @@ function makeIgnoreChip(kind, value) {
     close.style.cssText =
         "border:none; background:transparent; color:var(--text-secondary,#aaa); cursor:pointer; " +
         "font-size:12px; padding:0 2px;";
-    close.addEventListener("click", () => removeIgnoredPath(kind, value));
+    close.addEventListener("click", () => removeIgnoredPath(mode, kind, value));
     chip.appendChild(close);
     return chip;
 }
 
-export function renderAssetIgnoreEditor() {
-    if (!assetsIgnoreChips) { return; }
-    assetsIgnoreChips.innerHTML = "";
-    const dirs = state.assetsState?.ignoredDirectories || [];
-    const files = state.assetsState?.ignoredFiles || [];
+function renderIgnoreChips(container, mode) {
+    if (!container) { return; }
+    container.innerHTML = "";
+    const dirs = getIgnoreList(mode, "directory");
+    const files = getIgnoreList(mode, "file");
     if (dirs.length === 0 && files.length === 0) {
         const empty = document.createElement("span");
         empty.textContent = "None";
         empty.style.cssText = "color: var(--text-secondary,#aaa); font-size: 12px;";
-        assetsIgnoreChips.appendChild(empty);
+        container.appendChild(empty);
         return;
     }
-    dirs.forEach((d) => assetsIgnoreChips.appendChild(makeIgnoreChip("directory", d)));
-    files.forEach((f) => assetsIgnoreChips.appendChild(makeIgnoreChip("file", f)));
+    dirs.forEach((d) => container.appendChild(makeIgnoreChip(mode, "directory", d)));
+    files.forEach((f) => container.appendChild(makeIgnoreChip(mode, "file", f)));
+}
+
+export function renderAssetIgnoreEditor() {
+    renderIgnoreChips(assetsIgnoreChips, "full");
+    renderIgnoreChips(assetsIgnoreDynChips, "dynamic");
 }
 
 if (assetsIgnoreDirAdd) {
-    assetsIgnoreDirAdd.addEventListener("click", () => addIgnoredPath("directory", assetsIgnoreDirInput));
+    assetsIgnoreDirAdd.addEventListener("click", () => addIgnoredPath("full", "directory", assetsIgnoreDirInput));
 }
 if (assetsIgnoreFileAdd) {
-    assetsIgnoreFileAdd.addEventListener("click", () => addIgnoredPath("file", assetsIgnoreFileInput));
+    assetsIgnoreFileAdd.addEventListener("click", () => addIgnoredPath("full", "file", assetsIgnoreFileInput));
+}
+if (assetsIgnoreDynDirAdd) {
+    assetsIgnoreDynDirAdd.addEventListener("click", () => addIgnoredPath("dynamic", "directory", assetsIgnoreDynDirInput));
+}
+if (assetsIgnoreDynFileAdd) {
+    assetsIgnoreDynFileAdd.addEventListener("click", () => addIgnoredPath("dynamic", "file", assetsIgnoreDynFileInput));
 }
 if (assetsIgnoreDirInput) {
     assetsIgnoreDirInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") { addIgnoredPath("directory", assetsIgnoreDirInput); }
+        if (e.key === "Enter") { addIgnoredPath("full", "directory", assetsIgnoreDirInput); }
     });
 }
 if (assetsIgnoreFileInput) {
     assetsIgnoreFileInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") { addIgnoredPath("file", assetsIgnoreFileInput); }
+        if (e.key === "Enter") { addIgnoredPath("full", "file", assetsIgnoreFileInput); }
+    });
+}
+if (assetsIgnoreDynDirInput) {
+    assetsIgnoreDynDirInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { addIgnoredPath("dynamic", "directory", assetsIgnoreDynDirInput); }
+    });
+}
+if (assetsIgnoreDynFileInput) {
+    assetsIgnoreDynFileInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { addIgnoredPath("dynamic", "file", assetsIgnoreDynFileInput); }
     });
 }
 
@@ -417,6 +455,8 @@ export function handleUnusedAssetsResult(message) {
             usedAssets: 0,
             ignoredDirectories: message.ignoredDirectories || [],
             ignoredFiles: message.ignoredFiles || [],
+            ignoredDynamicDirectories: message.ignoredDynamicDirectories || [],
+            ignoredDynamicFiles: message.ignoredDynamicFiles || [],
         };
         // Surface the friendly message (e.g. VPN guidance) via the toast/status.
         setStatus(message.error, "error");
@@ -432,6 +472,8 @@ export function handleUnusedAssetsResult(message) {
         usedAssets: message.usedAssets || 0,
         ignoredDirectories: message.ignoredDirectories || state.assetsState.ignoredDirectories || [],
         ignoredFiles: message.ignoredFiles || state.assetsState.ignoredFiles || [],
+        ignoredDynamicDirectories: message.ignoredDynamicDirectories || state.assetsState.ignoredDynamicDirectories || [],
+        ignoredDynamicFiles: message.ignoredDynamicFiles || state.assetsState.ignoredDynamicFiles || [],
     };
     renderAssetIgnoreEditor();
     renderAssetsTable();

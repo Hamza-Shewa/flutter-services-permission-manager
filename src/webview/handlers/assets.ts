@@ -28,6 +28,8 @@ export async function handleAnalyzeUnusedAssets(ref: WebviewRef): Promise<void> 
             usedAssets: result.usedAssets,
             ignoredDirectories: ignore.ignoredDirectories,
             ignoredFiles: ignore.ignoredFiles,
+            ignoredDynamicDirectories: ignore.ignoredDynamicDirectories,
+            ignoredDynamicFiles: ignore.ignoredDynamicFiles,
         });
     } catch (error) {
         console.error('Analyze unused assets error:', error);
@@ -40,6 +42,8 @@ export async function handleAnalyzeUnusedAssets(ref: WebviewRef): Promise<void> 
             usedAssets: 0,
             ignoredDirectories: ignore.ignoredDirectories,
             ignoredFiles: ignore.ignoredFiles,
+            ignoredDynamicDirectories: ignore.ignoredDynamicDirectories,
+            ignoredDynamicFiles: ignore.ignoredDynamicFiles,
             error: toErrorMessage(error),
         });
     }
@@ -51,14 +55,22 @@ export async function handleAnalyzeUnusedAssets(ref: WebviewRef): Promise<void> 
  */
 export async function handleUpdateIgnoredAssetPaths(
     ref: WebviewRef,
-    payload: { action: 'add' | 'remove'; kind: 'directory' | 'file'; value: string },
+    payload: { action: 'add' | 'remove'; mode: 'full' | 'dynamic'; kind: 'directory' | 'file'; value: string },
 ): Promise<void> {
     try {
         const value = (payload?.value || '').trim();
         if (!value) {
             return;
         }
-        const key = payload?.kind === 'file' ? 'ignoredFiles' : 'ignoredDirectories';
+        const mode = payload?.mode === 'dynamic' ? 'dynamic' : 'full';
+        const key =
+            mode === 'dynamic'
+                ? payload?.kind === 'file'
+                    ? 'ignoredDynamicFiles'
+                    : 'ignoredDynamicDirectories'
+                : payload?.kind === 'file'
+                    ? 'ignoredFiles'
+                    : 'ignoredDirectories';
         const config = vscode.workspace.getConfiguration('flutter-config-manager.unusedAssets');
         const current = (config.get<string[]>(key, []) ?? []).filter((v) => v && v.trim());
         const next = payload?.action === 'remove'

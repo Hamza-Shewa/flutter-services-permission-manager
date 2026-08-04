@@ -58,6 +58,12 @@ Options:
   --ignore-files <list>Files to skip when scanning for references, by relative
                        path or basename, comma-separated and/or repeated
                        (e.g. --ignore-files my_image.dart,my_icon.dart)
+  --ignore-dynamic-dirs <list>
+                       Directories to skip for DYNAMIC pattern detection only;
+                       literal asset references in them still count as used
+  --ignore-dynamic-files <list>
+                       Files (relative path or basename) to skip for DYNAMIC
+                       pattern detection only; literal references still count
   -h, --help           Show this help
 
 Example:
@@ -79,6 +85,8 @@ function parseArgs(argv) {
         logPath: null,
         ignoreDirs: [],
         ignoreFiles: [],
+        ignoreDynamicDirs: [],
+        ignoreDynamicFiles: [],
     };
 
     const pushList = (arr, raw) => {
@@ -121,6 +129,12 @@ function parseArgs(argv) {
             case '--ignore-files':
                 pushList(args.ignoreFiles, argv[++i]);
                 break;
+            case '--ignore-dynamic-dirs':
+                pushList(args.ignoreDynamicDirs, argv[++i]);
+                break;
+            case '--ignore-dynamic-files':
+                pushList(args.ignoreDynamicFiles, argv[++i]);
+                break;
             default:
                 if (arg.startsWith('--path=')) {
                     args.path = arg.slice('--path='.length);
@@ -132,6 +146,10 @@ function parseArgs(argv) {
                     pushList(args.ignoreDirs, arg.slice('--ignore-dirs='.length));
                 } else if (arg.startsWith('--ignore-files=')) {
                     pushList(args.ignoreFiles, arg.slice('--ignore-files='.length));
+                } else if (arg.startsWith('--ignore-dynamic-dirs=')) {
+                    pushList(args.ignoreDynamicDirs, arg.slice('--ignore-dynamic-dirs='.length));
+                } else if (arg.startsWith('--ignore-dynamic-files=')) {
+                    pushList(args.ignoreDynamicFiles, arg.slice('--ignore-dynamic-files='.length));
                 } else if (!arg.startsWith('-')) {
                     positionals.push(arg);
                 }
@@ -616,7 +634,7 @@ function isIgnoredReferenceFile(relPath, ignoreDirs, ignoreFiles) {
     return false;
 }
 
-function findUnused(root, assetFiles, referenceFiles, alwaysUsed = new Set(), assetRoots = []) {
+function findUnused(root, assetFiles, referenceFiles, alwaysUsed = new Set(), assetRoots = [], ignoreDynamicDirs = [], ignoreDynamicFiles = []) {
     const used = new Set(alwaysUsed);
     const dynamicPatterns = [];
 
@@ -627,6 +645,15 @@ function findUnused(root, assetFiles, referenceFiles, alwaysUsed = new Set(), as
         } catch {
             continue;
         }
+
+        // Files in the "ignore dynamic references only" lists are still scanned
+        // for literal references, but their dynamic patterns are suppressed so
+        // they cannot flag assets as "maybe used".
+        const skipDynamic = isIgnoredReferenceFile(
+            toProjectRelative(root, refFile),
+            ignoreDynamicDirs,
+            ignoreDynamicFiles
+        );
 
         // Static literal reference detection (existing behaviour).
         for (const asset of assetFiles) {
@@ -640,7 +667,7 @@ function findUnused(root, assetFiles, referenceFiles, alwaysUsed = new Set(), as
         }
 
         // Dynamic pattern detection (Dart only - JSON has no interpolation).
-        if (path.extname(refFile).toLowerCase() === '.dart') {
+        if (!skipDynamic && path.extname(refFile).toLowerCase() === '.dart') {
             const hasRoot = assetRoots.some((r) => content.includes(r));
             const hasLoader = /Image\.asset|SvgPicture\.asset|AssetImage|precacheImage|rootBundle\.load/.test(content);
             if (hasRoot || hasLoader) {
@@ -803,7 +830,15 @@ function main() {
             })
             .map((e) => (e.endsWith('/') ? e : e + '/'));
 
-    const unused = findUnused(root, assetFiles, referenceFiles, alwaysUsed, assetRoots);
+    const unused = findUnused(
+        root,
+        assetFiles,
+        referenceFiles,
+        alwaysUsed,
+        assetRoots,
+        args.ignoreDynamicDirs,
+        args.ignoreDynamicFiles
+    );
     const totalAssets = assetFiles.length;
     const usedAssets = totalAssets - unused.length;
 
