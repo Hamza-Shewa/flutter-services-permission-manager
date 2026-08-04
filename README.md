@@ -15,7 +15,7 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 - **Dependency Management**: Fully-featured Flutter dependencies table showing direct, dev, and transitive packages.
   - **Search & Add**: Integrated pub.dev API search with typeahead and live package details preview.
   - **Dependency Validator**: Built-in integration with `dependency_validator` to safely analyze unused packages and automatically downgrade them or remove them.
-  - **Unused Assets**: Detect asset files that are no longer referenced from your Dart/JSON source (inspired by `unused_assets_removal`) and delete them to reduce app size. Use the **Unused Assets** section in the Flutter Config view (sidebar or panel) to scan, review, and delete per file or all at once — or run the **`Flutter Config Manager: Check Unused Assets`** command from the palette.
+  - **Unused Assets**: Detect asset files that are no longer referenced from your Dart/JSON source (inspired by `unused_assets_removal`) and delete them to reduce app size. The scanner also understands **dynamic references** — interpolated paths like `assets/icon/$icon`, string concatenation, and dynamic loaders like `Image.asset(path)` — so assets that may still be in use are moved to a **Maybe used** bucket instead of being flagged as unused. Each maybe-used row lists the Dart files that reference it, with buttons that jump straight to the exact line. You can **ignore** custom wrapper widgets (e.g. `my_image.dart`) or whole directories — either fully, or just their dynamic patterns — from the Unused Assets UI or workspace settings, and `easy_localization` translation folders are excluded automatically. Use the **Unused Assets** section in the Flutter Config view (sidebar or panel) to scan, review, and delete per file or all at once — or run the **`Flutter Config Manager: Check Unused Assets`** command from the palette.
 - **Package Configuration Management**: A dedicated dashboard at the top of the UI to view and update your Android Application ID and iOS Bundle Identifier with a single click.
 - **Safe & Automated Updates**: With a single click, the extension updates all necessary files (`AndroidManifest.xml`, `Info.plist`, `Podfile`, `AppDelegate.swift`, etc.) while preserving your existing project structure and comments.
 - **Vibe Coded**: This extension was vibe coded in the most fashionable way, because your development workflow deserves to look and feel as good as your apps.
@@ -29,11 +29,13 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 5.  **Configure Services**: Select services to integrate and fill in the required API keys or IDs.
 6.  **App Name Localizations**: Add or edit localized app names so the correct name appears on each device locale.
 7.  **Save**: Use section-level Save buttons or Save All Changes to apply updates across platform files instantly.
-8.  **Check Unused Assets**: Run the **`Flutter Config Manager: Check Unused Assets`** command from the command palette to list unused assets and delete them. You can also use the bundled standalone script directly:
+8.  **Check Unused Assets**: Run the **`Flutter Config Manager: Check Unused Assets`** command from the command palette to list assets split into **Unused** (safe to delete) and **Maybe used** (referenced via dynamic paths — click a file button to jump to the exact line). You can also use the bundled standalone script directly:
 
     ```bash
-    node scripts/check-unused-assets.js --path /path/to/flutter/project   # dry-run
+    node scripts/check-unused-assets.js --path /path/to/flutter/project              # dry-run
     node scripts/check-unused-assets.js --path /path/to/flutter/project --delete
+    node scripts/check-unused-assets.js --path . --ignore-files my_image.dart        # skip files entirely
+    node scripts/check-unused-assets.js --path . --ignore-dynamic-files icons.dart   # skip only dynamic patterns
     ```
 
 > **Note for iOS/macOS**: Some permissions require a usage description string (e.g., "We need camera access to scan QR codes"). The extension will prompt you to enter these descriptions directly in the UI.

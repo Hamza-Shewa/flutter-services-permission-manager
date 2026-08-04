@@ -7,8 +7,19 @@
 		"out": true // set this to false to include "out" folder in search results
 	},
 	// Turn off tsc task auto detection since we have the necessary tasks as npm scripts
-	"typescript.tsc.autoDetect": "off",
+	"js/ts.tsc.autoDetect": "off",
 	"chat.tools.terminal.autoApprove": {
 		"npm install": true
-	}
+	},
+	// Use a locally bundled copy of the package.json schema so the JSON
+	// language service does not try to fetch it from schemastore.org
+	// (offline / restricted-network environments show schema load errors).
+	"json.schemas": [
+		{
+			"fileMatch": [
+				"package.json"
+			],
+			"url": "./package.schema.json"
+		}
+	]
 }
