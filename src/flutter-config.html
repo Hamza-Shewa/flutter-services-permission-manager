@@ -605,16 +605,20 @@
     }
 
     td textarea {
+      box-sizing: border-box;
       width: 100%;
-      min-height: 72px;
-      padding: 8px 10px;
+      min-height: 44px;
+      padding: 10px 12px;
       border: 1px solid var(--border-default);
       border-radius: var(--radius-sm);
       background: var(--bg-tertiary);
       color: var(--text-primary);
       font-size: 13px;
       font-family: inherit;
+      line-height: 1.5;
+      overflow: hidden;
       resize: vertical;
+      word-wrap: break-word;
     }
 
     .empty-state {
@@ -1400,7 +1404,7 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      margin-left: 10px;
+      white-space: nowrap;
       box-shadow: var(--shadow-sm);
       transition: var(--transition-fast);
     }
@@ -1425,6 +1429,14 @@
     .delete-button:hover {
       background: rgba(248, 81, 73, 0.25);
       border-color: var(--danger);
+    }
+
+    /* Inline row actions (equivalent + delete) */
+    .row-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     /* Modal */
@@ -1751,13 +1763,39 @@
           <div class="detail-card-label" style="font-size: 14px; color: var(--android-accent);">🚀 Migrate to
             Declarative Setup</div>
           <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
-            Automatically upgrades your Android build files to the modern declarative setup (AGP 8.13.2, Kotlin 2.2.21).
-            Removes legacy buildscripts and syncs your NDK version.
+            Upgrades your Android build files to the latest Flutter requirements: declarative Gradle plugins
+            with the latest recommended AGP &amp; Kotlin versions, SDK/NDK versions driven by Flutter's built-in
+            variables
+            (<code
+              style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">flutter.compileSdkVersion</code>,
+            <code
+              style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">flutter.ndkVersion</code>),
+            and <b>16 KB page size support</b>. Supports both <code>build.gradle</code> and
+            <code>build.gradle.kts</code>.
           </div>
         </div>
         <button id="migrateAndroidButton" type="button" class="btn-primary"
           style="background: var(--android-accent); border-color: var(--android-accent); color: #fff; width: 100%; justify-content: center;">
-          Run Migration
+          Run Full Migration
+        </button>
+      </div>
+
+      <div class="detail-card" style="display:flex; flex-direction:column; gap:12px; justify-content: space-between;">
+        <div>
+          <div class="detail-card-label" style="font-size: 14px; color: var(--android-accent);">📱 Migrate to 16 KB
+            Page Size</div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
+            <b>Fallback</b> for projects that still use outdated packages incompatible with the full migration.
+            Applies only the minimal changes required for <b>Android 15+ 16 KB page size</b> compatibility:
+            AGP 8.5.2+, targetSdk 35+, NDK 27+, and
+            <code
+              style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">android:extractNativeLibs="true"</code>.
+            Your existing legacy buildscript setup is left untouched.
+          </div>
+        </div>
+        <button id="migrateAndroid16kbButton" type="button" class="btn-secondary"
+          style="width: 100%; justify-content: center;">
+          Enable 16 KB Page Size
         </button>
       </div>
 
@@ -1872,11 +1910,11 @@
     <div class="table-container">
       <table>
         <colgroup>
-          <col style="width: 18%" />
-          <col style="width: 32%" />
-          <col style="width: 20%" />
-          <col style="width: 15%" />
-          <col style="width: 15%" />
+          <col style="width: 160px" />
+          <col style="min-width: 240px" />
+          <col style="width: 180px" />
+          <col style="width: 110px" />
+          <col style="width: 150px" />
         </colgroup>
         <thead>
           <tr>
@@ -1908,11 +1946,11 @@
     <div class="table-container">
       <table>
         <colgroup>
-          <col style="width: 18%" />
-          <col style="width: 32%" />
-          <col style="width: 20%" />
-          <col style="width: 15%" />
-          <col style="width: 15%" />
+          <col style="width: 160px" />
+          <col style="min-width: 240px" />
+          <col style="width: 180px" />
+          <col style="width: 110px" />
+          <col style="width: 150px" />
         </colgroup>
         <thead>
           <tr>

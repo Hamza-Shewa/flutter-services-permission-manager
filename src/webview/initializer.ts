@@ -43,6 +43,7 @@ import {
   handleSaveAndroidBuildDetails,
   handleSaveIosBuildDetails,
   handleMigrateAndroid,
+  handleMigrateAndroid16kb,
   handleUpgradePackages,
   handleRequestPackagesAnalysis,
   handleUpgradeSinglePackage,
@@ -224,6 +225,7 @@ function setupMessageHandler(
     .register("saveAndroidBuildDetails", async (msg) => await handleSaveAndroidBuildDetails(ref, msg.androidDetails ?? [], files))
     .register("saveIosBuildDetails", async (msg) => await handleSaveIosBuildDetails(ref, msg.iosDetails ?? [], files))
     .register("migrateAndroid", async () => await handleMigrateAndroid(ref))
+    .register("migrateAndroid16kb", async () => await handleMigrateAndroid16kb(ref))
     .register("upgradePackages", async () => await handleUpgradePackages(ref))
     .register("requestPackagesAnalysis", async () => await handleRequestPackagesAnalysis(ref))
     .register("upgradeSinglePackage", async (msg) => { if (msg.packageName) { await handleUpgradeSinglePackage(ref, msg.packageName); } })

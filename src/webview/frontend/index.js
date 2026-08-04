@@ -250,6 +250,13 @@ if (migrateAndroidButton) {
   });
 }
 
+const migrateAndroid16kbButton = document.getElementById("migrateAndroid16kbButton");
+if (migrateAndroid16kbButton) {
+  migrateAndroid16kbButton.addEventListener("click", () => {
+    api.postMessage({ type: "migrateAndroid16kb" });
+  });
+}
+
 const upgradePackagesButton = document.getElementById("upgradePackagesButton");
 if (upgradePackagesButton) {
   upgradePackagesButton.addEventListener("click", () => {
@@ -851,11 +858,16 @@ bus.on("permissions", (message) => {
 
 bus.on("allAndroidPermissions", (message) => {
   state.allAndroidPermissions = message.permissions || [];
+  renderCategoryOptions();
+  renderModalCategoryTabs();
   renderModalResults();
 });
 
 bus.on("allIOSPermissions", (message) => {
   state.allIosPermissions = message.permissions || [];
+  renderIOSCategoryOptions();
+  renderMacOSCategoryOptions();
+  renderModalCategoryTabs();
   renderModalResults();
 
   if (state.pendingCrossPlatformModal) {
@@ -887,8 +899,15 @@ bus.on("saveResult", (message) => {
     if (validatorLoadingIndicator) { validatorLoadingIndicator.style.display = "none"; }
     if (assets.hideAssetsLoading) { assets.hideAssetsLoading(); }
   }
-  if (message.success && message.message && message.message.includes("migrated to declarative plugins")) {
-    handleSaveAll();
+  if (message.success && message.message &&
+    (message.message.includes("migrated to declarative plugins") ||
+      message.message.includes("16 KB page size support enabled"))) {
+    // Save only the migration-related files. The backend already wrote just the
+    // Android files it changed (settings.gradle, build.gradle, app/build.gradle,
+    // gradle-wrapper.properties, AndroidManifest.xml), so here we only re-read
+    // them into the UI. Never call handleSaveAll() — it would rewrite unrelated
+    // files (permissions, services, app name, iOS/macOS details).
+    scheduleRefresh();
   }
 });
 

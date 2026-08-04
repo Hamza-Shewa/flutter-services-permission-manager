@@ -11,11 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Unused Assets Check**: New `Flutter Config Manager: Check Unused Assets` command that scans the Flutter project's `flutter.assets` entries for files not referenced from Dart/JSON source, lists them in a picker, and lets you delete them. Also ships a standalone, dependency-free script at `scripts/check-unused-assets.js` (`--path` to point at a project, dry-run by default, `--delete` to remove, `--json` for machine output). Inspired by `unused_assets_removal`.
 - **Unused Assets Panel**: The **Unused Assets** section in the Flutter Config webview (sidebar and panel) scans the project and shows unused assets with per-file **Delete** and **Delete All Unused** actions, following the existing Dependency Validator design.
+- **Android 16 KB Page Size Migration**: New **Enable 16 KB Page Size** button (separate from the full migration) that applies only the minimal changes required for Android 15+ 16 KB page-size compatibility per the official Android guide: AGP 8.5.1+, targetSdk 35+, NDK r28, `android:extractNativeLibs="true"`, plus the guide's `useLegacyPackaging` fallback when AGP stays below 8.5.1. Leaves existing legacy buildscript setups untouched so projects with outdated packages can still pass Play Store 16 KB checks.
+
+### Changed
+
+- **Android Gradle Declarative Migration**: The full migration is now non-destructive — it never forces newer AGP/Kotlin versions onto a project that already builds (existing versions at/above the minimums are kept), never lowers the project's `minSdk`, and only normalizes the Java/Kotlin toolchain for genuinely legacy projects. It also guarantees `google()/mavenCentral()` repositories so bumped Kotlin/AGP artifacts (e.g. `kotlin-stdlib`) resolve, and supports both Groovy `build.gradle` and Kotlin DSL `build.gradle.kts`.
+- **iOS/macOS Permission Value Fields**: Value textareas now auto-resize to fit their content and the Value column flexes to fill available horizontal space; the **Add equivalent** button moved into the row Actions column for both Android and iOS tables.
+- **Categorized Permission Filtering**: Android and iOS catalogs are fully categorized — search by name, description, constant value, or category, filter the tables with category dropdowns, and browse the Add Permission dialog by category tabs.
 
 ### Fixed
 
 - **Packages analysis / dependency validator hanging**: `pub` commands no longer hang for ~75s per unreachable git host (e.g. VPN-only packages). The extension now pre-checks TCP connectivity to git dependencies declared in `pubspec.yaml` and fails fast with a clear "connect to your VPN" message; a timeout safety net was also added to all `pub` commands.
 - **Loading indicators stuck**: The packages/dependency-validator/unused-assets loading spinners are now always dismissed on failure, so the UI never stays stuck on "Installing dependency_validator..." or "Analyzing...".
+- **macOS Add-Permission Categories**: Fixed the macOS Add Permission modal showing Android categories — it now uses the iOS (NS\*) catalog, matching the macOS table and search.
+- **Migration Save Scope**: Migrations now save/refresh only the files they actually modify instead of re-saving all project files (permissions, services, app name, etc.).
 
 ## [1.0.13] - 2026-07-19
 

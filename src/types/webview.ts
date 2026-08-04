@@ -63,6 +63,7 @@ export type WebviewMessage =
     iosDetails: PlatformDetailItem[];
   }
   | { type: "migrateAndroid" }
+  | { type: "migrateAndroid16kb" }
   | { type: "upgradePackages" }
   | { type: "requestPackagesAnalysis" }
   | {

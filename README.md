@@ -4,14 +4,14 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 
 ## 🚀 Key Features
 
-- **Unified Permission Management**: Easily add, remove, and configure permissions for **Android**, **iOS**, and **macOS** from a single view. No more context switching between messy XML and plist files.
+- **Unified Permission Management**: Easily add, remove, and configure permissions for **Android**, **iOS**, and **macOS** from a single view. Permissions are categorized for fast search and filtering — filter the tables by category or search by name, description, constant value, or category, and browse the Add Permission dialog with category tabs. No more context switching between messy XML and plist files.
 - **Smart Extraction**: The extension intelligently scans your project workspace. It automatically detects which platforms you are targeting (Android, iOS, macOS) and only shows the relevant configuration sections. Existing permissions are automatically imported, so you never lose your place.
 - **Service Integrations**: Quickly configure popular third-party services without diving into documentation for platform-specific setup. Supported services include:
   - Facebook SDK
   - Google Sign-In & Google Maps
   - **App Name Localization**: Easily manage app display names for multiple languages using native `InfoPlist.strings` (iOS) and `strings.xml` (Android). Includes support for localizing `FacebookDisplayName` on iOS.
 - **Robust Executable Resolution**: Integrates seamlessly with the VS Code Dart extension to dynamically resolve the correct `flutter` and `dart` executables without relying on the system PATH.
-- **Gradle Declarative Migration**: One-click migration of Android projects to use declarative Gradle (replacing hardcoded paths with `flutter.minSdkVersion`, `flutter.targetSdkVersion`, and `flutter.ndkVersion`).
+- **Gradle Declarative Migration & 16 KB Support**: **Run Full Migration** upgrades Android projects to the latest declarative Flutter Gradle setup (replacing hardcoded paths with `flutter.compileSdkVersion`, `flutter.minSdkVersion`, `flutter.targetSdkVersion`, and `flutter.ndkVersion`). A separate **Enable 16 KB Page Size** button is a safe fallback for projects with outdated packages — it applies only the minimal changes required for Android 15+ 16 KB page-size compatibility (AGP 8.5.1+, targetSdk 35+, NDK r28, `android:extractNativeLibs="true"`) while leaving legacy buildscript setups untouched. The migration is non-destructive: it never forces newer AGP/Kotlin versions onto a project that already builds, never lowers your `minSdk`, and supports both `build.gradle` and `build.gradle.kts`.
 - **Dependency Management**: Fully-featured Flutter dependencies table showing direct, dev, and transitive packages.
   - **Search & Add**: Integrated pub.dev API search with typeahead and live package details preview.
   - **Dependency Validator**: Built-in integration with `dependency_validator` to safely analyze unused packages and automatically downgrade them or remove them.

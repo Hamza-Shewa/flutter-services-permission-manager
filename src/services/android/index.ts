@@ -31,5 +31,6 @@ export {
 } from './localization.service.js';
 
 export {
-    migrateAndroidSetup
+    migrateAndroidSetup,
+    migrateAndroid16kbSetup
 } from './migration.service.js';

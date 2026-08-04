@@ -376,7 +376,7 @@ export async function handleSavePackageNames(
   }
 }
 
-export { handleMigrateAndroid, handleUpgradePackages } from './migrate.js';
+export { handleMigrateAndroid, handleMigrateAndroid16kb, handleUpgradePackages } from './migrate.js';
 export {
   handleRequestPackagesAnalysis,
   handleUpgradeSinglePackage,

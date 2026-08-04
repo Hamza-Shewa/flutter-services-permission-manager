@@ -19,5 +19,6 @@ export function analyzeUnusedAssets() { vscode.postMessage({ type: "analyzeUnuse
 export function deleteUnusedAsset(assetPath) { vscode.postMessage({ type: "deleteUnusedAsset", assetPath }); }
 export function deleteAllUnusedAssets(assetPaths) { vscode.postMessage({ type: "deleteAllUnusedAssets", assetPaths }); }
 export function migrateAndroid() { vscode.postMessage({ type: "migrateAndroid" }); }
+export function migrateAndroid16kb() { vscode.postMessage({ type: "migrateAndroid16kb" }); }
 export function postMessage(msg) { vscode.postMessage(msg); }
 export function sendReady() { vscode.postMessage({ type: "ready" }); }

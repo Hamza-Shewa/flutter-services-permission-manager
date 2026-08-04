@@ -10,6 +10,24 @@ interface DependenciesVersions {
     crashlytics: string;
     compileSdk: string;
     targetSdk: string;
+    minSdk: string;
+    gradle: string;
+    ndk: string;
+}
+
+/**
+ * Guards against recommending an AGP from a different major line than the one
+ * the current Flutter tooling is validated against (e.g. a freshly released
+ * AGP 9.x would break existing Flutter Gradle projects). Falls back to the
+ * pinned default when the fetched version is on a different major.
+ */
+function compatibleAgp(fetched: string | null): string {
+    if (!fetched) {
+        return DEFAULT_VERSIONS.agp;
+    }
+    const fetchedMajor = parseInt(fetched.split('.')[0], 10);
+    const pinnedMajor = parseInt(DEFAULT_VERSIONS.agp.split('.')[0], 10);
+    return fetchedMajor === pinnedMajor ? fetched : DEFAULT_VERSIONS.agp;
 }
 
 /**
@@ -63,17 +81,20 @@ export async function getRecommendedVersions(): Promise<DependenciesVersions> {
         ]);
 
         return {
-            agp: agp || DEFAULT_VERSIONS.agp,
+            agp: compatibleAgp(agp),
             // Kotlin and SDK versions are usually tied to the Flutter release, so defaults are safer
             kotlin: DEFAULT_VERSIONS.kotlin,
             googleServices: googleServices || DEFAULT_VERSIONS.googleServices,
             firebasePerf: firebasePerf || DEFAULT_VERSIONS.firebasePerf,
             crashlytics: crashlytics || DEFAULT_VERSIONS.crashlytics,
             compileSdk: DEFAULT_VERSIONS.compileSdk,
-            targetSdk: DEFAULT_VERSIONS.targetSdk
+            targetSdk: DEFAULT_VERSIONS.targetSdk,
+            minSdk: DEFAULT_VERSIONS.minSdk,
+            gradle: DEFAULT_VERSIONS.gradle,
+            ndk: DEFAULT_VERSIONS.ndk
         };
     } catch (e) {
         logger.error("Failed to fetch versions, using defaults:", toError(e));
-        return DEFAULT_VERSIONS;
+        return { ...DEFAULT_VERSIONS };
     }
 }
