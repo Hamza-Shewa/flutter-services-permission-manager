@@ -18,6 +18,21 @@
  *   --delete             Actually delete the unused files (default is dry-run)
  *   --json               Print machine-readable JSON instead of human text
  *   --log-path <file>    Write the report to a file as well
+ *   --ignore-dirs <list> Project-relative source dirs skipped when scanning for
+ *                        references (e.g. lib/widgets,lib/generated)
+ *   --ignore-files <list>Files skipped when scanning for references, by
+ *                        relative path or basename (e.g. my_image.dart)
+ *   --ignore-dynamic-dirs <list>
+ *                        Directories where only DYNAMIC asset references are
+ *                        ignored (literal references still count as used)
+ *   --ignore-dynamic-files <list>
+ *                        Files where only DYNAMIC asset references are ignored
+ *   --ignore-asset-dirs <list>
+ *                        Asset folders skipped entirely from the scan (e.g.
+ *                        assets/vendor) - never reported, counted or deleted
+ *   --ignore-loaders <list>
+ *                        Loader APIs to skip for DYNAMIC detection, e.g.
+ *                        Image.asset,SvgPicture.asset (literal refs still count)
  *   -h, --help           Show this help
  *
  * Exit codes:
@@ -52,18 +67,46 @@ Options:
   --delete             Actually delete the unused files (default is dry-run)
   --json               Print machine-readable JSON instead of human text
   --log-path <file>    Write the report to a file as well
-  --ignore-dirs <list> Project-relative directories to skip when scanning for
-                       references, comma-separated and/or repeated
+  --ignore-dirs <list> Project-relative directories to skip entirely when
+                       scanning for references, comma-separated and/or repeated
                        (e.g. --ignore-dirs lib/widgets,lib/generated)
-  --ignore-files <list>Files to skip when scanning for references, by relative
-                       path or basename, comma-separated and/or repeated
-                       (e.g. --ignore-files my_image.dart,my_icon.dart)
+  --ignore-files <list>Files to skip entirely when scanning for references, by
+                       relative path or basename, comma-separated and/or
+                       repeated (e.g. --ignore-files my_image.dart,my_icon.dart)
   --ignore-dynamic-dirs <list>
-                       Directories to skip for DYNAMIC pattern detection only;
-                       literal asset references in them still count as used
+                       Directories where only DYNAMIC asset references are
+                       ignored. Literal references in these files (e.g.
+                       "assets/icon/logo.png") still count as used; only
+                       interpolated or loader patterns (e.g. 'assets/icon/$name'
+                       or Image.asset(path)) are suppressed, so they can no
+                       longer flag assets as "maybe used". Ideal for icon maps
+                       / helpers that mix static constants with a dynamic
+                       lookup, comma-separated and/or repeated
+                       (e.g. --ignore-dynamic-dirs lib/utilities)
   --ignore-dynamic-files <list>
-                       Files (relative path or basename) to skip for DYNAMIC
-                       pattern detection only; literal references still count
+                       Files (relative path or basename) where only DYNAMIC
+                       asset references are ignored; literal references still
+                       count as used (same rules as --ignore-dynamic-dirs),
+                       comma-separated and/or repeated
+                       (e.g. --ignore-dynamic-files lib/constants/app_icons.dart)
+  --ignore-asset-dirs <list>
+                       Project-relative ASSET folders to skip entirely from the
+                       scan (e.g. assets/vendor, assets/third_party). Files
+                       under these folders are never reported as unused, are
+                       not counted in the totals, and are never deleted - even
+                       when no Dart/JSON code references them, comma-separated
+                       and/or repeated
+                       (e.g. --ignore-asset-dirs assets/vendor)
+  --ignore-loaders <list>
+                       Loader APIs to skip for fully-dynamic detection, e.g.
+                       Image.asset, SvgPicture.asset, AssetImage,
+                       precacheImage or rootBundle.load, comma-separated and/or
+                       repeated. Calls to ignored loaders (e.g.
+                       Image.asset(someVariable)) are no longer treated as
+                       dynamic references, so they stop flagging every asset as
+                       "maybe used". Literal calls (Image.asset('assets/x.png'))
+                       still count as used via the string scan.
+                       (e.g. --ignore-loaders Image.asset,SvgPicture.asset)
   -h, --help           Show this help
 
 Example:
@@ -87,6 +130,8 @@ function parseArgs(argv) {
         ignoreFiles: [],
         ignoreDynamicDirs: [],
         ignoreDynamicFiles: [],
+        ignoreAssetDirs: [],
+        ignoreLoaders: [],
     };
 
     const pushList = (arr, raw) => {
@@ -135,6 +180,12 @@ function parseArgs(argv) {
             case '--ignore-dynamic-files':
                 pushList(args.ignoreDynamicFiles, argv[++i]);
                 break;
+            case '--ignore-asset-dirs':
+                pushList(args.ignoreAssetDirs, argv[++i]);
+                break;
+            case '--ignore-loaders':
+                pushList(args.ignoreLoaders, argv[++i]);
+                break;
             default:
                 if (arg.startsWith('--path=')) {
                     args.path = arg.slice('--path='.length);
@@ -150,6 +201,10 @@ function parseArgs(argv) {
                     pushList(args.ignoreDynamicDirs, arg.slice('--ignore-dynamic-dirs='.length));
                 } else if (arg.startsWith('--ignore-dynamic-files=')) {
                     pushList(args.ignoreDynamicFiles, arg.slice('--ignore-dynamic-files='.length));
+                } else if (arg.startsWith('--ignore-asset-dirs=')) {
+                    pushList(args.ignoreAssetDirs, arg.slice('--ignore-asset-dirs='.length));
+                } else if (arg.startsWith('--ignore-loaders=')) {
+                    pushList(args.ignoreLoaders, arg.slice('--ignore-loaders='.length));
                 } else if (!arg.startsWith('-')) {
                     positionals.push(arg);
                 }
@@ -396,19 +451,40 @@ function toProjectRelative(root, absPath) {
 }
 
 /**
+ * Is a project-relative path inside any of the given project-relative
+ * directories? (e.g. "assets/vendor" matches "assets/vendor/logo.png")
+ */
+function isUnderAnyDir(relPath, dirs) {
+    const norm = String(relPath).replace(/\\/g, '/');
+    for (const dir of dirs || []) {
+        const d = String(dir).replace(/\\/g, '/').replace(/^\.?\//, '').replace(/\/+$/, '');
+        if (d && (norm === d || norm.startsWith(d + '/'))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Collect every file under the declared asset entries.
  * Returns project-relative paths (forward slashes).
  */
-function collectAssetFiles(root, entries, assetsPathOverride) {
+function collectAssetFiles(root, entries, assetsPathOverride, ignoreAssetDirs) {
     const targets = assetsPathOverride ? [assetsPathOverride] : entries;
     const files = [];
     const seen = new Set();
 
     const add = (rel) => {
-        if (!seen.has(rel)) {
-            seen.add(rel);
-            files.push(rel);
+        if (seen.has(rel)) {
+            return;
         }
+        // Asset folders listed in --ignore-asset-dirs are skipped entirely:
+        // their files are not scanned, counted, reported or deleted.
+        if (isUnderAnyDir(rel, ignoreAssetDirs)) {
+            return;
+        }
+        seen.add(rel);
+        files.push(rel);
     };
 
     for (const target of targets) {
@@ -507,7 +583,7 @@ function buildPositionIndex(content) {
  *     prefix is a static asset-root path, suffix is optional static text
  *   - fully-dynamic (dynamic=true): no static anchor, matches every asset
  */
-function detectDynamicPatterns(content, assetRoots) {
+function detectDynamicPatterns(content, assetRoots, ignoreLoaders = []) {
     const patterns = [];
     const pos = buildPositionIndex(content);
     const isRooted = (p) => {
@@ -565,6 +641,13 @@ function detectDynamicPatterns(content, assetRoots) {
     LOADER_CALL_RE.lastIndex = 0;
     let lm;
     while ((lm = LOADER_CALL_RE.exec(content)) !== null) {
+        // User-configured loader names (e.g. Image.asset, SvgPicture.asset) are
+        // skipped entirely: their calls are no longer treated as dynamic
+        // references, so they stop flagging every asset as "maybe used".
+        // Literal calls are still covered by the string scans above.
+        if (ignoreLoaders.includes(lm[1])) {
+            continue;
+        }
         const rest = content.slice(lm.index + lm[0].length);
         const trimmed = rest.replace(/^\s+/, '');
         // A literal argument rooted at an asset folder is handled by the
@@ -579,7 +662,7 @@ function detectDynamicPatterns(content, assetRoots) {
             prefix: '',
             suffix: '',
             dynamic: true,
-            pattern: 'dynamic loader call',
+            pattern: `dynamic ${lm[1]} call`,
             offset: lm.index,
         });
     }
@@ -634,7 +717,7 @@ function isIgnoredReferenceFile(relPath, ignoreDirs, ignoreFiles) {
     return false;
 }
 
-function findUnused(root, assetFiles, referenceFiles, alwaysUsed = new Set(), assetRoots = [], ignoreDynamicDirs = [], ignoreDynamicFiles = []) {
+function findUnused(root, assetFiles, referenceFiles, alwaysUsed = new Set(), assetRoots = [], ignoreDynamicDirs = [], ignoreDynamicFiles = [], ignoreLoaders = []) {
     const used = new Set(alwaysUsed);
     const dynamicPatterns = [];
 
@@ -671,7 +754,7 @@ function findUnused(root, assetFiles, referenceFiles, alwaysUsed = new Set(), as
             const hasRoot = assetRoots.some((r) => content.includes(r));
             const hasLoader = /Image\.asset|SvgPicture\.asset|AssetImage|precacheImage|rootBundle\.load/.test(content);
             if (hasRoot || hasLoader) {
-                const patterns = detectDynamicPatterns(content, assetRoots);
+                const patterns = detectDynamicPatterns(content, assetRoots, ignoreLoaders);
                 for (const p of patterns) {
                     p.file = toProjectRelative(root, refFile);
                     dynamicPatterns.push(p);
@@ -803,7 +886,7 @@ function main() {
             .map((e) => path.resolve(root, e))
             .filter((p) => fs.existsSync(p) && fs.statSync(p).isDirectory());
 
-    const assetFiles = collectAssetFiles(root, entries, args.assetsPath);
+    const assetFiles = collectAssetFiles(root, entries, args.assetsPath, args.ignoreAssetDirs);
     let referenceFiles = collectReferenceFiles(root, assetAbsDirs);
 
     // User-configured ignored directories/files are skipped when scanning for
@@ -837,7 +920,8 @@ function main() {
         alwaysUsed,
         assetRoots,
         args.ignoreDynamicDirs,
-        args.ignoreDynamicFiles
+        args.ignoreDynamicFiles,
+        args.ignoreLoaders
     );
     const totalAssets = assetFiles.length;
     const usedAssets = totalAssets - unused.length;
@@ -877,7 +961,11 @@ function main() {
         if (args.logPath) {
             fs.writeFileSync(path.resolve(root, args.logPath), output, 'utf8');
         }
-        process.exit(0);
+        // Return instead of process.exit(0): with large reports the JSON can
+        // exceed the OS pipe buffer (64 KB on macOS), and process.exit() kills
+        // the process before stdout is fully flushed, truncating the output.
+        // Letting the process exit naturally flushes stdout completely.
+        return;
     }
 
     const report = buildReport(args, root, assetAbsDirs, totalAssets, usedAssets, unused);

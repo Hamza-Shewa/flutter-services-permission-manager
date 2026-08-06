@@ -30,6 +30,8 @@ export async function handleAnalyzeUnusedAssets(ref: WebviewRef): Promise<void> 
             ignoredFiles: ignore.ignoredFiles,
             ignoredDynamicDirectories: ignore.ignoredDynamicDirectories,
             ignoredDynamicFiles: ignore.ignoredDynamicFiles,
+            ignoredAssetDirectories: ignore.ignoredAssetDirectories,
+            ignoredLoaders: ignore.ignoredLoaders,
         });
     } catch (error) {
         console.error('Analyze unused assets error:', error);
@@ -44,6 +46,8 @@ export async function handleAnalyzeUnusedAssets(ref: WebviewRef): Promise<void> 
             ignoredFiles: ignore.ignoredFiles,
             ignoredDynamicDirectories: ignore.ignoredDynamicDirectories,
             ignoredDynamicFiles: ignore.ignoredDynamicFiles,
+            ignoredAssetDirectories: ignore.ignoredAssetDirectories,
+            ignoredLoaders: ignore.ignoredLoaders,
             error: toErrorMessage(error),
         });
     }
@@ -55,7 +59,7 @@ export async function handleAnalyzeUnusedAssets(ref: WebviewRef): Promise<void> 
  */
 export async function handleUpdateIgnoredAssetPaths(
     ref: WebviewRef,
-    payload: { action: 'add' | 'remove'; mode: 'full' | 'dynamic'; kind: 'directory' | 'file'; value: string },
+    payload: { action: 'add' | 'remove'; mode: 'full' | 'dynamic'; kind: 'directory' | 'file' | 'assetDirectory' | 'loader'; value: string },
 ): Promise<void> {
     try {
         const value = (payload?.value || '').trim();
@@ -64,13 +68,17 @@ export async function handleUpdateIgnoredAssetPaths(
         }
         const mode = payload?.mode === 'dynamic' ? 'dynamic' : 'full';
         const key =
-            mode === 'dynamic'
-                ? payload?.kind === 'file'
-                    ? 'ignoredDynamicFiles'
-                    : 'ignoredDynamicDirectories'
-                : payload?.kind === 'file'
-                    ? 'ignoredFiles'
-                    : 'ignoredDirectories';
+            payload?.kind === 'assetDirectory'
+                ? 'ignoredAssetDirectories'
+                : payload?.kind === 'loader'
+                    ? 'ignoredLoaders'
+                    : mode === 'dynamic'
+                        ? payload?.kind === 'file'
+                            ? 'ignoredDynamicFiles'
+                            : 'ignoredDynamicDirectories'
+                        : payload?.kind === 'file'
+                            ? 'ignoredFiles'
+                            : 'ignoredDirectories';
         const config = vscode.workspace.getConfiguration('flutter-config-manager.unusedAssets');
         const current = (config.get<string[]>(key, []) ?? []).filter((v) => v && v.trim());
         const next = payload?.action === 'remove'

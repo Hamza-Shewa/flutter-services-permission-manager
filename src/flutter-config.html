@@ -2486,17 +2486,18 @@
         <strong style="color: var(--text-primary); font-size: 13px;">🚫 Ignored directories &amp; files</strong>
       </div>
       <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px; line-height: 1.5;">
-        Files &amp; directories listed here are <b>not scanned</b> for asset references. Add custom wrapper widgets
-        (e.g. <code style="color:#bdbdbd">my_image.dart</code>) that load assets dynamically so they don't flag assets
-        as "maybe used". Stored in your workspace settings.
+        Files &amp; directories listed here are <b>not scanned at all</b> — neither literal nor dynamic asset
+        references inside them count as "used". Use this for generated or third-party source you don't want to
+        consider. For your own helpers that <i>do</i> reference assets, prefer the ♻️ section below, which keeps
+        literal references counting as used. Stored in your workspace settings.
       </p>
       <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;">
-        <input id="assetsIgnoreDirInput" type="text" placeholder="lib/widgets"
-          style="flex:1 1 160px; min-width:120px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+        <input id="assetsIgnoreDirInput" type="text" placeholder="e.g. lib/generated (source folder)"
+          style="flex:1 1 200px; min-width:140px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
         <button id="assetsIgnoreDirAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
           Directory</button>
-        <input id="assetsIgnoreFileInput" type="text" placeholder="my_image.dart"
-          style="flex:1 1 160px; min-width:120px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+        <input id="assetsIgnoreFileInput" type="text" placeholder="e.g. generated_widgets.dart"
+          style="flex:1 1 200px; min-width:140px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
         <button id="assetsIgnoreFileAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
           File</button>
       </div>
@@ -2504,23 +2505,69 @@
 
       <div style="border-top: 1px solid var(--vscode-editorGroup-border,#333); margin-top: 12px; padding-top: 12px;">
         <strong style="color: var(--text-primary); font-size: 13px;">♻️ Ignore dynamic references only</strong>
-        <p style="color: var(--text-secondary); font-size: 12px; margin: 6px 0 10px; line-height: 1.5;">
-          For these files &amp; directories, <b>literal asset references still count</b> as used, but their dynamic
-          patterns (e.g. <code style="color:#bdbdbd">assets/icons/$name</code> or <code
-            style="color:#bdbdbd">Image.asset(path)</code>) are ignored — so they won't flag assets as "maybe used".
-          Ideal for icon maps that mix static constants with a dynamic helper.
+        <p style="color: var(--text-secondary); font-size: 12px; margin: 6px 0 8px; line-height: 1.5;">
+          A <b>dynamic reference</b> is an asset path built at runtime, e.g.
+          <code style="color:#bdbdbd">'assets/icons/' + name + '.svg'</code>,
+          <code style="color:#bdbdbd">'assets/icons/$name'</code> or
+          <code style="color:#bdbdbd">Image.asset(path)</code>. Because the scanner can't tell which file those point
+          to, they move assets into <b>Maybe used</b> instead of truly-unused.
+        </p>
+        <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px; line-height: 1.5;">
+          Add a <b>source file or folder</b> here when its dynamic patterns are broad or false positives — e.g. an
+          icon helper like <code style="color:#bdbdbd">lib/constants/app_icons.dart</code> that builds a path from a
+          variable for any icon. For those files, dynamic patterns are ignored (so they stop flagging "maybe used"),
+          but <b>literal references still count as used</b> — real matches are preserved. Type the project-relative
+          path (e.g. <code style="color:#bdbdbd">lib/helpers</code>) or a file name.
         </p>
         <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;">
-          <input id="assetsIgnoreDynDirInput" type="text" placeholder="lib/utilities"
-            style="flex:1 1 160px; min-width:120px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+          <input id="assetsIgnoreDynDirInput" type="text" placeholder="e.g. lib/helpers (source folder)"
+            style="flex:1 1 200px; min-width:140px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
           <button id="assetsIgnoreDynDirAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
             Directory</button>
-          <input id="assetsIgnoreDynFileInput" type="text" placeholder="libozzle_icons.dart"
-            style="flex:1 1 160px; min-width:120px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+          <input id="assetsIgnoreDynFileInput" type="text" placeholder="e.g. lib/constants/app_icons.dart"
+            style="flex:1 1 200px; min-width:140px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
           <button id="assetsIgnoreDynFileAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
             File</button>
         </div>
         <div id="assetsIgnoreDynChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      </div>
+
+      <div style="border-top: 1px solid var(--vscode-editorGroup-border,#333); margin-top: 12px; padding-top: 12px;">
+        <strong style="color: var(--text-primary); font-size: 13px;">� Ignore dynamic loaders (app-wide)</strong>
+        <p style="color: var(--text-secondary); font-size: 12px; margin: 6px 0 10px; line-height: 1.5;">
+          Loader calls with a <b>variable</b> argument (e.g.
+          <code style="color:#bdbdbd">Image.asset(path)</code>,
+          <code style="color:#bdbdbd">SvgPicture.asset(path)</code>) are treated as dynamic references and flag
+          <b>every</b> asset as "maybe used". Add a loader name below to stop that — its calls are no longer treated
+          as dynamic, while literal calls like
+          <code style="color:#bdbdbd">Image.asset('assets/x.png')</code> still count as used. Known loaders:
+          <code style="color:#bdbdbd">Image.asset</code>, <code style="color:#bdbdbd">SvgPicture.asset</code>,
+          <code style="color:#bdbdbd">AssetImage</code>, <code style="color:#bdbdbd">precacheImage</code>,
+          <code style="color:#bdbdbd">rootBundle.load</code>.
+        </p>
+        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;">
+          <input id="assetsIgnoreLoaderInput" type="text" placeholder="e.g. Image.asset"
+            style="flex:1 1 200px; min-width:140px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+          <button id="assetsIgnoreLoaderAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
+            Loader</button>
+        </div>
+        <div id="assetsIgnoreLoaderChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      </div>
+
+      <div style="border-top: 1px solid var(--vscode-editorGroup-border,#333); margin-top: 12px; padding-top: 12px;">
+        <strong style="color: var(--text-primary); font-size: 13px;">�📁 Ignore asset folders from the scan</strong>
+        <p style="color: var(--text-secondary); font-size: 12px; margin: 6px 0 10px; line-height: 1.5;">
+          Asset folders listed here are <b>skipped entirely</b> — their files are not scanned, not counted in the
+          totals, and are never deleted, even if nothing references them. Use this for vendored / third-party asset
+          folders (e.g. <code style="color:#bdbdbd">assets/vendor</code>).
+        </p>
+        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center; flex-wrap:wrap;">
+          <input id="assetsIgnoreAssetDirInput" type="text" placeholder="assets/vendor"
+            style="flex:1 1 240px; min-width:160px; padding:6px 8px; background: var(--bg-primary,#1e1e1e); color: var(--text-primary,#fff); border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px;" />
+          <button id="assetsIgnoreAssetDirAdd" type="button" class="btn-secondary" style="padding: 6px 10px;">+ Add
+            Asset Folder</button>
+        </div>
+        <div id="assetsIgnoreAssetChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
       </div>
     </div>
 

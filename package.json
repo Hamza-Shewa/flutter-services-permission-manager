@@ -2,7 +2,7 @@
   "name": "flutter-config-manager",
   "displayName": "Flutter Config Manager",
   "description": "Manage Flutter Android/iOS/macOS permissions, services, and app name localizations. Update manifests, plists, Podfile, and AppDelegate from one VS Code UI.",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "publisher": "hamza-shewa",
   "author": {
     "name": "Hamza Shewa",
@@ -102,7 +102,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Project-relative directories to skip when scanning for unused assets (e.g. \"lib/widgets\"). Custom widget wrappers that load assets dynamically can be excluded here."
+          "description": "Project-relative source directories to skip entirely when scanning for unused assets (e.g. \"lib/generated\"). Files in them are not scanned at all, so their asset references (literal or dynamic) do not count as used."
         },
         "flutter-config-manager.unusedAssets.ignoredFiles": {
           "type": "array",
@@ -110,7 +110,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Files to skip when scanning for unused assets, by project-relative path or basename (e.g. \"my_image.dart\")."
+          "description": "Source files to skip entirely when scanning for unused assets, by project-relative path or basename (e.g. \"generated_widgets.dart\")."
         },
         "flutter-config-manager.unusedAssets.ignoredDynamicDirectories": {
           "type": "array",
@@ -118,7 +118,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Directories whose dynamic asset patterns (e.g. \"assets/icons/$name\", Image.asset(path)) are ignored, while literal asset references still count as used. Use for files like constants/icon maps that mix static and dynamic references."
+          "description": "Source directories whose dynamic asset patterns (e.g. \"assets/icons/$name\" or Image.asset(path)) are ignored, while literal asset references still count as used. Use for source folders that build asset paths from variables (e.g. \"lib/helpers\") so they stop flagging assets as \"maybe used\"."
         },
         "flutter-config-manager.unusedAssets.ignoredDynamicFiles": {
           "type": "array",
@@ -126,7 +126,23 @@
             "type": "string"
           },
           "default": [],
-          "description": "Files whose dynamic asset patterns are ignored (by project-relative path or basename), while literal asset references still count as used."
+          "description": "Source files whose dynamic asset patterns are ignored (by project-relative path or basename), while literal asset references still count as used. Example: \"lib/constants/app_icons.dart\"."
+        },
+        "flutter-config-manager.unusedAssets.ignoredAssetDirectories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Project-relative ASSET folders to skip entirely when scanning for unused assets (e.g. \"assets/vendor\"). Files under these folders are never reported as unused, are not counted in the totals, and are never deleted."
+        },
+        "flutter-config-manager.unusedAssets.ignoredLoaders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Loader APIs to skip for fully-dynamic detection, e.g. \"Image.asset\" or \"SvgPicture.asset\". Calls with a variable argument (Image.asset(path)) are no longer treated as dynamic references, so they stop flagging every asset as \"maybe used\"; literal calls still count as used."
         }
       }
     }

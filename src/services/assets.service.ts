@@ -1,5 +1,6 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { toErrorMessage } from '../shared/index.js';
@@ -60,12 +61,18 @@ function runScript(workspaceRoot: string, extraArgs: string[]): Promise<string> 
  * - `ignoredDirectories` / `ignoredFiles`: files/dirs skipped entirely.
  * - `ignoredDynamicDirectories` / `ignoredDynamicFiles`: only dynamic pattern
  *   detection is suppressed for these; literal references still count.
+ * - `ignoredAssetDirectories`: asset folders skipped entirely from the scan;
+ *   their files are never reported, counted or deleted.
+ * - `ignoredLoaders`: loader APIs (e.g. Image.asset, SvgPicture.asset) skipped
+ *   for fully-dynamic detection; literal calls still count as used.
  */
 export function getIgnoredAssetPaths(): {
     ignoredDirectories: string[];
     ignoredFiles: string[];
     ignoredDynamicDirectories: string[];
     ignoredDynamicFiles: string[];
+    ignoredAssetDirectories: string[];
+    ignoredLoaders: string[];
 } {
     const config = vscode.workspace.getConfiguration('flutter-config-manager.unusedAssets');
     const clean = (key: string): string[] =>
@@ -77,6 +84,8 @@ export function getIgnoredAssetPaths(): {
         ignoredFiles: clean('ignoredFiles'),
         ignoredDynamicDirectories: clean('ignoredDynamicDirectories'),
         ignoredDynamicFiles: clean('ignoredDynamicFiles'),
+        ignoredAssetDirectories: clean('ignoredAssetDirectories'),
+        ignoredLoaders: clean('ignoredLoaders'),
     };
 }
 
@@ -86,6 +95,8 @@ function buildIgnoreArgs(): string[] {
         ignoredFiles,
         ignoredDynamicDirectories,
         ignoredDynamicFiles,
+        ignoredAssetDirectories,
+        ignoredLoaders,
     } = getIgnoredAssetPaths();
     const args: string[] = [];
     for (const dir of ignoredDirectories) {
@@ -100,6 +111,12 @@ function buildIgnoreArgs(): string[] {
     for (const file of ignoredDynamicFiles) {
         args.push('--ignore-dynamic-files', file);
     }
+    for (const dir of ignoredAssetDirectories) {
+        args.push('--ignore-asset-dirs', dir);
+    }
+    for (const loader of ignoredLoaders) {
+        args.push('--ignore-loaders', loader);
+    }
     return args;
 }
 
@@ -108,9 +125,16 @@ function buildIgnoreArgs(): string[] {
  * files that are not referenced from the project's Dart/JSON source.
  */
 export async function analyzeUnusedAssets(workspaceRoot: string): Promise<UnusedAssetsResult> {
-    const stdout = await runScript(workspaceRoot, ['--json', ...buildIgnoreArgs()]);
+    // The script writes its --json report to a temp file (synchronously, so it
+    // is always complete); we parse that file instead of stdout. Parsing stdout
+    // is unreliable for large reports: the OS pipe buffer is only 64 KB on
+    // macOS, and if the JSON exceeds it the output can be truncated mid-flight,
+    // producing a parse error like "Expected ',' or '}' ... at position 65536".
+    const logFile = path.join(os.tmpdir(), `flutter-config-unused-assets-${process.pid}-${Date.now()}.json`);
     try {
-        const data = JSON.parse(stdout) as UnusedAssetsScriptPayload;
+        const stdout = await runScript(workspaceRoot, ['--json', '--log-path', logFile, ...buildIgnoreArgs()]);
+        const raw = fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : stdout;
+        const data = JSON.parse(raw) as UnusedAssetsScriptPayload;
         const all: UnusedAsset[] = (data.unusedAssets || []).map((a) => ({
             path: a.path,
             size: a.size,
@@ -126,6 +150,12 @@ export async function analyzeUnusedAssets(workspaceRoot: string): Promise<Unused
         };
     } catch (parseError) {
         throw new Error(`Failed to parse unused assets output: ${toErrorMessage(parseError)}`);
+    } finally {
+        try {
+            fs.unlinkSync(logFile);
+        } catch {
+            // best-effort cleanup of the temp report
+        }
     }
 }
 

@@ -29,6 +29,12 @@ import {
     assetsIgnoreDynFileInput,
     assetsIgnoreDynFileAdd,
     assetsIgnoreDynChips,
+    assetsIgnoreAssetDirInput,
+    assetsIgnoreAssetDirAdd,
+    assetsIgnoreAssetChips,
+    assetsIgnoreLoaderInput,
+    assetsIgnoreLoaderAdd,
+    assetsIgnoreLoaderChips,
 } from "./elements.js";
 
 let pendingDeleteAssets = []; // Array of project-relative asset paths
@@ -185,6 +191,12 @@ if (scanAssetsButton) {
 
 function getIgnoreList(mode, kind) {
     const s = state.assetsState || {};
+    if (mode === "loader") {
+        return s.ignoredLoaders || [];
+    }
+    if (mode === "asset") {
+        return s.ignoredAssetDirectories || [];
+    }
     if (mode === "dynamic") {
         return kind === "file"
             ? (s.ignoredDynamicFiles || [])
@@ -208,15 +220,17 @@ function removeIgnoredPath(mode, kind, value) {
 
 function makeIgnoreChip(mode, kind, value) {
     const dynamic = mode === "dynamic";
+    const asset = mode === "asset";
+    const loader = mode === "loader";
     const chip = document.createElement("span");
     chip.style.cssText =
         "display:inline-flex; align-items:center; gap:6px; padding:3px 8px; font-size:12px; " +
         "background: var(--bg-primary,#1e1e1e); border:1px solid " +
-        (dynamic ? "#4fc3f7" : "var(--vscode-editorGroup-border,#555)") +
+        (loader ? "#b39ddb" : asset ? "#f0ad4e" : dynamic ? "#4fc3f7" : "var(--vscode-editorGroup-border,#555)") +
         "; border-radius:12px; color: var(--text-primary,#fff);" +
         (dynamic ? " border-style: dashed;" : "");
     const icon = document.createElement("span");
-    icon.textContent = kind === "file" ? "📄" : "📁";
+    icon.textContent = loader ? "🛑" : kind === "file" ? "📄" : "📁";
     chip.appendChild(icon);
     const label = document.createElement("span");
     label.textContent = value;
@@ -249,9 +263,39 @@ function renderIgnoreChips(container, mode) {
     files.forEach((f) => container.appendChild(makeIgnoreChip(mode, "file", f)));
 }
 
+function renderIgnoreAssetDirChips() {
+    if (!assetsIgnoreAssetChips) { return; }
+    assetsIgnoreAssetChips.innerHTML = "";
+    const dirs = getIgnoreList("asset", "directory");
+    if (dirs.length === 0) {
+        const empty = document.createElement("span");
+        empty.textContent = "None";
+        empty.style.cssText = "color: var(--text-secondary,#aaa); font-size: 12px;";
+        assetsIgnoreAssetChips.appendChild(empty);
+        return;
+    }
+    dirs.forEach((d) => assetsIgnoreAssetChips.appendChild(makeIgnoreChip("asset", "directory", d)));
+}
+
+function renderIgnoreLoaderChips() {
+    if (!assetsIgnoreLoaderChips) { return; }
+    assetsIgnoreLoaderChips.innerHTML = "";
+    const loaders = getIgnoreList("loader", "loader");
+    if (loaders.length === 0) {
+        const empty = document.createElement("span");
+        empty.textContent = "None";
+        empty.style.cssText = "color: var(--text-secondary,#aaa); font-size: 12px;";
+        assetsIgnoreLoaderChips.appendChild(empty);
+        return;
+    }
+    loaders.forEach((l) => assetsIgnoreLoaderChips.appendChild(makeIgnoreChip("loader", "loader", l)));
+}
+
 export function renderAssetIgnoreEditor() {
     renderIgnoreChips(assetsIgnoreChips, "full");
     renderIgnoreChips(assetsIgnoreDynChips, "dynamic");
+    renderIgnoreAssetDirChips();
+    renderIgnoreLoaderChips();
 }
 
 if (assetsIgnoreDirAdd) {
@@ -265,6 +309,12 @@ if (assetsIgnoreDynDirAdd) {
 }
 if (assetsIgnoreDynFileAdd) {
     assetsIgnoreDynFileAdd.addEventListener("click", () => addIgnoredPath("dynamic", "file", assetsIgnoreDynFileInput));
+}
+if (assetsIgnoreAssetDirAdd) {
+    assetsIgnoreAssetDirAdd.addEventListener("click", () => addIgnoredPath("asset", "assetDirectory", assetsIgnoreAssetDirInput));
+}
+if (assetsIgnoreLoaderAdd) {
+    assetsIgnoreLoaderAdd.addEventListener("click", () => addIgnoredPath("loader", "loader", assetsIgnoreLoaderInput));
 }
 if (assetsIgnoreDirInput) {
     assetsIgnoreDirInput.addEventListener("keydown", (e) => {
@@ -284,6 +334,16 @@ if (assetsIgnoreDynDirInput) {
 if (assetsIgnoreDynFileInput) {
     assetsIgnoreDynFileInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") { addIgnoredPath("dynamic", "file", assetsIgnoreDynFileInput); }
+    });
+}
+if (assetsIgnoreAssetDirInput) {
+    assetsIgnoreAssetDirInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { addIgnoredPath("asset", "assetDirectory", assetsIgnoreAssetDirInput); }
+    });
+}
+if (assetsIgnoreLoaderInput) {
+    assetsIgnoreLoaderInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { addIgnoredPath("loader", "loader", assetsIgnoreLoaderInput); }
     });
 }
 
@@ -457,6 +517,8 @@ export function handleUnusedAssetsResult(message) {
             ignoredFiles: message.ignoredFiles || [],
             ignoredDynamicDirectories: message.ignoredDynamicDirectories || [],
             ignoredDynamicFiles: message.ignoredDynamicFiles || [],
+            ignoredAssetDirectories: message.ignoredAssetDirectories || [],
+            ignoredLoaders: message.ignoredLoaders || [],
         };
         // Surface the friendly message (e.g. VPN guidance) via the toast/status.
         setStatus(message.error, "error");
@@ -474,6 +536,8 @@ export function handleUnusedAssetsResult(message) {
         ignoredFiles: message.ignoredFiles || state.assetsState.ignoredFiles || [],
         ignoredDynamicDirectories: message.ignoredDynamicDirectories || state.assetsState.ignoredDynamicDirectories || [],
         ignoredDynamicFiles: message.ignoredDynamicFiles || state.assetsState.ignoredDynamicFiles || [],
+        ignoredAssetDirectories: message.ignoredAssetDirectories || state.assetsState.ignoredAssetDirectories || [],
+        ignoredLoaders: message.ignoredLoaders || state.assetsState.ignoredLoaders || [],
     };
     renderAssetIgnoreEditor();
     renderAssetsTable();
