@@ -4,9 +4,9 @@ import {
     updateAndroidManifest,
     updateAndroidManifestWithServices,
     removeServicesFromAndroidManifest
-} from '../../services/android/manifest.service.js';
+} from '../../core/platform/android/manifest.service.js';
 import { loadFixture } from '../helpers.js';
-import { ServiceEntry, ServiceConfig } from '../../types/index.js';
+import { ServiceEntry, ServiceConfig } from '../../core/types/index.js';
 
 suite('Android Manifest Service Test Suite', () => {
     let baseManifest: string;

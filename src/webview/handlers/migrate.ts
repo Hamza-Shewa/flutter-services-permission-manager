@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { execWithEnv, getFlutterCommand } from '../../utils/exec.js';
-import { migrateAndroidSetup, migrateAndroid16kbSetup } from '../../services/android/migration.service.js';
-import { logger, toError, toErrorMessage } from '../../shared/index.js';
+import { execWithEnv, getFlutterCommand } from '../../core/utils/exec.js';
+import { migrateAndroidSetup, migrateAndroid16kbSetup } from '../../features/migration/migration.service.js';
+import { logger, toError, toErrorMessage } from '../../core/shared/index.js';
 import type { WebviewRef } from './index.js';
 
 function formatReport(message: string, details: string[]): string {

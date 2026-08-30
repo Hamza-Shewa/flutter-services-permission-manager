@@ -12,14 +12,14 @@ import type {
   PlatformDetails,
   PlatformDetailItem,
   LanguageInfo,
-} from "../../types/index.js";
-import { readJsonFile } from "../../utils/file.js";
+} from "../../core/types/index.js";
+import { readJsonFile } from "../../core/utils/file.js";
 import {
   getUsedAndroidPermissions,
   getUsedIOSPermissions,
   getAndroidPermissions,
   getIOSPermissions,
-} from "../../utils/extractors.js";
+} from "../../features/permissions/extractor.js";
 import {
   savePermissions,
   savePermissionsOnly,
@@ -27,13 +27,13 @@ import {
   saveAppNameOnly,
   savePlatformDetails,
   extractServices,
-} from "../../services/index.js";
-import { validateServiceEntry } from "../../services/service-validator.js";
-import { toErrorMessage } from "../../shared/errors.js";
-import { extractAndroidAppNameLocalizations } from "../../services/android/localization.service.js";
-import { extractIOSAppNameLocalizations } from "../../services/ios/localization.service.js";
-import type { ProjectFiles } from "../../services/workspace.js";
-import { discoverProjectPlatformDetails } from "../../services/workspace.js";
+} from "../../features/index.js";
+import { validateServiceEntry } from "../../features/services/validator.service.js";
+import { toErrorMessage } from "../../core/shared/errors.js";
+import { extractAndroidAppNameLocalizations } from "../../features/localization/android.localization.service.js";
+import { extractIOSAppNameLocalizations } from "../../features/localization/ios.localization.service.js";
+import type { ProjectFiles } from "../../core/workspace.service.js";
+import { discoverProjectPlatformDetails } from "../../core/workspace.service.js";
 import {
   getCategorizedIosPermissionsCache,
   getServicesConfigCache,

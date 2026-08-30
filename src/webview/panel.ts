@@ -4,8 +4,8 @@
  */
 
 import * as vscode from "vscode";
-import type { AndroidPermission, IOSPermission } from "../types/index.js";
-import type { ProjectFiles } from "../services/workspace.js";
+import type { AndroidPermission, IOSPermission } from "../core/types/index.js";
+import type { ProjectFiles } from "../core/workspace.service.js";
 import { initializePermissionWebview } from "./initializer.js";
 
 /**

@@ -6,7 +6,7 @@ import {
   escapeRegExp,
   formatGradleValue,
   replaceGradlePropertyLine,
-} from '../../services/build-file-utils.js';
+} from '../../features/build/build-file-utils.js';
 
 suite('Build File Utils Test Suite', () => {
   suite('normalizeTextValue', () => {

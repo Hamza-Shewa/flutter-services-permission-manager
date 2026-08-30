@@ -1,9 +1,9 @@
 import type { WebviewRef } from './index.js';
-import { toErrorMessage } from '../../shared/index.js';
+import { toErrorMessage } from '../../core/shared/index.js';
 import { 
     analyzePackages, upgradePackage, searchPackages, getPackageDetails, addPackage,
     checkDependencyValidator, installDependencyValidator, runDependencyValidator, removePackage, downgradePackage
-} from '../../services/pub.service.js';
+} from '../../features/packages/pub.service.js';
 
 export async function handleRequestPackagesAnalysis(ref: WebviewRef): Promise<void> {
     try {

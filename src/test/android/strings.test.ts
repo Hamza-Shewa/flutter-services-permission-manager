@@ -2,9 +2,9 @@ import * as assert from 'assert';
 import {
     updateAndroidStringsWithServices,
     removeServicesFromAndroidStrings
-} from '../../services/android/strings.service.js';
+} from '../../core/platform/android/strings.service.js';
 import { loadFixture } from '../helpers.js';
-import { ServiceEntry, ServiceConfig } from '../../types/index.js';
+import { ServiceEntry, ServiceConfig } from '../../core/types/index.js';
 
 suite('Android Strings Service Test Suite', () => {
     let baseStrings: string;

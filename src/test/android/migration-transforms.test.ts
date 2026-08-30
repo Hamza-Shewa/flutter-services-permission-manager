@@ -18,7 +18,7 @@ import {
     ensureUseLegacyPackaging,
     detectFirebaseUsage,
     type MigrationVersions
-} from '../../services/android/migration-transforms.js';
+} from '../../features/migration/migration-transforms.js';
 
 const VERSIONS: MigrationVersions = {
     agp: '8.13.2',

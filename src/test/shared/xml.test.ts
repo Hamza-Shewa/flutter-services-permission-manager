@@ -5,7 +5,7 @@ import {
     hasXmlElement,
     findInsertionPoint,
     getLineIndent
-} from '../../shared/xml.js';
+} from '../../core/shared/xml.js';
 
 suite('Shared XML Test Suite', () => {
     suite('findXmlElementBounds', () => {

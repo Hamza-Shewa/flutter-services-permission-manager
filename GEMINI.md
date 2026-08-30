@@ -29,8 +29,8 @@ The project uses standard npm scripts for development:
 
 ## Development Conventions
 
-- **Separation of Concerns**: Keep platform-specific logic within their respective folders in `src/services/android` or `src/services/ios`.
-- **Type Safety**: Use interfaces defined in `src/types/` for all cross-component data structures.
+- **Separation of Concerns**: Keep cross-cutting infrastructure in `src/core/` (including platform write services in `src/core/platform/`) and feature-specific logic in `src/features/<feature>/`.
+- **Type Safety**: Use interfaces defined in `src/core/types/` for all cross-component data structures.
 - **Webview Communication**: Communication between the backend and the webview is handled via `vscode.postMessage` and monitored in `src/webview/handlers/`.
 - **Resource Management**: Permission and service data are centralized in `.json` files within `src/` (e.g., `permission-mapping.json`, `services-config.json`).
 - **Safety**: File updates should preserve existing comments and structure where possible, using specific service methods for targeted injections.

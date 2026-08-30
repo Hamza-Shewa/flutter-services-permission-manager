@@ -3,7 +3,7 @@
  * Centralized cache and state for webview operations
  */
 
-import type { ServiceConfig, ServiceEntry, IOSPermissionWithMacro } from '../types/index.js';
+import type { ServiceConfig, ServiceEntry, IOSPermissionWithMacro } from '../core/types/index.js';
 
 /** Cached state for webview operations */
 interface WebviewState {

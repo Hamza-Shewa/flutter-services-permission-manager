@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { extractPodfileMacros, updateIOSPodfile } from '../../services/ios/podfile.service.js';
+import { extractPodfileMacros, updateIOSPodfile } from '../../core/platform/ios/podfile.service.js';
 import { loadFixture } from '../helpers.js';
-import { IOSPermissionEntry } from '../../types/index.js';
+import { IOSPermissionEntry } from '../../core/types/index.js';
 
 suite('iOS Podfile Service Test Suite', () => {
     let basePodfile: string;

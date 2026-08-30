@@ -6,19 +6,19 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { setExtensionBaseUri } from "./utils/file.js";
+import { setExtensionBaseUri } from "./core/utils/file.js";
 import {
   getUsedAndroidPermissions,
   getUsedIOSPermissions,
-} from "./utils/extractors.js";
+} from "./features/permissions/extractor.js";
 import { createPermissionPanel } from "./webview/index.js";
-import { discoverProjectFilesWithContent } from "./services/workspace.js";
+import { discoverProjectFilesWithContent } from "./core/workspace.service.js";
 import {
   analyzeUnusedAssets,
   deleteUnusedAssets,
-} from "./services/assets.service.js";
-import { FlutterConfigSidebarProvider } from "./providers/sidebar.provider.js";
-import { enableDebug, disableDebug, toErrorMessage } from "./shared/index.js";
+} from "./features/assets/assets.service.js";
+import { FlutterConfigSidebarProvider } from "./core/providers/sidebar.provider.js";
+import { enableDebug, disableDebug, toErrorMessage } from "./core/shared/index.js";
 
 // Re-export for backward compatibility and testing
 export {
@@ -26,14 +26,14 @@ export {
   updateIOSPlist,
   normalizePermissionNames,
   normalizePlistSpacing,
-} from "./services/index.js";
+} from "./features/index.js";
 
 export {
   flattenAndroidPermissions,
   flattenIOSPermissions,
-} from "./utils/extractors.js";
+} from "./features/permissions/extractor.js";
 
-export { getExtensionBaseUri as extensionBaseUri } from "./utils/file.js";
+export { getExtensionBaseUri as extensionBaseUri } from "./core/utils/file.js";
 
 /**
  * Extension activation - called when extension is first used

@@ -1,12 +1,12 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import type { WebviewRef } from './index.js';
-import { toErrorMessage } from '../../shared/index.js';
+import { toErrorMessage } from '../../core/shared/index.js';
 import {
     analyzeUnusedAssets,
     deleteUnusedAssets,
     getIgnoredAssetPaths,
-} from '../../services/assets.service.js';
+} from '../../features/assets/assets.service.js';
 
 /**
  * Runs the unused-assets scan for the current workspace and posts the result

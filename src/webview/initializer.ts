@@ -12,15 +12,15 @@ import type {
   ServicesConfigFile,
   AppNameLocalization,
   LanguageInfo,
-} from "../types/index.js";
-import { getCategorizedIOSPermissions } from "../utils/extractors.js";
-import { extractServices } from "../services/index.js";
-import { extractAndroidAppNameLocalizations } from "../services/android/localization.service.js";
-import { extractIOSAppNameLocalizations } from "../services/ios/localization.service.js";
+} from "../core/types/index.js";
+import { getCategorizedIOSPermissions } from "../features/permissions/extractor.js";
+import { extractServices } from "../features/index.js";
+import { extractAndroidAppNameLocalizations } from "../features/localization/android.localization.service.js";
+import { extractIOSAppNameLocalizations } from "../features/localization/ios.localization.service.js";
 import { getWebviewContent } from "./content.js";
-import { readJsonFile } from "../utils/file.js";
-import { discoverProjectPlatformDetails } from "../services/workspace.js";
-import type { ProjectFiles } from "../services/workspace.js";
+import { readJsonFile } from "../core/utils/file.js";
+import { discoverProjectPlatformDetails } from "../core/workspace.service.js";
+import type { ProjectFiles } from "../core/workspace.service.js";
 
 import {
   setCategorizedIosPermissionsCache,
@@ -28,7 +28,7 @@ import {
   setPreviousServicesCache,
   getServicesConfigCache,
 } from "./state.js";
-import { debounce } from "../utils/debounce.js";
+import { debounce } from "../core/utils/debounce.js";
 import { MessageBus } from "./message-bus.js";
 import {
   handleRefresh,

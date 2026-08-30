@@ -4,9 +4,9 @@ import {
     updateIOSPlistWithServices,
     removeServicesFromIOSPlist,
     validateIOSPermissionEntries
-} from '../../services/ios/plist.service.js';
+} from '../../core/platform/ios/plist.service.js';
 import { loadFixture } from '../helpers.js';
-import { ServiceConfig, IOSPermissionEntry } from '../../types/index.js';
+import { ServiceConfig, IOSPermissionEntry } from '../../core/types/index.js';
 
 suite('iOS Plist Service Test Suite', () => {
     let basePlist: string;

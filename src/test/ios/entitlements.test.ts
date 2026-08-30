@@ -2,8 +2,8 @@ import * as assert from 'assert';
 import {
     updateIOSEntitlementsWithServices,
     removeServicesFromIOSEntitlements
-} from '../../services/ios/entitlements.service.js';
-import { ServiceConfig } from '../../types/index.js';
+} from '../../core/platform/ios/entitlements.service.js';
+import { ServiceConfig } from '../../core/types/index.js';
 
 suite('iOS Entitlements Service Test Suite', () => {
     const dummyServiceConfig: ServiceConfig = {

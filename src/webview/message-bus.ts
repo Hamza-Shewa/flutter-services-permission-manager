@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import type { WebviewMessage } from '../types/webview.js';
-import { logger } from '../shared/index.js';
+import type { WebviewMessage } from '../core/types/webview.js';
+import { logger } from '../core/shared/index.js';
 
 type Handler<T extends WebviewMessage> = (msg: T) => Promise<void> | void;
 

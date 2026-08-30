@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import {
     extractAppNameFromInfoPlistStrings,
     updateAppNameInInfoPlistStrings
-} from '../../services/ios/localization.service.js';
+} from '../../features/localization/ios.localization.service.js';
 
 suite('iOS Localization Service Test Suite', () => {
     suite('extractAppNameFromInfoPlistStrings', () => {

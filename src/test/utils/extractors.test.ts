@@ -4,7 +4,7 @@ import {
     flattenIOSPermissions,
     enrichAndroidPermissionsWithEquivalents,
     enrichIOSPermissionsWithEquivalents
-} from '../../utils/extractors.js';
+} from '../../features/permissions/extractor.js';
 
 suite('Extractors Utils Test Suite', () => {
     suite('flattenAndroidPermissions', () => {
