@@ -8,6 +8,7 @@ import type {
   IOSPermissionEntry,
 } from "./permissions.js";
 import type { ServiceEntry, ServiceConfig, UnusedAsset } from "./services.js";
+import type { TranslationFileData } from "./translations.js";
 
 /** Platform build metadata item */
 export interface PlatformDetailItem {
@@ -131,7 +132,56 @@ export type WebviewMessage =
   | {
     type: "webview_log";
     message: string;
-  };
+  }
+  // Translation-file management (ARB / JSON)
+  | {
+    type: "requestTranslations";
+    dir?: string;
+  }
+  | {
+    type: "addTranslationLocale";
+    locale: string;
+    referenceLocale?: string;
+    dir?: string;
+  }
+  | {
+    type: "removeTranslationLocale";
+    locale: string;
+    dir?: string;
+  }
+  | {
+    type: "autoAddMissingKeys";
+    referenceLocale?: string;
+    dir?: string;
+  }
+  | {
+    type: "translateAll";
+    referenceLocale?: string;
+    dir?: string;
+  }
+  | {
+    type: "translateMissing";
+    referenceLocale?: string;
+    dir?: string;
+  }
+  | {
+    type: "translateLocale";
+    locale: string;
+    referenceLocale?: string;
+    dir?: string;
+  }
+  | {
+    type: "translateLocaleMissing";
+    locale: string;
+    referenceLocale?: string;
+    dir?: string;
+  }
+  | {
+    type: "saveTranslations";
+    translations: TranslationFileData[];
+    dir?: string;
+  }
+  | { type: "browseTranslationsDir" };
 
 /** Language info */
 export interface LanguageInfo {

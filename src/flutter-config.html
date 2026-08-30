@@ -1095,6 +1095,406 @@
       border: 1px dashed var(--border-default);
     }
 
+    /* Translation Files Section */
+    .trans-help {
+      margin: 12px 0 16px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+    }
+
+    .trans-help code {
+      background: rgba(127, 127, 127, 0.15);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .trans-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+
+    .trans-control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 220px;
+    }
+
+    .trans-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .trans-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .trans-dropdown {
+      position: relative;
+    }
+
+    .trans-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      transition: var(--transition-fast);
+    }
+
+    .trans-dropdown-trigger:hover {
+      border-color: var(--accent);
+    }
+
+    .trans-dropdown-trigger.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .trans-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      display: none;
+      max-height: 260px;
+      overflow: hidden;
+      flex-direction: column;
+    }
+
+    .trans-dropdown-menu.active {
+      display: flex;
+    }
+
+    .trans-dropdown-search {
+      padding: 8px;
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    .trans-dropdown-search input {
+      width: 100%;
+      padding: 7px 10px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .trans-dropdown-search input:focus {
+      border-color: var(--accent);
+    }
+
+    .trans-dropdown-options {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .trans-option {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .trans-option:hover,
+    .trans-option.selected {
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .trans-option-title {
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .trans-option-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .trans-option-code {
+      font-size: 11px;
+      color: var(--accent);
+      margin-left: 4px;
+    }
+
+    .trans-option-empty {
+      padding: 12px;
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .trans-empty {
+      text-align: center;
+      padding: 28px;
+      color: var(--text-muted);
+      font-size: 13px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border-default);
+      line-height: 1.6;
+    }
+
+    .trans-locale-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .trans-locale-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--text-primary);
+    }
+
+    .trans-locale-chip.reference {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+    }
+
+    .trans-locale-chip-missing {
+      color: var(--warning);
+      font-size: 11px;
+    }
+
+    .trans-chip-menu {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .trans-chip-menu-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .trans-chip-menu-btn:hover {
+      color: var(--text-primary);
+      background: rgba(127, 127, 127, 0.15);
+    }
+
+    .trans-chip-menu-pop {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      z-index: 40;
+      min-width: 200px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      padding: 4px;
+      display: none;
+      flex-direction: column;
+    }
+
+    .trans-chip-menu-pop.active {
+      display: flex;
+    }
+
+    .trans-chip-menu-item {
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-primary);
+      cursor: pointer;
+      text-align: left;
+      background: transparent;
+      border: none;
+      transition: var(--transition-fast);
+    }
+
+    .trans-chip-menu-item:hover {
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .trans-chip-menu-item.danger {
+      color: var(--danger);
+    }
+
+    .trans-chip-menu-item.danger:hover {
+      background: rgba(211, 47, 47, 0.12);
+    }
+
+    .trans-table-container {
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .trans-table-scroll {
+      overflow-x: auto;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
+    .trans-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    .trans-table th,
+    .trans-table td {
+      border: 1px solid var(--border-default);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .trans-table th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-secondary);
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      z-index: 2;
+    }
+
+    .trans-table th.trans-key-cell,
+    .trans-table td.trans-key-cell {
+      width: 30%;
+      min-width: 180px;
+      font-family: var(--font-mono, monospace);
+      font-size: 11px;
+      color: var(--accent);
+      word-break: break-all;
+      background: var(--bg-tertiary);
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+
+    .trans-table th.trans-value-cell,
+    .trans-table td.trans-value-cell {
+      width: 35%;
+      min-width: 160px;
+    }
+
+    .trans-table textarea {
+      width: 100%;
+      min-height: 34px;
+      resize: vertical;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-primary);
+      font-size: 12px;
+      padding: 4px 6px;
+      border-radius: var(--radius-sm);
+      outline: none;
+      font-family: inherit;
+    }
+
+    .trans-table textarea:focus {
+      border-color: var(--accent);
+      background: var(--bg-tertiary);
+    }
+
+    .trans-table td.missing-cell {
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .trans-table td.missing-cell textarea {
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .trans-status {
+      margin-top: 12px;
+    }
+
+    .trans-header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .trans-dir-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+    }
+
+    .trans-dir-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .trans-dir-input {
+      flex: 1;
+      min-width: 240px;
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-mono, monospace);
+      outline: none;
+      transition: var(--transition-fast);
+    }
+
+    .trans-dir-input:focus {
+      border-color: var(--accent);
+    }
+
+    .trans-dir-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
     /* Services Section */
     .section.services {
       background: var(--bg-secondary);
@@ -1772,7 +2172,7 @@
   <nav class="tabs" role="tablist" aria-label="Configuration sections">
     <button type="button" class="tab active" data-tab="build" role="tab" aria-selected="true">⚙️ Build Settings</button>
     <button type="button" class="tab" data-tab="permissions" role="tab" aria-selected="false">🔐 Permissions</button>
-    <button type="button" class="tab" data-tab="appname" role="tab" aria-selected="false">📱 App Name</button>
+    <button type="button" class="tab" data-tab="localization" role="tab" aria-selected="false">🌐 Localization</button>
     <button type="button" class="tab" data-tab="services" role="tab" aria-selected="false">🔌 Services</button>
     <button type="button" class="tab" data-tab="packages" role="tab" aria-selected="false">📦 Packages</button>
     <button type="button" class="tab" data-tab="assets" role="tab" aria-selected="false">🖼️ Assets</button>
@@ -1999,12 +2399,12 @@
     </div>
   </section>
 
-  <section class="section appname" data-tab="appname">
+  <section class="section appname" data-tab="localization">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>📱 App Name Localization</h2>
         <button id="saveAppNameButton" type="button" class="btn-save" style="background: #f59e0b;">
-          💾 Save Localization
+          💾 Save App Name
         </button>
       </div>
     </div>
@@ -2036,6 +2436,100 @@
       </div>
       <div id="appNameLangList" class="appname-lang-list"></div>
     </div>
+  </section>
+
+  <section class="section translation-files" data-tab="localization">
+    <div class="section-header">
+      <div class="section-header-with-button">
+        <h2>🌐 Translation Files (ARB / JSON)</h2>
+        <div class="trans-header-actions">
+          <button id="transSaveAllButton" type="button" class="btn-save" style="background: #10b981;">
+            💾 Save All Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="trans-help">
+      Manage your <code>*.arb</code> / <code>*.json</code> locale files. Pick a
+      <strong>reference language</strong> — it becomes the source for missing-key detection
+      and machine translation (free, keyless: MyMemory → Google → LibreTranslate).
+    </div>
+
+    <div class="trans-dir-row">
+      <label class="trans-label" for="transDirInput">Translation files directory</label>
+      <div class="trans-dir-controls">
+        <input
+          type="text"
+          id="transDirInput"
+          class="trans-dir-input"
+          placeholder="e.g. lib/l10n (leave empty to auto-detect)"
+          spellcheck="false"
+        />
+        <button id="transDirLoadButton" type="button" class="btn-primary">Load</button>
+        <button id="transDirBrowseButton" type="button" class="btn-secondary">Browse…</button>
+      </div>
+      <span class="trans-dir-hint">Path is relative to the workspace root. New languages are created inside this directory.</span>
+    </div>
+
+    <div class="trans-controls">
+      <div class="trans-control">
+        <label class="trans-label" for="transRefDropdownTrigger">Reference language</label>
+        <div class="trans-dropdown" id="transRefDropdown">
+          <div class="trans-dropdown-trigger" id="transRefDropdownTrigger">
+            <span>Select reference...</span>
+            <span>▼</span>
+          </div>
+          <div class="trans-dropdown-menu" id="transRefDropdownMenu">
+            <div class="trans-dropdown-search">
+              <input type="text" id="transRefSearch" placeholder="Search languages..." />
+            </div>
+            <div id="transRefOptions"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="trans-control">
+        <label class="trans-label" for="transAddDropdownTrigger">Add language</label>
+        <div class="trans-dropdown" id="transAddDropdown">
+          <div class="trans-dropdown-trigger" id="transAddDropdownTrigger">
+            <span>Select a language...</span>
+            <span>▼</span>
+          </div>
+          <div class="trans-dropdown-menu" id="transAddDropdownMenu">
+            <div class="trans-dropdown-search">
+              <input type="text" id="transAddSearch" placeholder="Search languages..." />
+            </div>
+            <div id="transAddOptions"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="trans-actions">
+        <button id="transAutoAddButton" type="button" class="btn-secondary">➕ Auto-add missing keys</button>
+        <button id="transTranslateAllButton" type="button" class="btn-primary">🌐 Translate All</button>
+        <button id="transTranslateMissingButton" type="button" class="btn-primary">🔁 Translate Only Missing</button>
+      </div>
+    </div>
+
+    <div id="transEmpty" class="trans-empty">
+      No translation files found. Set the <strong>directory</strong> above (or use
+      <strong>Browse…</strong>) and press <strong>Load</strong>, then add a language from the
+      dropdown — new files are created inside that directory.
+    </div>
+
+    <div id="transLocaleList" class="trans-locale-list"></div>
+
+    <div id="transTableContainer" class="trans-table-container" style="display: none;">
+      <div class="trans-table-scroll">
+        <table class="trans-table" id="transTable">
+          <thead id="transTableHead"></thead>
+          <tbody id="transTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="status" id="transStatus"></div>
   </section>
 
   <section class="section services" data-tab="services">

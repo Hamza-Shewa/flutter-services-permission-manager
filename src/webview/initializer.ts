@@ -60,6 +60,16 @@ import {
   handleDeleteUnusedAssets,
   handleRevealAssetReference,
   handleUpdateIgnoredAssetPaths,
+  handleRequestTranslations,
+  handleAddTranslationLocale,
+  handleRemoveTranslationLocale,
+  handleAutoAddMissingKeys,
+  handleTranslateAll,
+  handleTranslateMissing,
+  handleTranslateLocale,
+  handleTranslateLocaleMissing,
+  handleSaveTranslations,
+  handleBrowseTranslationsDir,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -245,6 +255,16 @@ function setupMessageHandler(
     .register("deleteAllUnusedAssets", async (msg) => { if (msg.assetPaths) { await handleDeleteUnusedAssets(ref, msg.assetPaths); } })
     .register("revealAssetReference", async (msg) => { if (msg.file) { await handleRevealAssetReference(ref, { file: msg.file, line: msg.line, column: msg.column }); } })
     .register("updateIgnoredAssetPaths", async (msg) => { if (msg.value) { await handleUpdateIgnoredAssetPaths(ref, { action: msg.action, mode: msg.mode === "dynamic" ? "dynamic" : "full", kind: msg.kind, value: msg.value }); } })
+    .register("requestTranslations", async (msg) => await handleRequestTranslations(ref, msg?.dir))
+    .register("addTranslationLocale", async (msg) => { if (msg.locale) { await handleAddTranslationLocale(ref, msg.locale, msg.referenceLocale, msg.dir); } })
+    .register("removeTranslationLocale", async (msg) => { if (msg.locale) { await handleRemoveTranslationLocale(ref, msg.locale, msg.dir); } })
+    .register("autoAddMissingKeys", async (msg) => await handleAutoAddMissingKeys(ref, msg.referenceLocale, msg.dir))
+    .register("translateAll", async (msg) => await handleTranslateAll(ref, msg.referenceLocale, msg.dir))
+    .register("translateMissing", async (msg) => await handleTranslateMissing(ref, msg.referenceLocale, msg.dir))
+    .register("translateLocale", async (msg) => { if (msg.locale) { await handleTranslateLocale(ref, msg.locale, msg.referenceLocale, msg.dir); } })
+    .register("translateLocaleMissing", async (msg) => { if (msg.locale) { await handleTranslateLocaleMissing(ref, msg.locale, msg.referenceLocale, msg.dir); } })
+    .register("saveTranslations", async (msg) => { if (msg.translations) { await handleSaveTranslations(ref, msg.translations, msg.dir); } })
+    .register("browseTranslationsDir", async () => await handleBrowseTranslationsDir(ref))
     .register("webview_error", (msg) => { console.error("[WEBVIEW ERROR]:", JSON.stringify(msg, null, 2)); })
     .register("webview_log", (msg) => { console.log("[WEBVIEW LOG]:", msg.message); });
 }

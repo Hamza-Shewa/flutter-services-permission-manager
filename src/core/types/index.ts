@@ -56,3 +56,11 @@ export type {
     MacOSSaveContext,
     SaveContext
 } from './save-context.js';
+
+// Translation-file types
+export type {
+    TranslationFileData,
+    TranslationsPayload,
+    TranslationsResultMessage,
+    TranslationWebviewMessage
+} from './translations.js';

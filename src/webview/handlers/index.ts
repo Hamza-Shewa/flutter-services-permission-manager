@@ -396,3 +396,15 @@ export {
   handleRevealAssetReference,
   handleUpdateIgnoredAssetPaths,
 } from './assets.js';
+export {
+  handleRequestTranslations,
+  handleAddTranslationLocale,
+  handleRemoveTranslationLocale,
+  handleAutoAddMissingKeys,
+  handleTranslateAll,
+  handleTranslateMissing,
+  handleTranslateLocale,
+  handleTranslateLocaleMissing,
+  handleSaveTranslations,
+  handleBrowseTranslationsDir,
+} from './translations.js';

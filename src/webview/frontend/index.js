@@ -7,6 +7,7 @@ import * as services from './features/services/services.js';
 import * as packages from './features/packages/packages.js';
 import * as assets from './features/assets/assets.js';
 import * as localization from './features/localization/localization.js';
+import * as translations from './features/localization/translations.js';
 import * as buildDetails from './features/build/build-details.js';
 import * as utils from './core/utils.js';
 import * as router from './core/router.js';
@@ -17,6 +18,7 @@ Object.assign(window, services);
 Object.assign(window, packages);
 Object.assign(window, assets);
 Object.assign(window, localization);
+Object.assign(window, translations);
 Object.assign(window, buildDetails);
 Object.assign(window, utils);
 Object.assign(window, router);
@@ -27,10 +29,30 @@ window.services = services;
 window.packages = packages;
 window.assets = assets;
 window.localization = localization;
+window.translations = translations;
 window.buildDetails = buildDetails;
 window.utils = utils;
 window.router = router;
 window.api = api;
+
+// Forward webview console messages to the extension host so they show up in
+// the Extension Development Host output channel (the backend listens for
+// `webview_log` / `webview_error` messages). Makes runtime issues in the UI
+// visible instead of being silently swallowed by the webview console.
+const _origError = console.error;
+console.error = (...args) => {
+  _origError(...args);
+  try {
+    api.postMessage({ type: "webview_error", message: args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") });
+  } catch { /* ignore */ }
+};
+const _origLog = console.log;
+console.log = (...args) => {
+  _origLog(...args);
+  try {
+    api.postMessage({ type: "webview_log", message: args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") });
+  } catch { /* ignore */ }
+};
 
 // Initialize the top-level tab navigation (defaults to Build Settings).
 router.initTabs();
@@ -155,7 +177,76 @@ document.addEventListener("click", (e) => {
   if (appNameLangDropdown && !appNameLangDropdown.contains(e.target)) {
     closeAppNameLangDropdown();
   }
+  if (transRefDropdown && !transRefDropdown.contains(e.target)) {
+    closeRefDropdown();
+  }
+  if (transAddDropdown && !transAddDropdown.contains(e.target)) {
+    closeAddDropdown();
+  }
 });
+
+// Translation Files event listeners
+if (transRefDropdownTrigger) {
+  transRefDropdownTrigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleRefDropdown();
+  });
+}
+if (transRefSearch) {
+  transRefSearch.addEventListener("input", () => {
+    renderReferenceDropdown();
+  });
+}
+if (transAddDropdownTrigger) {
+  transAddDropdownTrigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleAddDropdown();
+  });
+}
+if (transAddSearch) {
+  transAddSearch.addEventListener("input", () => {
+    renderAddDropdown();
+  });
+}
+if (transAutoAddButton) {
+  transAutoAddButton.addEventListener("click", () => {
+    handleAutoAddMissing();
+  });
+}
+if (transTranslateAllButton) {
+  transTranslateAllButton.addEventListener("click", () => {
+    handleTranslateAll();
+  });
+}
+if (transTranslateMissingButton) {
+  transTranslateMissingButton.addEventListener("click", () => {
+    handleTranslateMissing();
+  });
+}
+if (transSaveAllButton) {
+  transSaveAllButton.addEventListener("click", () => {
+    handleSaveAllTranslations();
+  });
+}
+if (transDirLoadButton) {
+  transDirLoadButton.addEventListener("click", () => {
+    handleLoadTranslationsDir();
+  });
+}
+if (transDirBrowseButton) {
+  transDirBrowseButton.addEventListener("click", () => {
+    api.browseTranslationsDir();
+  });
+}
+// Load on Enter in the directory input.
+if (transDirInput) {
+  transDirInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleLoadTranslationsDir();
+    }
+  });
+}
 
 console.log("[PermissionManager] Initializing...");
 console.log("[PermissionManager] saveButton element:", saveButton);
@@ -833,6 +924,9 @@ bus.on("permissions", (message) => {
   updateView();
   router.applyTabVisibility();
 
+  // Reload translation files (ARB / JSON) on init and on every refresh.
+  api.requestTranslations(translations.getTranslationsDir());
+
   // Auto-run packages analysis on first load
   if (!hasAnalyzedPackages && analyzePackagesButton) {
     hasAnalyzedPackages = true;
@@ -840,6 +934,19 @@ bus.on("permissions", (message) => {
     api.checkDependencyValidator();
     assets.scanUnusedAssets();
   }
+});
+
+bus.on("translations", (message) => {
+  translations.applyTranslations(message.translations || []);
+});
+
+bus.on("translationsResult", (message) => {
+  translations.applyTranslationsResult(message);
+});
+
+bus.on("translationsDirSelected", (message) => {
+  translations.setTranslationsDir(message?.dir || "");
+  translations.handleLoadTranslationsDir();
 });
 
 bus.on("allAndroidPermissions", (message) => {

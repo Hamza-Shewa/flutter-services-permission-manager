@@ -37,3 +37,27 @@ export {
 
 // Shared string-reference resolver
 export { resolveStringReference } from './string-resolver.js';
+
+// ARB / JSON translation-file management
+export {
+    getLocaleFromFileName,
+    parseTranslationContent,
+    serializeTranslationContent,
+    discoverTranslationUris,
+    loadTranslationFiles,
+    findReferenceFile,
+    findMissingKeys,
+    autoAddMissingKeys,
+    translateLocale,
+    translateAllLocales,
+    createTranslationFileForLocale,
+    saveTranslationFiles,
+    translateValue
+} from './arb-translations.service.js';
+
+// Free keyless machine translation (needed_docs_api provider chain)
+export {
+    translateText,
+    translateMany,
+    DEFAULT_FALLBACK_LOCALE
+} from './machine-translator.js';

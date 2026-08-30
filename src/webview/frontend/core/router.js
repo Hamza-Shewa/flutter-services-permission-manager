@@ -1,7 +1,7 @@
 import { state } from './state.js';
 
 // Tab identifiers shown in the top-level config view.
-export const TABS = ['build', 'permissions', 'appname', 'services', 'packages', 'assets'];
+export const TABS = ['build', 'permissions', 'localization', 'services', 'packages', 'assets'];
 
 /**
  * Whether a section tagged with `data-platform` should be visible given the
