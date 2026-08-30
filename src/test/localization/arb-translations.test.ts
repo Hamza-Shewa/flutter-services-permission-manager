@@ -190,11 +190,85 @@ suite('ARB / JSON Translations Service Test Suite', () => {
             // Nested keys are flattened for the grid + translation pipeline.
             assert.ok(data!.keys['tabs.home']);
             assert.ok(data!.keys['quran.title']);
+            // The flattened dot-keys are tracked as nested paths...
+            assert.deepStrictEqual(data!.nestedPaths, [
+                'tabs.home',
+                'tabs.quran',
+                'tabs.library',
+                'tabs.radio',
+                'tabs.mosques',
+                'tabs.settings',
+                'quran.title',
+                'quran.listening',
+                'common.retry',
+                'common.cancel',
+            ]);
             // Saving restores the exact nested structure.
             assert.deepStrictEqual(
                 JSON.parse(serializeTranslationContent(data!)),
                 original,
             );
+        });
+
+        test('flat file with literal dot keys stays flat on round-trip', () => {
+            // masaken-style: flat keys that happen to contain dots (sentences
+            // ending in "." / "..." plus flat keys like input_field.context_menu.cut).
+            const original = {
+                'app_name': 'Masaken',
+                'show full description...': 'Show full description...',
+                'input_field.context_menu.cut': 'Cut',
+                'input_field.context_menu.copy': 'Copy',
+                'input_field.context_menu.paste': 'Paste',
+                'input_field.context_menu.select_all': 'Select All',
+                'this action is unauthorized.': 'This action is unauthorized.',
+                'select the city location of it .': 'Select the city location of it .',
+                'you\'re leaving...': 'You\'re leaving...',
+            };
+            const data = parseTranslationContent(JSON.stringify(original), 'en.json');
+            assert.ok(data);
+            // No nested objects → nestedPaths is empty.
+            assert.deepStrictEqual(data!.nestedPaths, []);
+            // Every literal dot key must survive EXACTLY as-is (never nested,
+            // never split on the dot).
+            assert.deepStrictEqual(
+                JSON.parse(serializeTranslationContent(data!)),
+                original,
+            );
+        });
+
+        test('mixed file keeps literal dot keys flat while re-nesting real objects', () => {
+            const original = {
+                'app_name': 'Mixed',
+                'this action is unauthorized.': 'Unauthorized.',
+                'input_field.context_menu.cut': 'Cut',
+                'tabs': { home: 'Home', settings: 'Settings' },
+                'common': { retry: 'Retry' },
+            };
+            const data = parseTranslationContent(JSON.stringify(original), 'en.json');
+            assert.ok(data);
+            assert.deepStrictEqual(data!.nestedPaths, ['tabs.home', 'tabs.settings', 'common.retry']);
+            const out = JSON.parse(serializeTranslationContent(data!)) as Record<string, unknown>;
+            // Real nested objects are restored.
+            assert.deepStrictEqual(out['tabs'], { home: 'Home', settings: 'Settings' });
+            assert.deepStrictEqual(out['common'], { retry: 'Retry' });
+            // Literal dot keys stay top-level, untouched.
+            assert.strictEqual(out['this action is unauthorized.'], 'Unauthorized.');
+            assert.strictEqual(out['input_field.context_menu.cut'], 'Cut');
+        });
+
+        test('manually built flat data without nestedPaths keeps dot keys flat', () => {
+            // Backward compatibility: if a caller constructs TranslationFileData
+            // directly (no nestedPaths), dot keys must not be re-nested.
+            const data: TranslationFileData = {
+                locale: 'en',
+                fileName: 'en.json',
+                isArb: false,
+                keys: { 'input_field.context_menu.cut': 'Cut' },
+                metadata: {},
+            };
+            const out = JSON.parse(serializeTranslationContent(data)) as Record<string, unknown>;
+            assert.strictEqual(out['input_field.context_menu.cut'], 'Cut');
+            assert.ok(!('input_field' in out));
         });
     });
 
@@ -240,6 +314,8 @@ suite('ARB / JSON Translations Service Test Suite', () => {
                 'quran.title': 'The Holy Quran',
             },
             metadata: {},
+            // Nested file: these dot-keys came from real nested objects.
+            nestedPaths: ['tabs.home', 'tabs.settings', 'quran.title'],
         };
         const es: TranslationFileData = {
             locale: 'es', fileName: 'es.json', isArb: false,
@@ -250,6 +326,7 @@ suite('ARB / JSON Translations Service Test Suite', () => {
                 'quran.title': '',
             },
             metadata: {},
+            nestedPaths: ['tabs.home', 'tabs.settings', 'quran.title'],
         };
 
         function googleMock(calls: string[]): void {
@@ -299,6 +376,7 @@ suite('ARB / JSON Translations Service Test Suite', () => {
             const partial: TranslationFileData = {
                 locale: 'es', fileName: 'es.json', isArb: false,
                 keys: { app_name: '', 'tabs.home': 'Inicio', 'tabs.settings': '', 'quran.title': '' },
+                nestedPaths: ['tabs.home', 'tabs.settings', 'quran.title'],
                 metadata: {},
             };
 

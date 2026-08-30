@@ -23,6 +23,15 @@ export interface TranslationFileData {
    * per-key `@keyName` entries. For plain JSON this is an empty object.
    */
   metadata: Record<string, unknown>;
+  /**
+   * Flat keys that were originally nested objects/arrays (flattened into
+   * dot-paths, e.g. `tabs.home` or `quran.reciters.0`). ONLY these keys are
+   * re-nested when the file is saved. Literal keys that happen to contain
+   * dots — sentence keys ending in `.`/`...`, or flat easy_localization keys
+   * like `input_field.context_menu.cut` — are NOT listed here and therefore
+   * stay exactly as-is on save.
+   */
+  nestedPaths?: string[];
 }
 
 /** Extension → webview: loaded translation files. */

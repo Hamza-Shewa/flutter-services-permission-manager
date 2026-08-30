@@ -10,6 +10,11 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
   - Facebook SDK
   - Google Sign-In & Google Maps
   - **App Name Localization**: Easily manage app display names for multiple languages using native `InfoPlist.strings` (iOS) and `strings.xml` (Android). Includes support for localizing `FacebookDisplayName` on iOS.
+- **Translation Files Manager**: Manage your app's `ARB`/`JSON` translation files (easy_localization, flutter_localizations, or plain i18n) from a dedicated **Localization** tab. Point it at your translation folder (default `assets/translations`), pick a reference locale, and translate everything with free keyless machine translation.
+  - **Locale grid & burger menus**: One row per locale with a burger menu (`Translate all`, `Translate missing only`, `Remove`); stable key → translation columns (key 30%, each translation 35%).
+  - **Searchable language dropdown**: Add new locales from a searchable list — the file is created next to the reference with all keys pre-filled as empty.
+  - **One-click translation**: Batch translate all locales (or only the missing gaps) and auto-add any reference keys missing elsewhere. Values are translated via a free provider chain (Google → MyMemory → LibreTranslate) with batched requests for speed.
+  - **Round-trip safe**: Nested easy_localization JSON (objects/arrays) is flattened for editing and re-nested exactly on save, while flat keys that merely contain dots (sentences ending in `.`/`...`, e.g. `input_field.context_menu.cut`) are preserved verbatim.
 - **Robust Executable Resolution**: Integrates seamlessly with the VS Code Dart extension to dynamically resolve the correct `flutter` and `dart` executables without relying on the system PATH.
 - **Gradle Declarative Migration & 16 KB Support**: **Run Full Migration** upgrades Android projects to the latest declarative Flutter Gradle setup (replacing hardcoded paths with `flutter.compileSdkVersion`, `flutter.minSdkVersion`, `flutter.targetSdkVersion`, and `flutter.ndkVersion`). A separate **Enable 16 KB Page Size** button is a safe fallback for projects with outdated packages — it applies only the minimal changes required for Android 15+ 16 KB page-size compatibility (AGP 8.5.1+, targetSdk 35+, NDK r28, `android:extractNativeLibs="true"`) while leaving legacy buildscript setups untouched. The migration is non-destructive: it never forces newer AGP/Kotlin versions onto a project that already builds, never lowers your `minSdk`, and supports both `build.gradle` and `build.gradle.kts`.
 - **Dependency Management**: Fully-featured Flutter dependencies table showing direct, dev, and transitive packages.
@@ -28,8 +33,9 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 4.  **Manage Permissions**: Browse categorized lists, search for specific permissions, and toggle them on/off.
 5.  **Configure Services**: Select services to integrate and fill in the required API keys or IDs.
 6.  **App Name Localizations**: Add or edit localized app names so the correct name appears on each device locale.
-7.  **Save**: Use section-level Save buttons or Save All Changes to apply updates across platform files instantly.
-8.  **Check Unused Assets**: Run the **`Flutter Config Manager: Check Unused Assets`** command from the command palette to list assets split into **Unused** (safe to delete) and **Maybe used** (referenced via dynamic paths — click a file button to jump to the exact line). You can also use the bundled standalone script directly:
+7.  **Manage Translation Files**: In the **Localization** tab, set the folder that holds your translation files (default `assets/translations`), choose a reference locale, and use **Translate All** / **Translate Missing Only** / **Auto-Add Missing Keys** to fill every locale. Add new languages from the searchable dropdown, and use each locale's burger menu for per-file actions.
+8.  **Save**: Use section-level Save buttons or Save All Changes to apply updates across platform files instantly.
+9.  **Check Unused Assets**: Run the **`Flutter Config Manager: Check Unused Assets`** command from the command palette to list assets split into **Unused** (safe to delete) and **Maybe used** (referenced via dynamic paths — click a file button to jump to the exact line). You can also use the bundled standalone script directly:
 
     ```bash
     node scripts/check-unused-assets.js --path /path/to/flutter/project              # dry-run
@@ -47,6 +53,7 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 | Permission Management |   ✅    | ✅  |  ✅   |
 | Service Configuration |   ✅    | ✅  |  🚧   |
 | Smart Extraction      |   ✅    | ✅  |  ✅   |
+| Translation Files     |   ✅    | ✅  |  ✅   |
 
 _macOS service configuration support is coming soon!_
 

@@ -61,21 +61,34 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * `parent.1`, … and scalar leaves keep their string form. This is how nested
  * easy_localization-style JSON (e.g. `{ "tabs": { "home": "Home" } }`) is
  * represented in the flat `keys` map without corrupting its structure.
+ *
+ * Every leaf key that actually came from a nested object/array is also pushed
+ * into `nestedPaths` so serialization can distinguish it from a literal flat
+ * key that merely contains dots (e.g. `input_field.context_menu.cut` or a
+ * sentence ending in ".").
  */
-function flattenValue(keyPath: string, value: unknown, out: Record<string, string>): void {
+function flattenValue(
+  keyPath: string,
+  value: unknown,
+  out: Record<string, string>,
+  nestedPaths?: string[],
+): void {
   if (Array.isArray(value)) {
     value.forEach((item, index) => {
-      flattenValue(`${keyPath}.${index}`, item, out);
+      flattenValue(`${keyPath}.${index}`, item, out, nestedPaths);
     });
     return;
   }
   if (isPlainObject(value)) {
     for (const [childKey, childValue] of Object.entries(value)) {
-      flattenValue(`${keyPath}.${childKey}`, childValue, out);
+      flattenValue(`${keyPath}.${childKey}`, childValue, out, nestedPaths);
     }
     return;
   }
   out[keyPath] = typeof value === 'string' ? value : String(value ?? '');
+  if (nestedPaths) {
+    nestedPaths.push(keyPath);
+  }
 }
 
 /**
@@ -107,12 +120,17 @@ function normalizeNestedArrays(node: unknown): unknown {
 
 /**
  * Re-nest a flat dot-path key map back into a nested object tree. Keys
- * starting with `@` (ARB metadata) and keys without a dot stay top-level.
+ * starting with `@` (ARB metadata), keys without a dot, and keys NOT present
+ * in `nestedKeys` (literal flat keys that happen to contain dots) stay
+ * top-level exactly as-is. Only keys listed in `nestedKeys` are re-nested.
  */
-function unflattenTranslationKeys(flat: Record<string, unknown>): Record<string, unknown> {
+function unflattenTranslationKeys(
+  flat: Record<string, unknown>,
+  nestedKeys?: Set<string>,
+): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(flat)) {
-    if (key.startsWith('@') || !key.includes('.')) {
+    if (key.startsWith('@') || !key.includes('.') || !nestedKeys?.has(key)) {
       result[key] = value;
       continue;
     }
@@ -154,12 +172,13 @@ export function parseTranslationContent(
   const isArb = fileName.toLowerCase().endsWith('.arb');
   const metadata: Record<string, unknown> = {};
   const keys: Record<string, string> = {};
+  const nestedPaths: string[] = [];
 
   for (const [key, value] of Object.entries(raw)) {
     if (key.startsWith('@')) {
       metadata[key] = value;
     } else if (isPlainObject(value) || Array.isArray(value)) {
-      flattenValue(key, value, keys);
+      flattenValue(key, value, keys, nestedPaths);
     } else {
       keys[key] = typeof value === 'string' ? value : String(value ?? '');
     }
@@ -170,7 +189,7 @@ export function parseTranslationContent(
     locale = metadata['@@locale'];
   }
 
-  return { locale, fileName, isArb, keys, metadata };
+  return { locale, fileName, isArb, keys, metadata, nestedPaths };
 }
 
 /**
@@ -221,7 +240,13 @@ export function serializeTranslationContent(data: TranslationFileData): string {
     obj[key] = value;
   }
 
-  return `${JSON.stringify(unflattenTranslationKeys(obj), null, 2)}\n`;
+  // Only re-nest keys that came from actual nested objects/arrays. Literal
+  // flat keys containing dots (sentences ending in "."/"...", or flat
+  // easy_localization keys like `input_field.context_menu.cut`) stay top-level.
+  const nestedKeys =
+    data.nestedPaths && data.nestedPaths.length > 0 ? new Set(data.nestedPaths) : undefined;
+
+  return `${JSON.stringify(unflattenTranslationKeys(obj, nestedKeys), null, 2)}\n`;
 }
 
 /**
@@ -345,19 +370,25 @@ export function autoAddMissingKeys(
     return translations;
   }
 
+  const refNested = reference.nestedPaths;
   return translations.map((t) => {
     if (t.locale === reference.locale) {
       return t;
     }
     const keys = { ...t.keys };
+    const nestedPaths = t.nestedPaths ? [...t.nestedPaths] : [];
     let changed = false;
     for (const key of Object.keys(reference.keys)) {
       if (keys[key] === undefined) {
         keys[key] = '';
+        if (refNested?.includes(key) && !nestedPaths.includes(key)) {
+          nestedPaths.push(key);
+        }
         changed = true;
       }
     }
-    return changed ? { ...t, keys } : t;
+    const extra = nestedPaths.length > 0 ? { nestedPaths } : {};
+    return changed ? { ...t, keys, ...extra } : t;
   });
 }
 
@@ -392,12 +423,19 @@ export async function translateLocale(
 
   const translated = await translateMany(toTranslate, target.locale, reference.locale);
   const keys = { ...target.keys };
+  const nestedPaths = target.nestedPaths ? [...target.nestedPaths] : [];
+  const refNested = reference.nestedPaths;
   for (const [key, value] of Object.entries(translated)) {
     keys[key] = value;
+    if (refNested?.includes(key) && !nestedPaths.includes(key)) {
+      nestedPaths.push(key);
+    }
   }
 
   const updated = translations.map((t) =>
-    t.locale === target.locale ? { ...t, keys } : t,
+    t.locale === target.locale
+      ? { ...t, keys, ...(nestedPaths.length > 0 ? { nestedPaths } : {}) }
+      : t,
   );
 
   return { translations: updated, translatedCount: Object.keys(translated).length };
@@ -479,7 +517,16 @@ export async function createTranslationFileForLocale(
   const dirUri = vscode.Uri.joinPath(workspaceRoot, relDir);
   const targetUri = vscode.Uri.joinPath(dirUri, base);
 
-  const data: TranslationFileData = { locale, fileName, isArb, keys, metadata };
+  const data: TranslationFileData = {
+    locale,
+    fileName,
+    isArb,
+    keys,
+    metadata,
+    // Copy the reference's nested paths so a new locale file keeps the same
+    // nested structure (while flat dot-keys stay flat).
+    ...(reference?.nestedPaths ? { nestedPaths: [...reference.nestedPaths] } : {}),
+  };
 
   try {
     await vscode.workspace.fs.createDirectory(dirUri);
