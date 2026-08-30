@@ -32,6 +32,9 @@ window.utils = utils;
 window.router = router;
 window.api = api;
 
+// Initialize the top-level tab navigation (defaults to Build Settings).
+router.initTabs();
+
 searchInput.addEventListener("input", (event) => {
   state.search = event.target.value;
   updateView();
@@ -795,15 +798,8 @@ bus.on("permissions", (message) => {
 
   if (message.hasAndroidManifest && !message.hasIOSPlist && !message.hasMacOSPlist) {
     state.modalMode = "android";
-    if (androidDetailsSection) { androidDetailsSection.style.display = "block"; }
-    if (iosDetailsSection) { iosDetailsSection.style.display = "none"; }
   } else if (!message.hasAndroidManifest && (message.hasIOSPlist || message.hasMacOSPlist)) {
     state.modalMode = message.hasIOSPlist ? "ios" : "macos";
-    if (androidDetailsSection) { androidDetailsSection.style.display = "none"; }
-    if (iosDetailsSection) { iosDetailsSection.style.display = "block"; }
-  } else if (androidDetailsSection && iosDetailsSection) {
-    androidDetailsSection.style.display = "block";
-    iosDetailsSection.style.display = "block";
   }
 
   state.androidPermissions = message.androidPermissions || [];
@@ -835,10 +831,7 @@ bus.on("permissions", (message) => {
   }
 
   updateView();
-
-  if (androidSection) { androidSection.style.display = state.hasAndroidManifest ? "block" : "none"; }
-  if (iosSection) { iosSection.style.display = state.hasIOSPlist ? "block" : "none"; }
-  if (macosSection) { macosSection.style.display = state.hasMacOSPlist ? "block" : "none"; }
+  router.applyTabVisibility();
 
   // Auto-run packages analysis on first load
   if (!hasAnalyzedPackages && analyzePackagesButton) {

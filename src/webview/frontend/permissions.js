@@ -1,5 +1,6 @@
 import { state, getState, setState, on } from './state.js';
 import * as api from './api.js';
+import { applyTabVisibility } from './router.js';
 import { androidTableBody, iosTableBody, searchInput, categoryFilter, addAndroidButton, addIosButton, saveAndroidBuildDetailsButton, saveIosBuildDetailsButton, iosSearchInput, iosCategoryFilter, saveButton, saveAppNameButton, saveServicesButton, savePackageNamesButton, saveAllButton, statusMessage, toastContainer, refreshButton, androidPackageNameInput, iosBundleIdentifierInput, analyzePackagesButton, updateAllPackagesButton, toggleTransitiveButton, packagesLoadingIndicator, packagesTableContainer, packagesTableBody, packageSearchInput, packageSearchSpinner, packageSearchDropdown, popularPackagesContainer, packagePreviewCard, previewPackageName, previewPackageVersion, previewPackageDescription, previewLoading, previewAddButton, validatorHeaderActions, validatorLoadingIndicator, validatorLoadingText, validatorTableContainer, validatorTableBody, validatorNotInstalledContainer, installValidatorButton, modalBackdrop, modalSearch, modalResults, modalError, modalValueContainer, modalValueInput, modalValueSelect, modalValueHint, androidCountChip, iosCountChip, macosCountChip, macosTableBody, macosSearchInput, macosCategoryFilter, addMacosButton, androidDetailsSection, iosDetailsSection, androidDetailsGrid, iosDetailsGrid, androidSection, iosSection, macosSection, modalCancel, modalAdd, crossPlatformModalBackdrop, crossPlatformModalTitle, crossPlatformModalMessage, crossPlatformSuggestions, crossPlatformModalError, crossPlatformModalSkip, crossPlatformModalAdd, syncPermissionsButton, equivalentModalBackdrop, equivalentModalTitle, equivalentModalMessage, equivalentSuggestions, equivalentModalError, equivalentModalCancel, equivalentModalAdd, syncModalBackdrop, syncModalList, syncModalError, syncModalCancel, syncModalConfirm, deleteSafetyModalBackdrop, deleteSafetyCancel, deleteSafetyConfirm, addServiceButton, servicesContainer, serviceSearch, serviceModalBackdrop, serviceModalTitle, serviceModalContent, serviceModalError, serviceModalCancel, serviceModalSave, addServiceModalBackdrop, addServiceList, addServiceModalCancel, appNameDefault, appNameLangDropdown, appNameLangDropdownTrigger, appNameLangDropdownMenu, appNameLangSearch, appNameLangOptions, appNameLangList } from './elements.js';
 
 export function renderAndroidTable() {
@@ -444,24 +445,10 @@ export function updateView() {
 }
 
 export function updateSectionVisibility() {
-  const hasAndroidDetails = (state.platformDetails?.android || []).length > 0;
-  const hasIOSDetails = (state.platformDetails?.ios || []).length > 0;
+  // Section visibility (active tab + detected platforms) is owned by the router.
+  applyTabVisibility();
 
-  if (androidDetailsSection) {
-    androidDetailsSection.style.display = state.hasAndroidManifest || hasAndroidDetails ? "" : "none";
-  }
-  if (iosDetailsSection) {
-    iosDetailsSection.style.display = state.hasIOSPlist || hasIOSDetails ? "" : "none";
-  }
-  if (androidSection) {
-    androidSection.style.display = state.hasAndroidManifest ? "" : "none";
-  }
-  if (iosSection) {
-    iosSection.style.display = state.hasIOSPlist ? "" : "none";
-  }
-  if (macosSection) {
-    macosSection.style.display = state.hasMacOSPlist ? "" : "none";
-  }
+  // Platform chips reflect available platforms regardless of the active tab.
   if (androidCountChip) {
     androidCountChip.style.display = state.hasAndroidManifest ? "" : "none";
   }

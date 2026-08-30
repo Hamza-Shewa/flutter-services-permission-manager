@@ -1703,6 +1703,45 @@
     ::-webkit-scrollbar-thumb:hover {
       background: var(--text-muted);
     }
+
+    /* ===== Top-level Config Tabs ===== */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin: 0 0 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    .tab {
+      appearance: none;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-secondary);
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-family: inherit;
+      transition:
+        color var(--transition-fast),
+        background var(--transition-fast),
+        border-color var(--transition-fast);
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+    }
+
+    .tab.active {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+      border-bottom-color: var(--accent);
+    }
   </style>
 </head>
 
@@ -1730,7 +1769,16 @@
     </div>
   </header>
 
-  <section class="section platform-details">
+  <nav class="tabs" role="tablist" aria-label="Configuration sections">
+    <button type="button" class="tab active" data-tab="build" role="tab" aria-selected="true">⚙️ Build Settings</button>
+    <button type="button" class="tab" data-tab="permissions" role="tab" aria-selected="false">🔐 Permissions</button>
+    <button type="button" class="tab" data-tab="appname" role="tab" aria-selected="false">📱 App Name</button>
+    <button type="button" class="tab" data-tab="services" role="tab" aria-selected="false">🔌 Services</button>
+    <button type="button" class="tab" data-tab="packages" role="tab" aria-selected="false">📦 Packages</button>
+    <button type="button" class="tab" data-tab="assets" role="tab" aria-selected="false">🖼️ Assets</button>
+  </nav>
+
+  <section class="section platform-details" data-tab="build">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>📦 Package Configuration</h2>
@@ -1753,7 +1801,7 @@
     </div>
   </section>
 
-  <section class="section platform-details">
+  <section class="section platform-details" data-tab="build" data-platform="android">
     <div class="section-header">
       <h2>🛠 Android Project Setup</h2>
     </div>
@@ -1801,7 +1849,7 @@
     </div>
   </section>
 
-  <section id="androidDetailsSection" class="section platform-details android">
+  <section id="androidDetailsSection" class="section platform-details android" data-tab="build" data-platform="android">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>Android Build Details</h2>
@@ -1813,7 +1861,7 @@
     <div id="androidDetailsGrid" class="details-grid"></div>
   </section>
 
-  <section id="iosDetailsSection" class="section platform-details ios">
+  <section id="iosDetailsSection" class="section platform-details ios" data-tab="build" data-platform="ios">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>iOS Build Details</h2>
@@ -1825,7 +1873,7 @@
     <div id="iosDetailsGrid" class="details-grid"></div>
   </section>
 
-  <section id="permissionsSection" class="section permissions">
+  <section id="permissionsSection" class="section permissions" data-tab="permissions">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>🔐 Permissions</h2>
@@ -1841,7 +1889,7 @@
     </div>
   </section>
 
-  <section id="androidSection" class="section android">
+  <section id="androidSection" class="section android" data-tab="permissions" data-platform="android">
     <div class="section-header">
       <h2>Android Permissions</h2>
     </div>
@@ -1879,7 +1927,7 @@
   <!-- Hidden status for backwards compatibility -->
   <div class="status" id="statusMessage"></div>
 
-  <section id="iosSection" class="section ios">
+  <section id="iosSection" class="section ios" data-tab="permissions" data-platform="ios">
     <div class="section-header">
       <h2>iOS Permissions</h2>
     </div>
@@ -1915,7 +1963,7 @@
     </div>
   </section>
 
-  <section id="macosSection" class="section macos">
+  <section id="macosSection" class="section macos" data-tab="permissions" data-platform="macos">
     <div class="section-header">
       <h2>macOS Permissions</h2>
     </div>
@@ -1951,7 +1999,7 @@
     </div>
   </section>
 
-  <section class="section appname">
+  <section class="section appname" data-tab="appname">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>📱 App Name Localization</h2>
@@ -1990,7 +2038,7 @@
     </div>
   </section>
 
-  <section class="section services">
+  <section class="section services" data-tab="services">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>🔌 Services</h2>
@@ -2153,7 +2201,7 @@
     </div>
   </div>
 
-  <section id="validatorSection" class="section platform-details">
+  <section id="validatorSection" class="section platform-details" data-tab="packages">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>🧹 Dependency Validator</h2>
@@ -2238,7 +2286,7 @@
     </style>
   </section>
 
-  <section id="packagesSection" class="section platform-details">
+  <section id="packagesSection" class="section platform-details" data-tab="packages">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>📦 Flutter Dependencies</h2>
@@ -2433,7 +2481,7 @@
       }
     </style>
   </section>
-  <section id="assetsSection" class="section platform-details">
+  <section id="assetsSection" class="section platform-details" data-tab="assets">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>🖼️ Unused Assets</h2>
