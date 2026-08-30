@@ -29,10 +29,10 @@ interface UnusedAssetsScriptPayload {
 /**
  * Resolves the bundled standalone script that performs the scan. It lives at
  * `<extensionRoot>/scripts/check-unused-assets.js`; from the compiled
- * `out/services/` this is two levels up.
+ * `out/features/assets/` this is three levels up (out/features -> out -> root).
  */
 function getScriptPath(): string {
-    return path.resolve(__dirname, '..', '..', 'scripts', 'check-unused-assets.js');
+    return path.resolve(__dirname, '..', '..', '..', 'scripts', 'check-unused-assets.js');
 }
 
 function runScript(workspaceRoot: string, extraArgs: string[]): Promise<string> {
