@@ -19,6 +19,7 @@ import {
 } from "./features/assets/assets.service.js";
 import { FlutterConfigSidebarProvider } from "./core/providers/sidebar.provider.js";
 import { enableDebug, disableDebug, toErrorMessage } from "./core/shared/index.js";
+import { registerMcpServerDefinitionProvider } from "./core/mcp/index.js";
 
 // Re-export for backward compatibility and testing
 export {
@@ -80,6 +81,9 @@ export function activate(context: vscode.ExtensionContext): void {
     "flutter-config-manager.checkUnusedAssets",
     () => handleCheckUnusedAssets(),
   );
+
+  // Register MCP server definition provider (VS Code 1.93+; no-op otherwise)
+  registerMcpServerDefinitionProvider(context);
 
   context.subscriptions.push(
     editDisposable,

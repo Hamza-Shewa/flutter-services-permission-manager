@@ -15,6 +15,7 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
   - **Searchable language dropdown**: Add new locales from a searchable list — the file is created next to the reference with all keys pre-filled as empty.
   - **One-click translation**: Batch translate all locales (or only the missing gaps) and auto-add any reference keys missing elsewhere. Values are translated via a free provider chain (Google → MyMemory → LibreTranslate) with batched requests for speed.
   - **Round-trip safe**: Nested easy_localization JSON (objects/arrays) is flattened for editing and re-nested exactly on save, while flat keys that merely contain dots (sentences ending in `.`/`...`, e.g. `input_field.context_menu.cut`) are preserved verbatim.
+- **MCP Server for AI Agents**: Ship the extension's capabilities to AI agents through a bundled [Model Context Protocol](https://modelcontextprotocol.io) server. Copilot (and other MCP clients) can inspect and edit your Flutter project's permissions, service integrations, and ARB/JSON translations programmatically — reusing the exact same safe, structure-preserving edits the UI makes. See [mcp-server/README.md](mcp-server/README.md).
 - **Robust Executable Resolution**: Integrates seamlessly with the VS Code Dart extension to dynamically resolve the correct `flutter` and `dart` executables without relying on the system PATH.
 - **Gradle Declarative Migration & 16 KB Support**: **Run Full Migration** upgrades Android projects to the latest declarative Flutter Gradle setup (replacing hardcoded paths with `flutter.compileSdkVersion`, `flutter.minSdkVersion`, `flutter.targetSdkVersion`, and `flutter.ndkVersion`). A separate **Enable 16 KB Page Size** button is a safe fallback for projects with outdated packages — it applies only the minimal changes required for Android 15+ 16 KB page-size compatibility (AGP 8.5.1+, targetSdk 35+, NDK r28, `android:extractNativeLibs="true"`) while leaving legacy buildscript setups untouched. The migration is non-destructive: it never forces newer AGP/Kotlin versions onto a project that already builds, never lowers your `minSdk`, and supports both `build.gradle` and `build.gradle.kts`.
 - **Dependency Management**: Fully-featured Flutter dependencies table showing direct, dev, and transitive packages.
@@ -57,10 +58,31 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 
 _macOS service configuration support is coming soon!_
 
+## 🤖 MCP Server for AI Agents
+
+The extension bundles a Model Context Protocol server (`mcp-server/`) that lets
+AI agents work with the same Flutter configuration you manage in the UI. On
+VS Code 1.93+ it is registered automatically via
+`contributes.mcpServerDefinitionProviders`, so Copilot can call its tools with
+no setup:
+
+| Tool | What it does |
+|------|--------------|
+| `get_project_info` | Project root, name, and discovered platform files. |
+| `list_permissions` | Permissions currently in the Android manifest and iOS/macOS plists. |
+| `add_permission` / `remove_permission` | Edit permissions safely across platforms. |
+| `list_services` | Available service integrations. |
+| `list_translations` | ARB/JSON translation files + locales + key counts. |
+| `translate_locale` / `add_translation_locale` | Machine-translate a locale or add a new one. |
+
+To register it with other MCP clients (Claude Desktop, Cursor, …) or run it
+standalone, see the dedicated [mcp-server/README.md](mcp-server/README.md).
+
 ## 🔧 Requirements
 
 - VS Code 1.80.0 or higher.
 - A Flutter project structure (standard `android/`, `ios/`, or `macos/` directories).
+- MCP server / AI-agent integration requires VS Code 1.93+ (ignored on older versions).
 
 ## 📝 Release Notes
 

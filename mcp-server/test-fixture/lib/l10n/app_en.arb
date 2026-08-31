@@ -1,0 +1,10 @@
+{
+  "@@locale": "en",
+  "appTitle": "Mcp Test App",
+  "welcome": "Welcome",
+  "settings": "Settings",
+  "tabs": {
+    "home": "Home",
+    "profile": "Profile"
+  }
+}

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **MCP Server for AI Agents**: A bundled Model Context Protocol server (`mcp-server/`) exposes the extension's capabilities to AI agents — inspect and edit Flutter permissions, service integrations, and ARB/JSON translations programmatically. It reuses the extension's pure compiled modules, so every edit matches the UI exactly. Registered automatically on VS Code 1.93+ via `contributes.mcpServerDefinitionProviders` (older versions are unaffected), and usable standalone with any MCP client (Claude Desktop, Cursor, …) via `scripts/run-mcp-server.mjs` or `FCM_MCP_PROJECT`. See `mcp-server/README.md`.
 - **Translation Files Manager**: A new **Localization** tab that manages your app's `ARB`/`JSON` translation files (easy_localization, flutter_localizations, or plain i18n) without editing them by hand.
   - **Directory selection**: Point the manager at the folder that holds your translation files (e.g. `assets/translations`, `lib/l10n`), with `assets/translations` as a convenient default. Existing files and locales are auto-detected and their keys extracted on load.
   - **Reference locale & locale grid**: Pick a reference (source) locale; every locale gets its own row with a burger menu (`Translate all`, `Translate missing only`, `Remove`), and the table keeps a stable key → translation column layout (key 30%, each translation 35%).

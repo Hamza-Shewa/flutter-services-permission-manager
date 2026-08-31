@@ -26,3 +26,8 @@ CONTRIBUTING.md
 flutter-service-manager.skill
 coverage/**
 test-fast-xml.js
+mcp-server/test-fixture/**
+mcp-server/smoke-test.mjs
+mcp-server/tsconfig.json
+mcp-server/src/**
+mcp-server/node_modules/.cache/**

@@ -69,6 +69,12 @@
         "title": "Flutter Config Manager: Check Unused Assets"
       }
     ],
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "flutter-config-manager",
+        "label": "Flutter Config Manager MCP"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -148,14 +154,17 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && npm run compile:mcp",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "compile:mcp": "cd mcp-server && npm run compile",
+    "install:mcp": "cd mcp-server && npm install",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "c8 vscode-test",
+    "test:mcp": "node mcp-server/smoke-test.mjs",
     "coverage:report": "c8 report --reporter=html",
-    "package": "vsce package",
+    "package": "npm run compile:mcp && vsce package",
     "publish": "vsce publish"
   },
   "devDependencies": {
