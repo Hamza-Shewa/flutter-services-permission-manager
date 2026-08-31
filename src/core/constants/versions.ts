@@ -1,45 +1,36 @@
 /**
- * Default fallback versions for Android migration
+ * Default fallback versions for Android migration.
+ *
+ * Mirrors the masaken reference project configuration:
+ *  - AGP 9.3.1, Kotlin 2.4.10, google-services 4.5.0
+ *  - compileSdk / targetSdk 37, minSdk 26
+ *  - Gradle 9.5.1, NDK 29.0.14206865
  */
 export const DEFAULT_VERSIONS = {
-    agp: "8.13.2",
-    kotlin: "2.2.21",
-    googleServices: "4.4.4",
-    firebasePerf: "1.4.1",
-    crashlytics: "2.8.1",
+    agp: "9.3.1",
+    kotlin: "2.4.10",
+    googleServices: "4.5.0",
+    firebasePerf: "2.0.2",
+    crashlytics: "3.0.7",
     compileSdk: "37",
     targetSdk: "37",
-    minSdk: "21",
+    minSdk: "26",
     // Gradle distribution used by the full declarative migration.
-    gradle: "8.14.3",
-    // NDK r27 — first NDK with 16 KB page-size alignment enabled by default.
-    ndk: "27.1.12297006"
+    gradle: "9.5.1",
+    // NDK 29.0.14206865 — the version used by the masaken reference project.
+    ndk: "29.0.14206865"
 } as const;
 
 /**
- * Minimum versions required for Android 15+ 16 KB page-size compatibility.
- *
- * Values follow the official Android guide
- * (https://developer.android.com/guide/practices/page-sizes#update-packaging):
- *  - AGP 8.5.1+ aligns uncompressed shared libraries to a 16 KB zip boundary,
- *  - NDK r28+ compiles 16 KB-aligned ELF segments by default (r27 and lower
- *    require manual linker flags, which a migration cannot reliably apply).
- *
- * Used by the safe "16 KB page size only" migration so projects that still
- * depend on outdated/legacy packages are NOT forced onto the full declarative
- * Gradle setup — they only get the minimal changes required to pass Play Store
- * 16 KB checks.
+ * The 16 KB page-size fallback migration now ONLY updates the NDK version to
+ * the masaken reference value (29.0.14206865). All other 16 KB steps (AGP /
+ * SDK bumps, useLegacyPackaging, wrapper, extractNativeLibs) were removed per
+ * product decision — the 16 KB button is a lightweight, non-destructive NDK
+ * alignment helper.
  */
 export const SIXTEEN_KB_MINIMUMS = {
-    // AGP 8.5.1+ aligns native libraries to 16 KB page sizes by default.
-    agp: "8.5.2",
-    // targetSdk 35 (Android 15) is where 16 KB page-size enforcement begins.
-    compileSdk: "35",
-    targetSdk: "35",
-    // AGP 8.5.2 requires Gradle 8.7+.
-    gradle: "8.7",
-    // NDK r28 — compiles 16 KB-aligned ELF segments by default.
-    ndk: "28.0.12433566"
+    // NDK 29.0.14206865 — the masaken reference NDK.
+    ndk: "29.0.14206865"
 } as const;
 
 /**
@@ -50,6 +41,7 @@ export const SIXTEEN_KB_MINIMUMS = {
  * embedding not being wired up after blindly bumping Kotlin/AGP).
  */
 export const MIGRATION_MINIMUMS = {
-    agp: "8.5.2",
-    kotlin: "2.0.0"
+    agp: "9.3.1",
+    kotlin: "2.4.10",
+    googleServices: "4.5.0"
 } as const;

@@ -17,23 +17,26 @@ import {
     getAgpVersion,
     ensureUseLegacyPackaging,
     detectFirebaseUsage,
+    mergeMasakenGradleProperties,
+    MASAKEN_GRADLE_PROPERTIES,
     type MigrationVersions
 } from '../../features/migration/migration-transforms.js';
 
+// masaken reference versions (also the extension defaults).
 const VERSIONS: MigrationVersions = {
-    agp: '8.13.2',
-    kotlin: '2.2.21',
-    googleServices: '4.4.4',
-    firebasePerf: '1.4.1',
-    crashlytics: '2.8.1',
+    agp: '9.3.1',
+    kotlin: '2.4.10',
+    googleServices: '4.5.0',
+    firebasePerf: '2.0.2',
+    crashlytics: '3.0.7',
     compileSdk: '37',
     targetSdk: '37',
-    minSdk: '21',
-    gradle: '8.14.3',
-    ndk: '27.1.12297006'
+    minSdk: '26',
+    gradle: '9.5.1',
+    ndk: '29.0.14206865'
 };
 
-const MINIMUMS = { agp: '8.5.2', kotlin: '2.0.0' };
+const MINIMUMS = { agp: '9.3.1', kotlin: '2.4.10', googleServices: '4.5.0' };
 
 const NO_FIREBASE = { googleServices: false, firebasePerf: false, crashlytics: false };
 
@@ -76,8 +79,8 @@ suite('Android Migration Transforms Test Suite', () => {
             const legacy = 'pluginManagement {\n    repositories { google() }\n}\ninclude ":app"\n';
             const result = updateSettingsPlugins(legacy, false, VERSIONS, NO_FIREBASE, MINIMUMS);
             assert.ok(result.includes('id "dev.flutter.flutter-plugin-loader" version "1.0.0"'));
-            assert.ok(result.includes('id "com.android.application" version "8.13.2" apply false'));
-            assert.ok(result.includes('id "org.jetbrains.kotlin.android" version "2.2.21" apply false'));
+            assert.ok(result.includes('id "com.android.application" version "9.3.1" apply false'));
+            assert.ok(result.includes('id "org.jetbrains.kotlin.android" version "2.4.10" apply false'));
             assert.ok(result.includes('include ":app"'));
         });
 
@@ -88,12 +91,12 @@ suite('Android Migration Transforms Test Suite', () => {
                 firebasePerf: false,
                 crashlytics: true
             }, MINIMUMS);
-            assert.ok(result.includes('id "com.google.gms.google-services" version "4.4.4" apply false'));
+            assert.ok(result.includes('id "com.google.gms.google-services" version "4.5.0" apply false'));
             assert.ok(!result.includes('firebase-perf'));
-            assert.ok(result.includes('id "com.google.firebase.crashlytics" version "2.8.1" apply false'));
+            assert.ok(result.includes('id "com.google.firebase.crashlytics" version "3.0.7" apply false'));
         });
 
-        test('raises plugins only when below minimums', () => {
+        test('raises existing plugins to the masaken reference versions', () => {
             const kts = [
                 'plugins {',
                 '    id("dev.flutter.flutter-plugin-loader") version "1.0.0"',
@@ -103,20 +106,19 @@ suite('Android Migration Transforms Test Suite', () => {
                 'include(":app")'
             ].join('\n');
             const result = updateSettingsPlugins(kts, true, VERSIONS, NO_FIREBASE, MINIMUMS);
-            assert.ok(result.includes('id("com.android.application") version "8.13.2" apply false'));
-            assert.ok(result.includes('id("org.jetbrains.kotlin.android") version "2.2.21" apply false'));
+            assert.ok(result.includes('id("com.android.application") version "9.3.1" apply false'));
+            assert.ok(result.includes('id("org.jetbrains.kotlin.android") version "2.4.10" apply false'));
             assert.ok(!result.includes('version "8.0.0"'));
+            assert.ok(!result.includes('version "1.9.22"'));
         });
 
-        test('keeps existing versions that already meet minimums (does not force latest)', () => {
-            // Mirrors the reported regression: a working project on AGP 8.12.2 /
-            // Kotlin 2.2.10 must NOT be force-bumped to 8.13.2 / 2.2.21.
+        test('forces google-services to the masaken reference when firebase detected', () => {
             const kts = [
                 'plugins {',
                 '    id "dev.flutter.flutter-plugin-loader" version "1.0.0" apply false',
-                '    id "com.android.application" version "8.12.2" apply false',
+                '    id "com.android.application" version "9.3.1" apply false',
                 '    id "com.google.gms.google-services" version "4.3.8" apply false',
-                '    id "org.jetbrains.kotlin.android" version "2.2.10" apply false',
+                '    id "org.jetbrains.kotlin.android" version "2.4.10" apply false',
                 '}',
                 'include ":app"'
             ].join('\n');
@@ -125,16 +127,15 @@ suite('Android Migration Transforms Test Suite', () => {
                 firebasePerf: false,
                 crashlytics: false
             }, MINIMUMS);
-            assert.ok(result.includes('com.android.application" version "8.12.2"'));
-            assert.ok(result.includes('org.jetbrains.kotlin.android" version "2.2.10"'));
-            assert.ok(result.includes('com.google.gms.google-services" version "4.3.8"'));
-            assert.ok(!result.includes('version "8.13.2"'));
-            assert.ok(!result.includes('version "2.2.21"'));
+            assert.ok(result.includes('com.android.application" version "9.3.1"'));
+            assert.ok(result.includes('org.jetbrains.kotlin.android" version "2.4.10"'));
+            assert.ok(result.includes('com.google.gms.google-services" version "4.5.0"'));
+            assert.ok(!result.includes('version "4.3.8"'));
         });
     });
 
     suite('migrateProjectBuildGradle', () => {
-        test('removes the legacy buildscript block', () => {
+        test('builds the masaken-style project build.gradle with ext + Java 17', () => {
             const legacy = [
                 'buildscript {',
                 '    repositories { google() }',
@@ -150,11 +151,47 @@ suite('Android Migration Transforms Test Suite', () => {
                 '    }',
                 '}'
             ].join('\n');
-            const result = migrateProjectBuildGradle(legacy, false);
+            const result = migrateProjectBuildGradle(legacy, false, VERSIONS);
             assert.ok(!result.includes('buildscript'));
             assert.ok(!result.includes('com.android.tools.build:gradle'));
-            assert.ok(result.includes('allprojects'));
+            // masaken-style ext block with the SDK/minSdk/NDK versions.
+            assert.ok(result.includes('allprojects {'));
+            assert.ok(result.includes('compileSdkVersion = 37'));
+            assert.ok(result.includes('targetSdkVersion = 37'));
+            assert.ok(result.includes('minSdkVersion = 26'));
+            assert.ok(result.includes('ndkVersion: "29.0.14206865"'));
+            // subprojects afterEvaluate with Java 17 + Kotlin JVM_17.
+            assert.ok(result.includes('subprojects {'));
+            assert.ok(result.includes('afterEvaluate'));
+            assert.ok(result.includes('JavaVersion.VERSION_17'));
+            assert.ok(result.includes('JvmTarget.JVM_17'));
+            assert.ok(result.includes('tasks.register("clean", Delete)'));
+        });
+
+        test('preserves custom allprojects repositories (private mirrors)', () => {
+            const legacy = [
+                'allprojects {',
+                '    repositories {',
+                '        google()',
+                '        maven { url "https://ozforensics.jfrog.io/artifactory/main" }',
+                '    }',
+                '}'
+            ].join('\n');
+            const result = migrateProjectBuildGradle(legacy, false, VERSIONS);
+            assert.ok(result.includes('ozforensics.jfrog.io'));
+            assert.ok(result.includes('google()'));
             assert.ok(result.includes('mavenCentral()'));
+        });
+
+        test('builds a Kotlin DSL masaken-style project build.gradle', () => {
+            const legacy = 'allprojects {\n    repositories { google() }\n}\n';
+            const result = migrateProjectBuildGradle(legacy, true, VERSIONS);
+            assert.ok(result.includes('extra {'));
+            assert.ok(result.includes('set("compileSdkVersion", 37)'));
+            assert.ok(result.includes('set("flutter", mapOf('));
+            assert.ok(result.includes('"ndkVersion" to "29.0.14206865"'));
+            assert.ok(result.includes('afterEvaluate'));
+            assert.ok(result.includes('tasks.register<Delete>("clean")'));
         });
     });
 
@@ -225,8 +262,34 @@ suite('Android Migration Transforms Test Suite', () => {
         });
     });
 
+    suite('gradle.properties (masaken)', () => {
+        test('mergeMasakenGradleProperties adds the masaken flags to an empty file', () => {
+            const result = mergeMasakenGradleProperties('');
+            assert.ok(result.includes('org.gradle.jvmargs=-Xmx4096m'));
+            assert.ok(result.includes('android.useAndroidX=true'));
+            assert.ok(result.includes('android.enableJetifier=true'));
+            assert.ok(result.includes('org.gradle.daemon=false'));
+            assert.ok(result.includes('android.builtInKotlin=false'));
+            assert.ok(result.includes('android.newDsl=false'));
+            assert.ok(result.includes('kotlin.incremental=false'));
+        });
+
+        test('mergeMasakenGradleProperties preserves existing values', () => {
+            const existing = 'org.gradle.jvmargs=-Xmx2g\nandroid.useAndroidX=true\n';
+            const result = mergeMasakenGradleProperties(existing);
+            assert.ok(result.includes('org.gradle.jvmargs=-Xmx2g'));
+            assert.ok(result.includes('android.useAndroidX=true'));
+        });
+
+        test('MASAKEN_GRADLE_PROPERTIES is a complete reference block', () => {
+            assert.ok(MASAKEN_GRADLE_PROPERTIES.includes('android.newDsl=false'));
+            assert.ok(MASAKEN_GRADLE_PROPERTIES.includes('kotlin.incremental=false'));
+            assert.ok(MASAKEN_GRADLE_PROPERTIES.includes('org.gradle.daemon=false'));
+        });
+    });
+
     suite('migrateAppBuildGradle', () => {
-        test('converts a legacy Groovy app build.gradle to declarative', () => {
+        test('converts a legacy Groovy app build.gradle to the masaken style', () => {
             const legacy = [
                 "apply plugin: 'com.android.application'",
                 "apply plugin: 'kotlin-android'",
@@ -250,21 +313,25 @@ suite('Android Migration Transforms Test Suite', () => {
                 '    }',
                 '}'
             ].join('\n');
-            const result = migrateAppBuildGradle(legacy, false, { apacheHttpLegacy: false });
+            const result = migrateAppBuildGradle(legacy, false, { apacheHttpLegacy: false }, VERSIONS);
             assert.ok(result.startsWith('plugins {'));
             assert.ok(result.includes('id "com.android.application"'));
             assert.ok(result.includes('id "kotlin-android"'));
             assert.ok(result.includes('id "dev.flutter.flutter-gradle-plugin"'));
             assert.ok(!result.includes("apply plugin:"));
-            assert.ok(result.includes('compileSdkVersion flutter.compileSdkVersion'));
-            // Legacy projects keep their explicit minSdk (never silently lowered).
-            assert.ok(result.includes('minSdkVersion 21'));
-            assert.ok(!result.includes('flutter.minSdkVersion'));
-            assert.ok(result.includes('targetSdkVersion flutter.targetSdkVersion'));
-            assert.ok(result.includes('ndkVersion flutter.ndkVersion'));
-            // Legacy projects get the toolchain normalized to 11.
-            assert.ok(result.includes('JavaVersion.VERSION_11'));
-            assert.ok(result.includes("jvmTarget = '11'"));
+            // masaken literal SDK values.
+            assert.ok(result.includes('compileSdkVersion 37'));
+            assert.ok(result.includes('targetSdkVersion 37'));
+            assert.ok(result.includes('minSdkVersion 26'));
+            assert.ok(result.includes('ndkVersion "29.0.14206865"'));
+            // Java 17 toolchain.
+            assert.ok(result.includes('JavaVersion.VERSION_17'));
+            // Top-level kotlin { compilerOptions { jvmTarget = JVM_17 } } block.
+            assert.ok(result.includes('kotlin {'));
+            assert.ok(result.includes('compilerOptions {'));
+            assert.ok(result.includes('org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17'));
+            // Old kotlinOptions inside android is removed.
+            assert.ok(!result.includes('kotlinOptions'));
             assert.ok(result.includes("flutter {\n    source '../..'"));
         });
 
@@ -276,11 +343,11 @@ suite('Android Migration Transforms Test Suite', () => {
                 '    compileSdkVersion 34',
                 '}'
             ].join('\n');
-            const result = migrateAppBuildGradle(legacy, false, { apacheHttpLegacy: true });
+            const result = migrateAppBuildGradle(legacy, false, { apacheHttpLegacy: true }, VERSIONS);
             assert.ok(result.includes("useLibrary 'org.apache.http.legacy'"));
         });
 
-        test('migrates a Kotlin DSL app build.gradle.kts non-destructively', () => {
+        test('migrates a Kotlin DSL app build.gradle.kts to the masaken style', () => {
             const kts = [
                 'plugins {',
                 '    id("com.android.application")',
@@ -307,16 +374,45 @@ suite('Android Migration Transforms Test Suite', () => {
                 '    source = "../.."',
                 '}'
             ].join('\n');
-            const result = migrateAppBuildGradle(kts, true, { apacheHttpLegacy: false });
-            assert.ok(result.includes('compileSdk = flutter.compileSdkVersion'));
-            // Already-modern projects keep their explicit minSdk untouched.
-            assert.ok(result.includes('minSdk = 21'));
-            assert.ok(!result.includes('minSdk = flutter.minSdkVersion'));
-            assert.ok(result.includes('targetSdk = flutter.targetSdkVersion'));
-            assert.ok(result.includes('ndkVersion = flutter.ndkVersion'));
-            // Toolchain is preserved (not rewritten) for already-modern projects.
-            assert.ok(result.includes('JavaVersion.VERSION_11'));
+            const result = migrateAppBuildGradle(kts, true, { apacheHttpLegacy: false }, VERSIONS);
+            // masaken literal SDK values.
+            assert.ok(result.includes('compileSdk = 37'));
+            assert.ok(result.includes('targetSdk = 37'));
+            assert.ok(result.includes('minSdk = 26'));
+            assert.ok(result.includes('ndkVersion = "29.0.14206865"'));
+            // Top-level kotlin { compilerOptions {} } block.
+            assert.ok(result.includes('kotlin {'));
+            assert.ok(result.includes('compilerOptions {'));
+            assert.ok(result.includes('org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17'));
+            // Toolchain normalized to 17.
+            assert.ok(result.includes('JavaVersion.VERSION_17'));
             assert.ok(!result.includes('JavaVersion.VERSION_1_8'));
+            assert.ok(!result.includes('kotlinOptions'));
+        });
+
+        test('normalizes an existing top-level kotlin block jvmTarget to 17', () => {
+            const content = [
+                'plugins {',
+                '    id "com.android.application"',
+                '}',
+                '',
+                'kotlin {',
+                '    compilerOptions {',
+                '        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11',
+                '    }',
+                '}',
+                '',
+                'android {',
+                '    compileSdk = 36',
+                '}',
+                '',
+                'flutter {',
+                "    source '../..'",
+                '}'
+            ].join('\n');
+            const result = migrateAppBuildGradle(content, false, { apacheHttpLegacy: false }, VERSIONS);
+            assert.ok(result.includes('JvmTarget.JVM_17'));
+            assert.ok(!result.includes('JVM_11'));
         });
     });
 

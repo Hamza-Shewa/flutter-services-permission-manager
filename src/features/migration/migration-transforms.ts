@@ -214,12 +214,9 @@ export function ensurePluginManagement(content: string, _kts: boolean): string {
  * plugin loader, the Android application plugin and the Kotlin Android plugin
  * (plus Firebase plugins when detected).
  *
- * Version policy (important for not breaking working projects):
- *  - legacy projects with no `plugins {}` block get the recommended versions,
- *  - projects that ALREADY have a `plugins {}` block keep their existing
- *    versions when those are at/above the minimums (`minimums`), and are only
- *    raised when they fall below them. Never forces the latest patch onto a
- *    working project.
+ * Version policy: the full migration targets the masaken reference versions
+ * (`versions`), which are also the current defaults. Plugins are set/updated
+ * to those versions so the migrated project matches the reference exactly.
  */
 export function updateSettingsPlugins(
     content: string,
@@ -258,41 +255,21 @@ export function updateSettingsPlugins(
         return result;
     }
 
-    // plugins block already exists → update/insert each plugin version, but
-    // never force newer versions onto a project that already meets minimums.
+    // plugins block already exists → set every managed plugin to the masaken
+    // reference version (legacy projects get raised; already-at-reference
+    // versions are simply re-affirmed).
     const loaderExisting = extractPluginVersion(result, FLUTTER_PLUGIN_LOADER);
     result = setPluginVersion(result, FLUTTER_PLUGIN_LOADER, loaderExisting ?? '1.0.0', kts);
-    result = setPluginVersion(
-        result,
-        ANDROID_APPLICATION_PLUGIN,
-        resolvePluginVersion(
-            extractPluginVersion(result, ANDROID_APPLICATION_PLUGIN),
-            versions.agp,
-            minimums.agp
-        ),
-        kts
-    );
-    result = setPluginVersion(
-        result,
-        KOTLIN_ANDROID_PLUGIN,
-        resolvePluginVersion(
-            extractPluginVersion(result, KOTLIN_ANDROID_PLUGIN),
-            versions.kotlin,
-            minimums.kotlin
-        ),
-        kts
-    );
+    result = setPluginVersion(result, ANDROID_APPLICATION_PLUGIN, versions.agp, kts);
+    result = setPluginVersion(result, KOTLIN_ANDROID_PLUGIN, versions.kotlin, kts);
     if (firebase.googleServices) {
-        const existing = extractPluginVersion(result, 'com.google.gms.google-services');
-        result = setPluginVersion(result, 'com.google.gms.google-services', existing ?? versions.googleServices, kts);
+        result = setPluginVersion(result, 'com.google.gms.google-services', versions.googleServices, kts);
     }
     if (firebase.firebasePerf) {
-        const existing = extractPluginVersion(result, 'com.google.firebase.firebase-perf');
-        result = setPluginVersion(result, 'com.google.firebase.firebase-perf', existing ?? versions.firebasePerf, kts);
+        result = setPluginVersion(result, 'com.google.firebase.firebase-perf', versions.firebasePerf, kts);
     }
     if (firebase.crashlytics) {
-        const existing = extractPluginVersion(result, 'com.google.firebase.crashlytics');
-        result = setPluginVersion(result, 'com.google.firebase.crashlytics', existing ?? versions.crashlytics, kts);
+        result = setPluginVersion(result, 'com.google.firebase.crashlytics', versions.crashlytics, kts);
     }
     return result;
 }
@@ -301,21 +278,203 @@ export function updateSettingsPlugins(
 // Project-level build.gradle(.kts)
 // ---------------------------------------------------------------------------
 
+/** Extracts custom repository lines (non-google/mavenCentral) from an existing allprojects block. */
+function extractCustomRepositories(content: string): string[] {
+    const allMatch = content.match(/\ballprojects\s*\{/);
+    if (!allMatch || allMatch.index === undefined) {
+        return [];
+    }
+    const openIdx = allMatch.index + allMatch[0].indexOf('{');
+    const blockEnd = findMatchingBrace(content, openIdx);
+    if (blockEnd === -1) {
+        return [];
+    }
+    const block = content.slice(allMatch.index, blockEnd);
+    const reposMatch = block.match(/repositories\s*\{/);
+    if (!reposMatch || reposMatch.index === undefined) {
+        return [];
+    }
+    const reposOpen = reposMatch.index + reposMatch[0].indexOf('{');
+    const reposEnd = findMatchingBrace(block, reposOpen);
+    if (reposEnd === -1) {
+        return [];
+    }
+    const inner = block.slice(reposOpen + 1, reposEnd);
+    return inner
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l && !/^(google\(\)|mavenCentral\(\)|gradlePluginPortal\(\))/.test(l));
+}
+
+function indentLines(lines: string[], spaces: number): string {
+    const pad = ' '.repeat(spaces);
+    return lines.map((l) => (l ? pad + l : l)).join('\n');
+}
+
+function buildProjectExtBlock(versions: MigrationVersions, indent: string, kts: boolean): string {
+    const { compileSdk, targetSdk, minSdk, ndk } = versions;
+    if (kts) {
+        return [
+            `${indent}extra {`,
+            `${indent}    set("compileSdkVersion", ${compileSdk})`,
+            `${indent}    set("targetSdkVersion", ${targetSdk})`,
+            `${indent}    set("minSdkVersion", ${minSdk})`,
+            `${indent}    set("flutter", mapOf(`,
+            `${indent}        "compileSdkVersion" to ${compileSdk},`,
+            `${indent}        "targetSdkVersion" to ${targetSdk},`,
+            `${indent}        "minSdkVersion" to ${minSdk},`,
+            `${indent}        "ndkVersion" to "${ndk}"`,
+            `${indent}    ))`,
+            `${indent}}`
+        ].join('\n');
+    }
+    return [
+        `${indent}ext {`,
+        `${indent}    compileSdkVersion = ${compileSdk}`,
+        `${indent}    targetSdkVersion = ${targetSdk}`,
+        `${indent}    minSdkVersion = ${minSdk}`,
+        `${indent}    flutter = [`,
+        `${indent}        compileSdkVersion: ${compileSdk},`,
+        `${indent}        targetSdkVersion: ${targetSdk},`,
+        `${indent}        minSdkVersion: ${minSdk},`,
+        `${indent}        ndkVersion: "${ndk}"`,
+        `${indent}    ]`,
+        `${indent}}`
+    ].join('\n');
+}
+
+function buildMasakenProjectGradle(
+    kts: boolean,
+    versions: MigrationVersions,
+    customRepos: string[]
+): string {
+    const { compileSdk, targetSdk, minSdk, ndk } = versions;
+    const repos = ['google()', 'mavenCentral()', ...customRepos];
+    const reposBlock = indentLines(repos, 8);
+    const extAll = buildProjectExtBlock(versions, '    ', kts);
+    const extSub = buildProjectExtBlock(versions, '    ', kts);
+
+    if (kts) {
+        return [
+            'allprojects {',
+            '    repositories {',
+            reposBlock,
+            '    }',
+            extAll,
+            '}',
+            'rootProject.buildDir = file("../build")',
+            '',
+            'subprojects {',
+            '    project.buildDir = file("${rootProject.buildDir}/${project.name}")',
+            '',
+            extSub,
+            '',
+            '    afterEvaluate {',
+            '        if (project.hasProperty("android")) {',
+            '            val javaVersion = JavaVersion.VERSION_17',
+            '            extensions.configure<com.android.build.gradle.BaseExtension>("android") {',
+            '                if (namespace == null || namespace.isEmpty()) {',
+            '                    namespace = project.group as String?',
+            '                }',
+            `                compileSdkVersion(${compileSdk})`,
+            `                ndkVersion = "${ndk}"`,
+            '                defaultConfig {',
+            `                    targetSdkVersion(${targetSdk})`,
+            `                    minSdkVersion(${minSdk})`,
+            '                    multiDexEnabled = true',
+            '                }',
+            '                compileOptions {',
+            '                    sourceCompatibility = javaVersion',
+            '                    targetCompatibility = javaVersion',
+            '                }',
+            '            }',
+            '            tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {',
+            '                compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)',
+            '            }',
+            '        }',
+            '    }',
+            '}',
+            'subprojects {',
+            '    project.evaluationDependsOn(":app")',
+            '}',
+            '',
+            'tasks.register<Delete>("clean") {',
+            '    delete(rootProject.buildDir)',
+            '}',
+            ''
+        ].join('\n');
+    }
+
+    return [
+        'allprojects {',
+        '    repositories {',
+        reposBlock,
+        '    }',
+        extAll,
+        '}',
+        "rootProject.buildDir = '../build'",
+        '',
+        'subprojects {',
+        '    project.buildDir = "${rootProject.buildDir}/${project.name}"',
+        '',
+        extSub,
+        '',
+        '    afterEvaluate {',
+        "        // check if android block is available",
+        "        if (it.hasProperty('android')) {",
+        '            def javaVersion = JavaVersion.VERSION_17',
+        '            android {',
+        '                if (namespace == null || namespace.isEmpty()) {',
+        '                    namespace = project.group',
+        '                }',
+        `                compileSdkVersion ${compileSdk}`,
+        `                ndkVersion "${ndk}"`,
+        '                defaultConfig {',
+        `                    targetSdkVersion ${targetSdk}`,
+        `                    minSdkVersion ${minSdk}`,
+        '                    multiDexEnabled true',
+        '                }',
+        '                compileOptions {',
+        '                    sourceCompatibility javaVersion',
+        '                    targetCompatibility javaVersion',
+        '                }',
+        '                tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {',
+        '                    compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)',
+        '                }',
+        '            }',
+        '        }',
+        '    }',
+        '}',
+        'subprojects {',
+        "    project.evaluationDependsOn(':app')",
+        '}',
+        '',
+        'tasks.register("clean", Delete) {',
+        '    delete rootProject.buildDir',
+        '}',
+        ''
+    ].join('\n');
+}
+
 /**
- * Migrates the project-level build.gradle. Removes the legacy `buildscript`
- * block (plugin classpaths now live in settings.gradle's plugins block).
- * `allprojects` repositories are preserved.
+ * Migrates the project-level build.gradle to the masaken reference style:
+ *  - removes the legacy `buildscript` block,
+ *  - builds the `allprojects` / `subprojects` blocks with `ext` (compileSdk /
+ *    targetSdk / minSdk / flutter map with the masaken NDK) and an
+ *    `afterEvaluate` that forces Java 17 + the masaken SDK/NDK on every
+ *    Android subproject,
+ *  - keeps custom `allprojects` repositories (private mirrors etc.).
+ *
+ * This mirrors the masaken reference project (`E:\work_space\masaken`) so the
+ * full migration produces the exact same Gradle structure.
  */
-export function migrateProjectBuildGradle(content: string, _kts: boolean): string {
-    let result = content;
-    if (/\bbuildscript\s*\{/.test(result)) {
-        result = removeBlockByName(result, 'buildscript');
-    }
-    result = result.trim();
-    if (!result.endsWith('\n')) {
-        result += '\n';
-    }
-    return result;
+export function migrateProjectBuildGradle(
+    content: string,
+    kts: boolean,
+    versions: MigrationVersions
+): string {
+    const customRepos = extractCustomRepositories(content);
+    return buildMasakenProjectGradle(kts, versions, customRepos);
 }
 
 /**
@@ -431,23 +590,26 @@ export interface AppBuildOptions {
 }
 
 /**
- * Migrates android/app/build.gradle(.kts) to the modern declarative setup:
+ * Migrates android/app/build.gradle(.kts) to the masaken reference style:
  *  - a `plugins {}` block (com.android.application, kotlin-android,
  *    dev.flutter.flutter-gradle-plugin) replacing `apply plugin:`,
- *  - SDK/NDK versions driven by Flutter's built-in variables
- *    (`flutter.compileSdkVersion`, `flutter.targetSdkVersion`,
- *    `flutter.ndkVersion`) instead of hardcoded numbers,
+ *  - SDK/NDK set to the masaken literal values (compileSdk 37, targetSdk 37,
+ *    minSdk 26, ndkVersion 29.0.14206865),
+ *  - Java 17 toolchain (`compileOptions` `JavaVersion.VERSION_17`),
+ *  - the Kotlin JVM target now lives in a TOP-LEVEL
+ *    `kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }` block
+ *    (matching the masaken reference — no longer `android { kotlinOptions {} }`),
  *  - a `flutter { source '../..' }` block.
  *
  * Non-destructive for projects that are already on the modern template: the
- * project's own `minSdk` and Java/Kotlin toolchain are left untouched so a
- * working build is never broken by the migration. The toolchain is only
- * normalized (1.8 → 11) when a legacy `apply plugin:` project is converted.
+ * project's own `minSdk` is never silently lowered below the masaken target,
+ * and existing plugin/toolchain blocks are preserved.
  */
 export function migrateAppBuildGradle(
     content: string,
     kts: boolean,
-    options: AppBuildOptions
+    options: AppBuildOptions,
+    versions: MigrationVersions
 ): string {
     let result = content;
     const hadPluginsBlock = /^\s*plugins\s*\{/m.test(result);
@@ -461,16 +623,14 @@ export function migrateAppBuildGradle(
         .replace(/^\s*apply\s+plugin\s*:\s*['"](?:com\.android\.application|kotlin-android|com\.google\.gms\.google-services|com\.google\.firebase\.firebase-perf|com\.google\.firebase\.crashlytics)['"]\s*$/gm, '')
         .replace(/^\s*apply\s+from\s*:.*flutter\.gradle.*$/gm, '');
 
-    // 3. Only normalize the Java/Kotlin toolchain when converting a legacy
-    //    project. Already-modern files keep their own toolchain settings.
-    if (!hadPluginsBlock) {
-        result = normalizeCompileOptions(result);
-        result = normalizeKotlinOptions(result, kts);
-    }
+    // 3. Set the masaken literal SDK/NDK versions (compileSdk/targetSdk 37,
+    //    minSdk 26, ndk 29.0.14206865).
+    result = normalizeSdkRefs(result, kts, versions);
 
-    // 4. Drive compileSdk/targetSdk/ndk from Flutter's built-in variables
-    //    (minSdk is intentionally left alone — never silently lower it).
-    result = normalizeSdkRefs(result, kts);
+    // 4. Normalize the Java toolchain to 17 and relocate Kotlin options to a
+    //    top-level `kotlin { compilerOptions { jvmTarget = JVM_17 } }` block.
+    result = normalizeCompileOptions(result);
+    result = normalizeKotlinOptions(result, kts);
 
     // 5. Legacy Apache HTTP support (only when the project actually uses it).
     if (options.apacheHttpLegacy && !result.includes('org.apache.http.legacy')) {
@@ -504,54 +664,124 @@ function ensureAppPluginsBlock(content: string, kts: boolean): string {
 
 function normalizeCompileOptions(content: string): string {
     let result = content;
-    // JavaVersion enum form (Groovy & KTS).
-    result = result.replace(/JavaVersion\.VERSION_1_8/g, 'JavaVersion.VERSION_11');
-    // String form: sourceCompatibility '1.8' / sourceCompatibility = "1.8".
+    // JavaVersion enum form (Groovy & KTS) → 17.
+    result = result.replace(/JavaVersion\.VERSION_1_8/g, 'JavaVersion.VERSION_17');
+    result = result.replace(/JavaVersion\.VERSION_11/g, 'JavaVersion.VERSION_17');
+    // String form: sourceCompatibility '1.8' / '11' / sourceCompatibility = "1.8".
     result = result.replace(
-        /((?:source|target)Compatibility)(\s*=\s*|\s+)(['"])1\.8\3/g,
-        (_m, prop: string, sep: string, quote: string) => `${prop}${sep}${quote}11${quote}`
+        /((?:source|target)Compatibility)(\s*=\s*|\s+)(['"])(?:1\.8|11)\3/g,
+        (_m, prop: string, sep: string, quote: string) => `${prop}${sep}${quote}17${quote}`
     );
     return result;
 }
 
 function normalizeKotlinOptions(content: string, kts: boolean): string {
     let result = content;
-    // jvmTarget = '1.8' → '11' (Groovy) and jvmTarget = "1.8" → "11".
+
+    // Remove any legacy `android { kotlinOptions { ... } }` block — the Kotlin
+    // JVM target now lives in a top-level `kotlin {}` block (masaken style).
+    result = removeKotlinOptionsBlock(result);
+
+    // Update any existing top-level `kotlin { compilerOptions { ... } }` block's
+    // jvmTarget to JVM_17; otherwise insert a new top-level block.
+    if (!/\bkotlin\s*\{/.test(result)) {
+        const block = kts
+            ? [
+                  'kotlin {',
+                  '    compilerOptions {',
+                  '        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17',
+                  '    }',
+                  '}',
+                  ''
+              ].join('\n')
+            : [
+                  'kotlin {',
+                  '    compilerOptions {',
+                  '        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17',
+                  '    }',
+                  '}',
+                  ''
+              ].join('\n');
+        // Insert right after the plugins block if present, else at the top.
+        const pluginsMatch = result.match(/^\s*plugins\s*\{/m);
+        if (pluginsMatch && pluginsMatch.index !== undefined) {
+            const openIdx = pluginsMatch.index + pluginsMatch[0].indexOf('{');
+            const closeIdx = findMatchingBrace(result, openIdx);
+            if (closeIdx !== -1) {
+                result =
+                    result.slice(0, closeIdx + 1) + '\n\n' + block.trimEnd() + '\n\n' + result.slice(closeIdx + 1);
+                return result;
+            }
+        }
+        result = block.trimEnd() + '\n\n' + result.trimStart();
+        return result;
+    }
+
+    // A top-level kotlin block already exists — normalize its jvmTarget to 17.
     result = result.replace(
-        /(jvmTarget\s*=\s*)(['"])1\.8\2/g,
-        (_m, pre: string, quote: string) => `${pre}${quote}11${quote}`
+        /(jvmTarget\s*=\s*)(['"])?(?:1\.8|11|17|JavaVersion\.VERSION_11\.toString\(\))(\2)?/g,
+        (_m, pre: string, q: string | undefined) =>
+            `${pre}${q ?? ''}org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17${q ?? ''}`
     );
-    // Add a kotlinOptions block if none exists (matches Flutter's own template).
-    if (!/\bkotlinOptions\s*\{/.test(result)) {
-        const line = kts
-            ? 'kotlinOptions {\n        jvmTarget = JavaVersion.VERSION_11.toString()\n    }'
-            : "kotlinOptions {\n        jvmTarget = '11'\n    }";
-        result = insertIntoAndroidBlock(result, line);
+    result = result.replace(
+        /(jvmTarget\s*=\s*)org\.jetbrains\.kotlin\.gradle\.dsl\.JvmTarget\.JVM_(?:1_8|11)/g,
+        '$1org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17'
+    );
+    return result;
+}
+
+/** Removes a legacy `android { kotlinOptions { ... } }` block by brace counting. */
+function removeKotlinOptionsBlock(content: string): string {
+    let result = content;
+    let match = /\bkotlinOptions\s*\{/.exec(result);
+    while (match) {
+        const openIdx = match.index + match[0].indexOf('{');
+        const end = findMatchingBrace(result, openIdx);
+        if (end === -1) {
+            break;
+        }
+        // Also consume the preceding indentation on the same line.
+        const lineStart = result.lastIndexOf('\n', match.index) + 1;
+        result = result.slice(0, lineStart) + result.slice(end + 1);
+        match = /\bkotlinOptions\s*\{/.exec(result);
     }
     return result;
 }
 
-function normalizeSdkRefs(content: string, kts: boolean): string {
+function normalizeSdkRefs(content: string, kts: boolean, versions: MigrationVersions): string {
     let result = content;
+    const compileSdk = versions.compileSdk;
+    const targetSdk = versions.targetSdk;
+    const minSdk = versions.minSdk;
+    const ndk = versions.ndk;
 
-    // Groovy forms. (minSdk is intentionally NOT converted — the project's
-    // explicit minSdk must never be silently lowered to flutter.minSdkVersion.)
-    result = result.replace(/(compileSdkVersion\s+)\d+/g, '$1flutter.compileSdkVersion');
-    result = result.replace(/(\bcompileSdk\s+)\d+/g, '$1flutter.compileSdkVersion');
-    result = result.replace(/(targetSdkVersion\s+)\d+/g, '$1flutter.targetSdkVersion');
+    // Groovy forms.
+    result = result.replace(/(compileSdkVersion\s+)\d+/g, `$1${compileSdk}`);
+    result = result.replace(/(\bcompileSdk\s+)\d+/g, `$1${compileSdk}`);
+    result = result.replace(/(targetSdkVersion\s+)\d+/g, `$1${targetSdk}`);
+    result = result.replace(/(\btargetSdk\s+)\d+/g, `$1${targetSdk}`);
+    result = result.replace(/(minSdkVersion\s+)\d+/g, `$1${minSdk}`);
+    result = result.replace(/(\bminSdk\s+)\d+/g, `$1${minSdk}`);
 
     // Kotlin DSL forms.
-    result = result.replace(/(compileSdkVersion\s*=\s*)\d+/g, '$1flutter.compileSdkVersion');
-    result = result.replace(/(\bcompileSdk\s*=\s*)\d+/g, '$1flutter.compileSdkVersion');
-    result = result.replace(/(targetSdkVersion\s*=\s*)\d+/g, '$1flutter.targetSdkVersion');
-    result = result.replace(/(\btargetSdk\s*=\s*)\d+/g, '$1flutter.targetSdkVersion');
+    result = result.replace(/(compileSdkVersion\s*=\s*)\d+/g, `$1${compileSdk}`);
+    result = result.replace(/(\bcompileSdk\s*=\s*)\d+/g, `$1${compileSdk}`);
+    result = result.replace(/(targetSdkVersion\s*=\s*)\d+/g, `$1${targetSdk}`);
+    result = result.replace(/(\btargetSdk\s*=\s*)\d+/g, `$1${targetSdk}`);
+    result = result.replace(/(minSdkVersion\s*=\s*)\d+/g, `$1${minSdk}`);
+    result = result.replace(/(\bminSdk\s*=\s*)\d+/g, `$1${minSdk}`);
 
-    // ndkVersion → flutter.ndkVersion.
-    result = result.replace(/ndkVersion\s*=\s*["'][^"']*["']/g, 'ndkVersion = flutter.ndkVersion');
-    result = result.replace(/ndkVersion\s+["'][^"']*["']/g, 'ndkVersion flutter.ndkVersion');
+    // Flutter-built-in variable forms (in case the file already uses them).
+    result = result.replace(/flutter\.compileSdkVersion/g, compileSdk);
+    result = result.replace(/flutter\.targetSdkVersion/g, targetSdk);
+    result = result.replace(/flutter\.minSdkVersion/g, minSdk);
+
+    // ndkVersion → masaken literal.
+    result = result.replace(/ndkVersion\s*=\s*["'][^"']*["']/g, `ndkVersion = "${ndk}"`);
+    result = result.replace(/ndkVersion\s+["'][^"']*["']/g, `ndkVersion "${ndk}"`);
 
     if (!result.includes('ndkVersion')) {
-        const line = kts ? 'ndkVersion = flutter.ndkVersion' : 'ndkVersion flutter.ndkVersion';
+        const line = kts ? `ndkVersion = "${ndk}"` : `ndkVersion "${ndk}"`;
         result = insertIntoAndroidBlock(result, line);
     }
 
@@ -595,6 +825,75 @@ export function bumpGradleWrapperMinimum(content: string, minimum: string): stri
         /distributionUrl=.*/,
         `distributionUrl=https\\://services.gradle.org/distributions/gradle-${minimum}-${flavor}.zip`
     );
+}
+
+// ---------------------------------------------------------------------------
+// gradle.properties (masaken reference)
+// ---------------------------------------------------------------------------
+
+/**
+ * The masaken reference `android/gradle.properties` content. The full
+ * migration writes this so the project gets the exact same Gradle/JVM
+ * settings as the masaken reference project.
+ */
+export const MASAKEN_GRADLE_PROPERTIES = [
+    'org.gradle.jvmargs=-Xmx4096m',
+    '# Gradle 8.14.x does not support running on JDK 25 (Android Studio\'s embedded JBR).',
+    '# Pin the Gradle JVM to JDK 21, which is also what the command-line build uses.',
+    '#org.gradle.java.home=C:/Program Files/Java/jdk-21',
+    'android.useAndroidX=true',
+    'android.enableJetifier=true',
+    'org.gradle.daemon=false',
+    '# This builtInKotlin flag was added automatically by Flutter migrator',
+    'android.builtInKotlin=false',
+    '# This newDsl flag was added automatically by Flutter migrator',
+    'android.newDsl=false',
+    '# Disable Kotlin incremental compilation: the pub cache lives on C: while this',
+    '# project is on E:, and Kotlin\'s incremental cache cannot store relative paths',
+    '# across different filesystem roots.',
+    'kotlin.incremental=false',
+    ''
+].join('\n');
+
+/**
+ * Copies the masaken reference `gradle.properties` content into the project's
+ * `android/gradle.properties` (merging: existing keys are preserved, the
+ * masaken keys are forced to the reference values).
+ */
+export function mergeMasakenGradleProperties(content: string): string {
+    const existing = new Map<string, string>();
+    const lines = content.split(/\r?\n/);
+    for (const line of lines) {
+        const m = /^\s*([A-Za-z0-9_.-]+)\s*=(.*)$/.exec(line);
+        if (m) {
+            existing.set(m[1], m[2].trim());
+        }
+    }
+    const masaken = MASAKEN_GRADLE_PROPERTIES.split(/\r?\n/);
+    const out: string[] = [];
+    const written = new Set<string>();
+    for (const line of masaken) {
+        const m = /^\s*([A-Za-z0-9_.-]+)\s*=(.*)$/.exec(line);
+        if (m) {
+            const key = m[1];
+            if (existing.has(key)) {
+                out.push(`${key}=${existing.get(key)}`);
+            } else {
+                out.push(line.trim());
+            }
+            written.add(key);
+        } else if (line.trim()) {
+            out.push(line);
+        }
+    }
+    // Append any existing lines whose keys we didn't manage.
+    for (const line of lines) {
+        const m = /^\s*([A-Za-z0-9_.-]+)\s*=(.*)$/.exec(line);
+        if (m && !written.has(m[1])) {
+            out.push(line.trim());
+        }
+    }
+    return out.join('\n').replace(/[ \t]+\n/g, '\n') + '\n';
 }
 
 // ---------------------------------------------------------------------------

@@ -8,19 +8,13 @@ import {
     ensurePluginManagement,
     updateSettingsPlugins,
     migrateProjectBuildGradle,
-    ensureProjectRepositories,
     ensureDependencyResolutionManagement,
     migrateAppBuildGradle,
     updateGradleWrapper,
     ensureExtractNativeLibs,
-    bumpAgpVersion,
-    bumpSdkVersions,
     bumpNdkVersion,
-    bumpGradleWrapperMinimum,
-    getAgpVersion,
-    ensureUseLegacyPackaging,
-    compareVersions,
-    detectFirebaseUsage
+    detectFirebaseUsage,
+    mergeMasakenGradleProperties
 } from './migration-transforms.js';
 
 export interface MigrationReport {
@@ -40,6 +34,7 @@ interface AndroidLayout {
     appBuild?: GradleFile;
     wrapperPath?: string;
     manifestPath?: string;
+    gradlePropertiesPath?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +120,11 @@ function detectGradleLayout(androidDir: string): AndroidLayout {
         }
     }
 
+    const gradlePropertiesPath = path.join(androidDir, 'gradle.properties');
+    if (fs.existsSync(gradlePropertiesPath)) {
+        layout.gradlePropertiesPath = gradlePropertiesPath;
+    }
+
     return layout;
 }
 
@@ -177,37 +177,21 @@ function detectApacheHttpUsage(androidDir: string): boolean {
     return false;
 }
 
-/**
- * Determines whether the app uses native code (NDK / JNI). Native libraries
- * must be 16 KB aligned, so the NDK version matters for the 16 KB migration.
- */
-function detectNativeUsage(buildContent: string, androidDir: string): boolean {
-    if (/ndkVersion|externalNativeBuild|jniLibs|\.so\b/.test(buildContent)) {
-        return true;
-    }
-    const appMain = path.join(androidDir, 'app', 'src', 'main');
-    for (const sub of ['jniLibs', 'libs']) {
-        const dir = path.join(appMain, sub);
-        if (fs.existsSync(dir)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 // ---------------------------------------------------------------------------
-// Full migration — latest Flutter declarative setup + 16 KB support
+// Full migration — masaken declarative setup + 16 KB support
 // ---------------------------------------------------------------------------
 
 /**
- * Migrates the Android project to the latest Flutter requirements:
- *  - declarative `plugins {}` Gradle setup driven by Flutter's built-in
- *    variables (`flutter.compileSdkVersion`, `flutter.minSdkVersion`,
- *    `flutter.targetSdkVersion`, `flutter.ndkVersion`),
- *  - legacy `buildscript` blocks removed,
- *  - Gradle wrapper / AGP / Kotlin bumped to the recommended versions, and
- *  - 16 KB page-size support enabled (`android:extractNativeLibs="true"`,
- *    targetSdk 35+, AGP 8.5.2+).
+ * Migrates the Android project to the masaken reference configuration:
+ *  - declarative `plugins {}` Gradle setup pinned to the masaken versions
+ *    (AGP 9.3.1, Kotlin 2.4.10, google-services 4.5.0),
+ *  - project build.gradle rewritten to the masaken `ext` block style
+ *    (compileSdk/targetSdk 37, minSdk 26, flutter map with NDK 29.0.14206865,
+ *    Java 17 afterEvaluate),
+ *  - app build.gradle set to the masaken SDK/NDK values with a top-level
+ *    `kotlin { compilerOptions {} }` block and Java 17 toolchain,
+ *  - Gradle wrapper 9.5.1, masaken gradle.properties, and 16 KB page-size
+ *    support enabled (`android:extractNativeLibs="true"`).
  *
  * Works with BOTH legacy Groovy (`build.gradle`) and modern Kotlin DSL
  * (`build.gradle.kts`) projects, and runs identically on Windows, Linux and
@@ -224,7 +208,8 @@ export async function migrateAndroidSetup(): Promise<MigrationReport> {
         firebase = detectFirebaseUsage(appContent);
     }
 
-    // 1. settings.gradle(.kts) → pluginManagement + declarative plugins.
+    // 1. settings.gradle(.kts) → pluginManagement + declarative plugins
+    //    (AGP / Kotlin / google-services pinned to the masaken reference).
     if (layout.settings) {
         let content = readIfExists(layout.settings.filePath) ?? '';
         content = ensurePluginManagement(content, layout.settings.kts);
@@ -234,33 +219,32 @@ export async function migrateAndroidSetup(): Promise<MigrationReport> {
         });
         content = ensureDependencyResolutionManagement(content);
         if (writeIfChanged(layout.settings.filePath, content)) {
-            details.push(`Updated ${path.basename(layout.settings.filePath)} (declarative plugins, AGP ≥ ${MIGRATION_MINIMUMS.agp}, Kotlin ≥ ${MIGRATION_MINIMUMS.kotlin})`);
+            details.push(`Updated ${path.basename(layout.settings.filePath)} (declarative plugins, AGP ${versions.agp}, Kotlin ${versions.kotlin}, google-services ${versions.googleServices})`);
         }
     }
 
-    // 2. Project-level build.gradle(.kts) → remove legacy buildscript and
-    //    guarantee google()/mavenCentral() so the new Kotlin/AGP versions
-    //    (hosted on Maven Central) can actually be resolved.
+    // 2. Project-level build.gradle(.kts) → masaken-style `ext` block with
+    //    compileSdk/targetSdk/minSdk/flutter map + Java 17 afterEvaluate.
     if (layout.projectBuild) {
         let content = readIfExists(layout.projectBuild.filePath) ?? '';
-        content = migrateProjectBuildGradle(content, layout.projectBuild.kts);
-        content = ensureProjectRepositories(content, layout.projectBuild.kts);
+        content = migrateProjectBuildGradle(content, layout.projectBuild.kts, versions);
         if (writeIfChanged(layout.projectBuild.filePath, content)) {
-            details.push(`Updated ${path.basename(layout.projectBuild.filePath)} (removed legacy buildscript, ensured google()/mavenCentral())`);
+            details.push(`Updated ${path.basename(layout.projectBuild.filePath)} (masaken-style ext: SDK ${versions.compileSdk}, minSdk ${versions.minSdk}, NDK ${versions.ndk}, Java 17)`);
         }
     }
 
-    // 3. App-level app/build.gradle(.kts) → Flutter-driven SDK/NDK versions.
+    // 3. App-level app/build.gradle(.kts) → masaken-style SDK/NDK versions,
+    //    Java 17, and the top-level `kotlin { compilerOptions {} }` block.
     if (layout.appBuild) {
         const apacheHttpLegacy = detectApacheHttpUsage(layout.androidDir);
         let content = readIfExists(layout.appBuild.filePath) ?? '';
-        content = migrateAppBuildGradle(content, layout.appBuild.kts, { apacheHttpLegacy });
+        content = migrateAppBuildGradle(content, layout.appBuild.kts, { apacheHttpLegacy }, versions);
         if (writeIfChanged(layout.appBuild.filePath, content)) {
-            details.push(`Updated ${path.basename(layout.appBuild.filePath)} (Flutter-built-in SDK/NDK versions)`);
+            details.push(`Updated ${path.basename(layout.appBuild.filePath)} (masaken SDK/NDK + Java 17 + top-level kotlin block)`);
         }
     }
 
-    // 4. Gradle wrapper → recommended version.
+    // 4. Gradle wrapper → recommended version (9.5.1).
     if (layout.wrapperPath) {
         let content = readIfExists(layout.wrapperPath) ?? '';
         content = updateGradleWrapper(content, versions.gradle);
@@ -269,7 +253,16 @@ export async function migrateAndroidSetup(): Promise<MigrationReport> {
         }
     }
 
-    // 5. AndroidManifest.xml → 16 KB page-size support.
+    // 5. gradle.properties → masaken reference content.
+    if (layout.gradlePropertiesPath) {
+        let content = readIfExists(layout.gradlePropertiesPath) ?? '';
+        content = mergeMasakenGradleProperties(content);
+        if (writeIfChanged(layout.gradlePropertiesPath, content)) {
+            details.push(`Updated gradle.properties (masaken reference JVM/Android flags)`);
+        }
+    }
+
+    // 6. AndroidManifest.xml → 16 KB page-size support.
     if (layout.manifestPath) {
         let content = readIfExists(layout.manifestPath) ?? '';
         content = ensureExtractNativeLibs(content);
@@ -279,93 +272,48 @@ export async function migrateAndroidSetup(): Promise<MigrationReport> {
     }
 
     return {
-        message: 'Android setup successfully migrated to declarative plugins and 16 KB page size support enabled.',
+        message: 'Android setup successfully migrated to the masaken declarative configuration (AGP 9.3.1, Gradle 9.5.1, SDK 37, minSdk 26, NDK 29.0.14206865, Java 17).',
         details
     };
 }
 
 // ---------------------------------------------------------------------------
-// Fallback migration — 16 KB page size ONLY
+// Fallback migration — NDK ONLY
 // ---------------------------------------------------------------------------
 
 /**
- * Safe fallback for projects that still use outdated packages incompatible
- * with the full declarative migration. It applies ONLY the minimal changes
- * required for Android 15+ 16 KB page-size compatibility and leaves the
- * existing legacy `buildscript` setup, plugin versions and package layout
- * untouched. Follows the official Android guide
- * (https://developer.android.com/guide/practices/page-sizes#update-packaging):
- *  - AGP raised to at least 8.5.1 (never downgraded) → uncompressed shared
- *    libraries are 16 KB zip-aligned automatically,
- *  - compileSdk/targetSdk raised to at least 35,
- *  - NDK raised to at least r28 (compiles 16 KB-aligned ELF segments by
- *    default; only for native projects),
- *  - `useLegacyPackaging true` (the guide's compressed-libs fallback) when AGP
- *    is still below 8.5.1,
- *  - Gradle wrapper raised if needed,
- *  - `android:extractNativeLibs="true"` added to the manifest.
+ * Lightweight 16 KB helper. Per product decision this migration ONLY updates
+ * the NDK version to the masaken reference (29.0.14206865) so native
+ * libraries are compiled with 16 KB-aligned ELF segments. It does NOT touch
+ * AGP, SDK levels, packaging, the Gradle wrapper or the manifest.
  */
 export async function migrateAndroid16kbSetup(): Promise<MigrationReport> {
     const layout = getAndroidLayout();
     const details: string[] = [];
 
-    // 1. AGP >= 8.5.2 wherever it is declared. Track the resulting version so
-    //    the guide's compressed-libs fallback can be applied when AGP stays
-    //    below 8.5.1.
-    const gradleFiles: GradleFile[] = [layout.settings, layout.projectBuild].filter(
-        (f): f is GradleFile => f !== undefined
-    );
-    let agpBelow815 = false;
-    for (const gf of gradleFiles) {
-        let content = readIfExists(gf.filePath) ?? '';
-        content = bumpAgpVersion(content, SIXTEEN_KB_MINIMUMS.agp);
-        const declaredAgp = getAgpVersion(content);
-        if (declaredAgp && compareVersions(declaredAgp, "8.5.1") < 0) {
-            agpBelow815 = true;
-        }
-        if (writeIfChanged(gf.filePath, content)) {
-            details.push(`Raised AGP to >= ${SIXTEEN_KB_MINIMUMS.agp} in ${path.basename(gf.filePath)}`);
-        }
-    }
-
-    // 2. compileSdk/targetSdk >= 35, NDK >= r28 (native projects only), and the
-    //    guide's compressed-libs packaging fallback when AGP < 8.5.1.
+    // 1. NDK version → 29.0.14206865 in app/build.gradle(.kts).
     if (layout.appBuild) {
         let content = readIfExists(layout.appBuild.filePath) ?? '';
-        const before = content;
-        content = bumpSdkVersions(content, parseInt(SIXTEEN_KB_MINIMUMS.targetSdk, 10));
-        if (detectNativeUsage(before, layout.androidDir)) {
-            content = bumpNdkVersion(content, SIXTEEN_KB_MINIMUMS.ndk);
-        }
-        content = ensureUseLegacyPackaging(content, layout.appBuild.kts, agpBelow815);
+        content = bumpNdkVersion(content, SIXTEEN_KB_MINIMUMS.ndk);
         if (writeIfChanged(layout.appBuild.filePath, content)) {
-            details.push(`Raised SDK levels to >= ${SIXTEEN_KB_MINIMUMS.targetSdk} in ${path.basename(layout.appBuild.filePath)}`);
-            if (agpBelow815) {
-                details.push(`Added useLegacyPackaging (compressed native libs) — AGP below 8.5.1`);
-            }
+            details.push(`Updated NDK version to ${SIXTEEN_KB_MINIMUMS.ndk} in ${path.basename(layout.appBuild.filePath)}`);
         }
     }
 
-    // 3. Gradle wrapper >= 8.7 (AGP 8.5.2 requirement).
-    if (layout.wrapperPath) {
-        let content = readIfExists(layout.wrapperPath) ?? '';
-        content = bumpGradleWrapperMinimum(content, SIXTEEN_KB_MINIMUMS.gradle);
-        if (writeIfChanged(layout.wrapperPath, content)) {
-            details.push(`Updated Gradle wrapper to >= ${SIXTEEN_KB_MINIMUMS.gradle}`);
+    // 2. Also update the NDK inside the project-level `flutter = [...]` ext map
+    //    when present (masaken-style projects declare it there too).
+    if (layout.projectBuild) {
+        let content = readIfExists(layout.projectBuild.filePath) ?? '';
+        const before = content;
+        content = bumpNdkVersion(content, SIXTEEN_KB_MINIMUMS.ndk);
+        if (writeIfChanged(layout.projectBuild.filePath, content)) {
+            details.push(`Updated NDK version to ${SIXTEEN_KB_MINIMUMS.ndk} in ${path.basename(layout.projectBuild.filePath)}`);
         }
-    }
-
-    // 4. AndroidManifest.xml → extractNativeLibs.
-    if (layout.manifestPath) {
-        let content = readIfExists(layout.manifestPath) ?? '';
-        content = ensureExtractNativeLibs(content);
-        if (writeIfChanged(layout.manifestPath, content)) {
-            details.push(`Enabled android:extractNativeLibs in AndroidManifest.xml (16 KB page size)`);
-        }
+        void before;
     }
 
     return {
-        message: '16 KB page size support enabled. Your legacy build setup was left untouched.',
+        message: `NDK version updated to ${SIXTEEN_KB_MINIMUMS.ndk} (16 KB page-size compatible).`,
         details
     };
 }
