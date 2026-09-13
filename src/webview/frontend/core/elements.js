@@ -204,5 +204,23 @@ export const transTable = document.getElementById("transTable");
 export const transTableHead = document.getElementById("transTableHead");
 export const transTableBody = document.getElementById("transTableBody");
 export const transStatus = document.getElementById("transStatus");
+// Semantics inventory elements
+export const scanInteractivesButton = document.getElementById("scanInteractivesButton");
+export const installCodexMcpButton = document.getElementById("installCodexMcpButton");
+export const codexMcpStatus = document.getElementById("codexMcpStatus");
+export const previewSemanticsFixesButton = document.getElementById("previewSemanticsFixesButton");
+export const semanticsSummary = document.getElementById("semanticsSummary");
+export const semanticsSearch = document.getElementById("semanticsSearch");
+export const semanticsStatusFilter = document.getElementById("semanticsStatusFilter");
+export const semanticsKindFilter = document.getElementById("semanticsKindFilter");
+export const semanticsLoading = document.getElementById("semanticsLoading");
+export const semanticsError = document.getElementById("semanticsError");
+export const semanticsEmpty = document.getElementById("semanticsEmpty");
+export const semanticsTableContainer = document.getElementById("semanticsTableContainer");
+export const semanticsTableBody = document.getElementById("semanticsTableBody");
+export const semanticsPreviewBackdrop = document.getElementById("semanticsPreviewBackdrop");
+export const semanticsPreviewList = document.getElementById("semanticsPreviewList");
+export const semanticsPreviewCancel = document.getElementById("semanticsPreviewCancel");
+export const semanticsPreviewApply = document.getElementById("semanticsPreviewApply");
 // Languages data (loaded from extension)
 let languagesData = [];

@@ -1,7 +1,7 @@
 import { state } from './state.js';
 
 // Tab identifiers shown in the top-level config view.
-export const TABS = ['build', 'permissions', 'localization', 'services', 'packages', 'assets'];
+export const TABS = ['build', 'permissions', 'localization', 'services', 'packages', 'assets', 'semantics'];
 
 /**
  * Whether a section tagged with `data-platform` should be visible given the
@@ -54,6 +54,9 @@ export function applyTabVisibility() {
 export function switchTab(tabName) {
   state.activeTab = tabName;
   applyTabVisibility();
+  if (tabName === 'semantics') {
+    window.dispatchEvent(new CustomEvent('semantics-tab-activated'));
+  }
 }
 
 export function initTabs() {

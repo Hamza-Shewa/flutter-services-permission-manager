@@ -1,6 +1,6 @@
 {
   "name": "flutter-config-manager-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP server for Flutter Config Manager — lets AI agents inspect and edit Flutter Android/iOS/macOS permissions, service integrations, and ARB/JSON translations in a project.",
   "license": "MIT",
   "type": "module",
@@ -13,7 +13,8 @@
     "watch": "tsc -watch -p ./"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "fast-xml-parser": "^5.10.1"
   },
   "devDependencies": {
     "@types/node": "^22.19.19",

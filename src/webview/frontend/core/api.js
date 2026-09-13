@@ -31,5 +31,11 @@ export function translateLocale(locale, referenceLocale, dir) { vscode.postMessa
 export function translateLocaleMissing(locale, referenceLocale, dir) { vscode.postMessage({ type: "translateLocaleMissing", locale, referenceLocale, dir }); }
 export function saveTranslations(translations, dir) { vscode.postMessage({ type: "saveTranslations", translations, dir }); }
 export function browseTranslationsDir() { vscode.postMessage({ type: "browseTranslationsDir" }); }
+export function scanInteractives() { vscode.postMessage({ type: "scanInteractives" }); }
+export function checkCodexMcp() { vscode.postMessage({ type: "checkCodexMcp" }); }
+export function installCodexMcp() { vscode.postMessage({ type: "installCodexMcp" }); }
+export function previewSemanticsFixes(requests) { vscode.postMessage({ type: "previewSemanticsFixes", requests }); }
+export function applySemanticsFixes(previewId) { vscode.postMessage({ type: "applySemanticsFixes", previewId }); }
+export function revealSourceReference(path, line, column) { vscode.postMessage({ type: "revealSourceReference", path, line, column }); }
 export function postMessage(msg) { vscode.postMessage(msg); }
 export function sendReady() { vscode.postMessage({ type: "ready" }); }

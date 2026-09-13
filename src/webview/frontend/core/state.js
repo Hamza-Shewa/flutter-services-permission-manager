@@ -14,6 +14,8 @@ const _state = {
   packages: [], showTransitive: false,
   validatorState: { isInstalled: false, issues: null, loading: false },
   assetsState: { assets: [], maybeUsedAssets: [], totalAssets: 0, usedAssets: 0, ignoredDirectories: [], ignoredFiles: [], ignoredDynamicDirectories: [], ignoredDynamicFiles: [] },
+  interactivesResult: null,
+  interactivesInvalidated: true,
   platformDetails: { android: [], ios: [] },
   languages: [], syncItems: []
 };

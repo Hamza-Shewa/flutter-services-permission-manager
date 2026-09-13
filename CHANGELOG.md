@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added a verified, user-level **Install MCP for Codex** action to the global top navigation with existing-install detection, Windows/macOS/Linux executable handling, and collision-safe per-workspace registrations.
+
 ### Added
 
+- **Semantics Inventory & Reviewed Fixes**: A new **Semantics** tab uses a pinned, checksum-verified Dart Tree-sitter WASM grammar to inventory interactive widgets under `lib/`, group them by source file, open exact references, audit accessibility and stable automation IDs independently, report heuristic confidence, and flag opaque WebView/platform/custom-painted surfaces. Selected dotted `Semantics.identifier` fixes are syntax-checked, previewed, hash-guarded, and applied as one workspace edit.
+- **Semantics MCP Tools**: Added `scan_interactives`, `preview_semantics_fixes`, and `apply_semantics_fixes`, backed by the same scanner and guarded patch engine as the VS Code UI.
+- **Android Runtime Automation MCP Tools**: Added explicit Appium/UiAutomator2 health and session tools plus exact-identifier inspect, tap, type, select, scroll, back, wait, assert, and screenshot primitives. The adapter refuses ambiguous identifiers, redacts entered text, never falls back to coordinates for element targeting, and requires a screen-bound one-use confirmation token for consequential actions.
 - **MCP Server for AI Agents**: A bundled Model Context Protocol server (`mcp-server/`) exposes the extension's capabilities to AI agents — inspect and edit Flutter permissions, service integrations, and ARB/JSON translations programmatically. It reuses the extension's pure compiled modules, so every edit matches the UI exactly. Registered automatically on VS Code 1.93+ via `contributes.mcpServerDefinitionProviders` (older versions are unaffected), and usable standalone with any MCP client (Claude Desktop, Cursor, …) via `scripts/run-mcp-server.mjs` or `FCM_MCP_PROJECT`. See `mcp-server/README.md`.
 - **Translation Files Manager**: A new **Localization** tab that manages your app's `ARB`/`JSON` translation files (easy_localization, flutter_localizations, or plain i18n) without editing them by hand.
   - **Directory selection**: Point the manager at the folder that holds your translation files (e.g. `assets/translations`, `lib/l10n`), with `assets/translations` as a convenient default. Existing files and locales are auto-detected and their keys extracted on load.

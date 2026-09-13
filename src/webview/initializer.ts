@@ -70,6 +70,12 @@ import {
   handleTranslateLocaleMissing,
   handleSaveTranslations,
   handleBrowseTranslationsDir,
+  handleScanInteractives,
+  handlePreviewSemanticsFixes,
+  handleApplySemanticsFixes,
+  handleRevealSourceReference,
+  handleCheckCodexMcp,
+  handleInstallCodexMcp,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -160,7 +166,7 @@ export async function initializePermissionWebview(
   const ref: WebviewRef = target.type === "panel"
     ? { kind: 'panel', panel: target.panel, webview }
     : { kind: 'view', view: target.view, webview };
-  setupMessageHandler(ref, payload, files);
+  setupMessageHandler(ref, payload, files, extensionUri.fsPath);
 
   // Set up visibility change handler
   if (target.type === "panel") {
@@ -194,6 +200,21 @@ export async function initializePermissionWebview(
     } else {
       target.view.onDidDispose(() => watcher.dispose());
     }
+
+    const dartWatcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(workspaceFolder, "lib/**/*.dart"),
+    );
+    const invalidateInteractives = debounce(() => {
+      webview.postMessage({ type: "interactivesInvalidated" });
+    }, 500);
+    dartWatcher.onDidChange(invalidateInteractives);
+    dartWatcher.onDidCreate(invalidateInteractives);
+    dartWatcher.onDidDelete(invalidateInteractives);
+    if (target.type === "panel") {
+      target.panel.onDidDispose(() => dartWatcher.dispose());
+    } else {
+      target.view.onDidDispose(() => dartWatcher.dispose());
+    }
   }
 
   // Set webview HTML content
@@ -210,6 +231,7 @@ function setupMessageHandler(
   ref: WebviewRef,
   initialPayload: PermissionsPayload,
   files: ProjectFiles,
+  extensionRoot: string,
 ): void {
   const bus = new MessageBus(ref.webview);
 
@@ -265,6 +287,12 @@ function setupMessageHandler(
     .register("translateLocaleMissing", async (msg) => { if (msg.locale) { await handleTranslateLocaleMissing(ref, msg.locale, msg.referenceLocale, msg.dir); } })
     .register("saveTranslations", async (msg) => { if (msg.translations) { await handleSaveTranslations(ref, msg.translations, msg.dir); } })
     .register("browseTranslationsDir", async () => await handleBrowseTranslationsDir(ref))
+    .register("scanInteractives", async () => await handleScanInteractives(ref))
+    .register("checkCodexMcp", async () => await handleCheckCodexMcp(ref, extensionRoot))
+    .register("installCodexMcp", async () => await handleInstallCodexMcp(ref, extensionRoot))
+    .register("previewSemanticsFixes", async (msg) => await handlePreviewSemanticsFixes(ref, msg.requests ?? []))
+    .register("applySemanticsFixes", async (msg) => { if (msg.previewId) { await handleApplySemanticsFixes(ref, msg.previewId); } })
+    .register("revealSourceReference", async (msg) => { if (msg.path) { await handleRevealSourceReference(ref, msg); } })
     .register("webview_error", (msg) => { console.error("[WEBVIEW ERROR]:", JSON.stringify(msg, null, 2)); })
     .register("webview_log", (msg) => { console.log("[WEBVIEW LOG]:", msg.message); });
 }

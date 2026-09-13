@@ -2108,10 +2108,18 @@
     .tabs {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 4px;
       margin: 0 0 20px;
       padding-bottom: 10px;
       border-bottom: 1px solid var(--border-default);
+    }
+
+    .tab-list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
     }
 
     .tab {
@@ -2142,6 +2150,77 @@
       background: var(--bg-elevated);
       border-bottom-color: var(--accent);
     }
+
+    .semantics-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .semantics-stat {
+      border: 1px solid var(--border-default);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+    }
+
+    .semantics-stat strong { display: block; font-size: 20px; }
+    .semantics-stat span { color: var(--text-secondary); font-size: 12px; }
+    .semantics-file-row { cursor: pointer; }
+    .semantics-file-row:hover { background: var(--bg-elevated); }
+    .semantics-details-row td { background: var(--bg-tertiary); padding: 0 !important; }
+    .semantics-findings { padding: 10px; display: grid; gap: 8px; }
+    .semantics-finding {
+      display: grid;
+      grid-template-columns: 24px minmax(130px, 1fr) minmax(150px, 2fr) auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      padding: 9px;
+    }
+    .semantics-finding-meta { color: var(--text-secondary); font-size: 11px; }
+    .semantics-id-input {
+      width: 100%; min-width: 150px; padding: 6px 8px;
+      color: var(--text-primary); background: var(--bg-primary);
+      border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+    }
+    .semantics-badge { display: inline-block; border-radius: 10px; padding: 2px 7px; font-size: 11px; margin: 1px; }
+    .semantics-badge.ready { color: #81c784; background: rgba(76,175,80,.12); }
+    .semantics-badge.issue { color: #ef9a9a; background: rgba(211,47,47,.12); }
+    .semantics-badge.uncertain { color: #ffcc80; background: rgba(245,124,0,.12); }
+    .semantics-source { color: var(--ios-accent); background: transparent; border: 0; cursor: pointer; padding: 2px 0; text-align: left; }
+    .semantics-preview-list { max-height: 55vh; overflow: auto; display: grid; gap: 12px; }
+    .semantics-preview-file pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg-primary); padding: 10px; border-radius: 4px; font-size: 11px; }
+    .tabs-mcp-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .mcp-install-status {
+      display: flex;
+      align-items: center;
+      min-height: 28px;
+      max-width: 290px;
+      padding: 4px 9px;
+      border: 1px solid var(--vscode-editorGroup-border);
+      border-radius: 999px;
+      color: var(--text-secondary);
+      font-size: 11px;
+      background: var(--bg-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mcp-install-status[data-state="installed"] { border-color: rgba(76,175,80,.45); color: #a5d6a7; }
+    .mcp-install-status[data-state="error"],
+    .mcp-install-status[data-state="unavailable"] { border-color: rgba(211,47,47,.45); color: #ef9a9a; }
+    @media (max-width: 900px) {
+      .tabs-mcp-control { width: 100%; margin-left: 0; margin-top: 6px; }
+      .mcp-install-status { flex: 1; max-width: none; }
+    }
   </style>
 </head>
 
@@ -2169,13 +2248,21 @@
     </div>
   </header>
 
-  <nav class="tabs" role="tablist" aria-label="Configuration sections">
-    <button type="button" class="tab active" data-tab="build" role="tab" aria-selected="true">⚙️ Build Settings</button>
-    <button type="button" class="tab" data-tab="permissions" role="tab" aria-selected="false">🔐 Permissions</button>
-    <button type="button" class="tab" data-tab="localization" role="tab" aria-selected="false">🌐 Localization</button>
-    <button type="button" class="tab" data-tab="services" role="tab" aria-selected="false">🔌 Services</button>
-    <button type="button" class="tab" data-tab="packages" role="tab" aria-selected="false">📦 Packages</button>
-    <button type="button" class="tab" data-tab="assets" role="tab" aria-selected="false">🖼️ Assets</button>
+  <nav class="tabs" aria-label="Configuration and MCP actions">
+    <div class="tab-list" role="tablist" aria-label="Configuration sections">
+      <button type="button" class="tab active" data-tab="build" role="tab" aria-selected="true">⚙️ Build Settings</button>
+      <button type="button" class="tab" data-tab="permissions" role="tab" aria-selected="false">🔐 Permissions</button>
+      <button type="button" class="tab" data-tab="localization" role="tab" aria-selected="false">🌐 Localization</button>
+      <button type="button" class="tab" data-tab="services" role="tab" aria-selected="false">🔌 Services</button>
+      <button type="button" class="tab" data-tab="packages" role="tab" aria-selected="false">📦 Packages</button>
+      <button type="button" class="tab" data-tab="assets" role="tab" aria-selected="false">🖼️ Assets</button>
+      <button type="button" class="tab" data-tab="semantics" role="tab" aria-selected="false">♿ Semantics</button>
+    </div>
+    <div class="tabs-mcp-control">
+      <span id="codexMcpStatus" class="mcp-install-status" data-state="checking" role="status" aria-live="polite"
+        title="MCP registration is stored in the user-level Codex configuration.">Checking user-level MCP…</span>
+      <button id="installCodexMcpButton" type="button" class="btn-secondary">Install MCP for Codex</button>
+    </div>
   </nav>
 
   <section class="section platform-details" data-tab="build">
@@ -2975,6 +3062,57 @@
       }
     </style>
   </section>
+  <section id="semanticsSection" class="section platform-details" data-tab="semantics">
+    <div class="section-header">
+      <div class="section-header-with-button">
+        <h2>♿ Interactive Widgets &amp; Semantics</h2>
+        <div style="display:flex; gap:8px;">
+          <button id="previewSemanticsFixesButton" type="button" class="btn-secondary" disabled>Preview selected fixes</button>
+          <button id="scanInteractivesButton" type="button" class="btn-primary">Scan Dart sources</button>
+        </div>
+      </div>
+    </div>
+    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
+      Confidence-based static audit of <code>lib/**/*.dart</code>. Opaque and runtime-generated controls are flagged,
+      not claimed as completely inspected. Automation IDs use <code>Semantics.identifier</code>.
+    </p>
+    <div id="semanticsSummary" class="semantics-summary" style="display:none;"></div>
+    <div class="toolbar">
+      <input id="semanticsSearch" type="search" placeholder="Search file, widget, kind, or identifier" />
+      <select id="semanticsStatusFilter">
+        <option value="">All statuses</option>
+        <option value="issues">Issues only</option>
+        <option value="automation">Missing/duplicate automation IDs</option>
+        <option value="accessibility">Accessibility missing/uncertain</option>
+        <option value="ready">Fully ready</option>
+      </select>
+      <select id="semanticsKindFilter"><option value="">All interaction kinds</option></select>
+    </div>
+    <div id="semanticsLoading" style="display:none; padding:20px; text-align:center; color:var(--text-secondary);">Scanning Dart sources…</div>
+    <div id="semanticsError" style="display:none; margin:12px 0; color:#ef9a9a;"></div>
+    <div id="semanticsEmpty" style="padding:24px; text-align:center; color:var(--text-secondary);">
+      Open this tab or click “Scan Dart sources” to build the inventory.
+    </div>
+    <div id="semanticsTableContainer" style="display:none; margin-top:12px; overflow:auto;">
+      <table class="permissions-table">
+        <thead><tr><th>Source file</th><th>Widgets</th><th>Accessibility</th><th>Automation</th><th>Open</th></tr></thead>
+        <tbody id="semanticsTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="modal-backdrop" id="semanticsPreviewBackdrop" style="display:none;">
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:850px; width:min(850px, 94vw);">
+      <h3>Review semantics fixes</h3>
+      <p style="color:var(--text-secondary); font-size:12px;">All files are hash-checked again before this one undoable workspace edit is applied.</p>
+      <div id="semanticsPreviewList" class="semantics-preview-list"></div>
+      <div class="modal-actions">
+        <button id="semanticsPreviewCancel" type="button" class="btn-secondary">Cancel</button>
+        <button id="semanticsPreviewApply" type="button" class="btn-primary">Apply fixes</button>
+      </div>
+    </div>
+  </div>
+
   <section id="assetsSection" class="section platform-details" data-tab="assets">
     <div class="section-header">
       <div class="section-header-with-button">

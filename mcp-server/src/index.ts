@@ -40,9 +40,43 @@ import {
   translateLocaleTool,
 } from './translations.js';
 import { loadServicesConfig } from './host.js';
+import {
+  applySemanticsFixesSchema,
+  applySemanticsFixesTool,
+  previewSemanticsFixesSchema,
+  previewSemanticsFixesTool,
+  scanInteractivesSchema,
+  scanInteractivesTool,
+} from './semantics.js';
+import {
+  assertRuntimeSchema,
+  assertRuntimeTool,
+  automationHealthSchema,
+  automationHealthTool,
+  backRuntimeSchema,
+  backRuntimeTool,
+  endAndroidSessionSchema,
+  endAndroidSessionTool,
+  enterRuntimeTextSchema,
+  enterRuntimeTextTool,
+  inspectRuntimeSchema,
+  inspectRuntimeTool,
+  screenshotRuntimeSchema,
+  screenshotRuntimeTool,
+  scrollRuntimeSchema,
+  scrollRuntimeTool,
+  selectRuntimeOptionSchema,
+  selectRuntimeOptionTool,
+  startAndroidSessionSchema,
+  startAndroidSessionTool,
+  tapRuntimeSchema,
+  tapRuntimeTool,
+  waitRuntimeSchema,
+  waitRuntimeTool,
+} from './android-automation.js';
 
 const SERVER_NAME = 'flutter-config-manager';
-const SERVER_VERSION = '1.0.0';
+const SERVER_VERSION = '1.1.0';
 
 /** Create an McpServer with every tool registered against the given project. */
 export function createServer(root: string): McpServer {
@@ -165,6 +199,174 @@ export function createServer(root: string): McpServer {
       inputSchema: addTranslationLocaleSchema,
     },
     async (args) => addTranslationLocaleTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'scan_interactives',
+    {
+      title: 'Scan interactive Flutter widgets',
+      description:
+        'Statically inventories interactive widgets under lib/, grouped by source file, with exact references, confidence, accessibility readiness, automation identifier readiness, and opaque-surface warnings. This is a confidence-based audit, not a runtime completeness guarantee.',
+      inputSchema: scanInteractivesSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => scanInteractivesTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'preview_semantics_fixes',
+    {
+      title: 'Preview reviewed Flutter semantics fixes',
+      description:
+        'Builds a non-mutating, content-hashed preview for selected scan occurrence IDs and reviewed dotted Semantics.identifier values. Returns a short-lived preview ID required by apply_semantics_fixes.',
+      inputSchema: previewSemanticsFixesSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => previewSemanticsFixesTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'apply_semantics_fixes',
+    {
+      title: 'Apply a reviewed Flutter semantics preview',
+      description:
+        'Applies a previously generated, unexpired semantics preview only when every source hash still matches. The preview is single-use and cannot bypass scanner exclusions or validation.',
+      inputSchema: applySemanticsFixesSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    },
+    async (args) => applySemanticsFixesTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'check_android_automation',
+    {
+      title: 'Check Android automation prerequisites',
+      description: 'Read-only health check for Android SDK, adb, emulator, Appium, UiAutomator2, connected devices, and the configured Appium server. It never installs or starts anything.',
+      inputSchema: automationHealthSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => automationHealthTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'start_android_session',
+    {
+      title: 'Start an Android Appium session',
+      description: 'Connects to an existing Appium UiAutomator2 server and starts a session for an APK or installed package. Appium and emulator setup remain explicit prerequisites.',
+      inputSchema: startAndroidSessionSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false },
+    },
+    async (args) => startAndroidSessionTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'inspect_runtime_ui',
+    {
+      title: 'Inspect Android runtime semantics identifiers',
+      description: 'Reads the current native accessibility hierarchy, reports exact semantics identifiers and duplicates, and correlates identifiers to static Dart source references.',
+      inputSchema: inspectRuntimeSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => inspectRuntimeTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'tap_interactive',
+    {
+      title: 'Tap an exact semantics identifier',
+      description: 'Taps exactly one Android element by Semantics.identifier. Missing and duplicate identifiers fail; consequential identifiers require a one-use confirmation token.',
+      inputSchema: tapRuntimeSchema,
+      annotations: { readOnlyHint: false, destructiveHint: true },
+    },
+    async (args) => tapRuntimeTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'enter_interactive_text',
+    {
+      title: 'Enter text by semantics identifier',
+      description: 'Clears and enters text into exactly one identified element. Entered values are redacted from results and are never logged by the tool.',
+      inputSchema: enterRuntimeTextSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false },
+    },
+    async (args) => enterRuntimeTextTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'select_interactive_option',
+    {
+      title: 'Select an identified option',
+      description: 'Opens an exactly identified field and taps an exactly identified option. Consequential option identifiers require confirmation.',
+      inputSchema: selectRuntimeOptionSchema,
+      annotations: { readOnlyHint: false, destructiveHint: true },
+    },
+    async (args) => selectRuntimeOptionTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'scroll_interactive',
+    {
+      title: 'Scroll an identified container',
+      description: 'Performs an Appium scroll gesture scoped to exactly one identified container; it never falls back to guessed screen coordinates.',
+      inputSchema: scrollRuntimeSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false },
+    },
+    async (args) => scrollRuntimeTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'android_back',
+    {
+      title: 'Navigate back in Android',
+      description: 'Invokes the Android back action for the active automation session.',
+      inputSchema: backRuntimeSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false },
+    },
+    async (args) => backRuntimeTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'wait_for_interactive',
+    {
+      title: 'Wait for an identified element state',
+      description: 'Waits up to 30 seconds for an exact semantics identifier to become present or absent.',
+      inputSchema: waitRuntimeSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => waitRuntimeTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'assert_interactive_state',
+    {
+      title: 'Assert an identified element state',
+      description: 'Asserts that an exact semantics identifier is present, absent, enabled, or disabled.',
+      inputSchema: assertRuntimeSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => assertRuntimeTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'capture_android_screenshot',
+    {
+      title: 'Capture the Android session screenshot',
+      description: 'Returns the current Appium session screenshot as PNG without persisting it to disk.',
+      inputSchema: screenshotRuntimeSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => screenshotRuntimeTool(args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'end_android_session',
+    {
+      title: 'End an Android automation session',
+      description: 'Closes the Appium session and discards its confirmation tokens.',
+      inputSchema: endAndroidSessionSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false },
+    },
+    async (args) => endAndroidSessionTool(args as Record<string, unknown>),
   );
 
   return server;

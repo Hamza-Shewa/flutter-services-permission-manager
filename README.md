@@ -22,6 +22,9 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
   - **Search & Add**: Integrated pub.dev API search with typeahead and live package details preview.
   - **Dependency Validator**: Built-in integration with `dependency_validator` to safely analyze unused packages and automatically downgrade them or remove them.
   - **Unused Assets**: Detect asset files that are no longer referenced from your Dart/JSON source (inspired by `unused_assets_removal`) and delete them to reduce app size. The scanner also understands **dynamic references** — interpolated paths like `assets/icon/$icon`, string concatenation, and dynamic loaders like `Image.asset(path)` — so assets that may still be in use are moved to a **Maybe used** bucket instead of being flagged as unused. Each maybe-used row lists the Dart files that reference it, with buttons that jump straight to the exact line. You can **ignore** custom wrapper widgets (e.g. `my_image.dart`) or whole directories — either fully, or just their dynamic patterns — from the Unused Assets UI or workspace settings, and `easy_localization` translation folders are excluded automatically. Use the **Unused Assets** section in the Flutter Config view (sidebar or panel) to scan, review, and delete per file or all at once — or run the **`Flutter Config Manager: Check Unused Assets`** command from the palette.
+- **Semantics & AI Automation**: The **Semantics** tab scans production Dart sources with a pinned, checksum-verified Tree-sitter WASM grammar. It groups interactive widgets by file, opens exact source locations, distinguishes accessibility readiness from stable automation identifiers, reports heuristic confidence, and flags WebViews/platform/custom-painted surfaces as opaque. Missing `Semantics.identifier` values can be selected, reviewed in a content-hashed preview, and applied as one guarded workspace edit. Flutter 3.19+ is required for identifier fixes.
+- **Android AI Control (optional)**: The MCP server can connect to an existing Appium UiAutomator2 session and inspect, tap, type, select, scroll, wait, assert, and capture screenshots using exact `Semantics.identifier` matches. It never installs Appium or silently falls back to coordinates; consequential actions require a short-lived confirmation token.
+- **One-click Codex MCP setup**: The top navigation can register the bundled server in the user's Codex configuration. It uses the Codex CLI on Windows, macOS, and Linux, verifies the installed definition before enabling the action, and keeps separate workspace registrations from overwriting one another.
 - **Package Configuration Management**: A dedicated dashboard at the top of the UI to view and update your Android Application ID and iOS Bundle Identifier with a single click.
 - **Safe & Automated Updates**: With a single click, the extension updates all necessary files (`AndroidManifest.xml`, `Info.plist`, `Podfile`, `AppDelegate.swift`, etc.) while preserving your existing project structure and comments.
 - **Vibe Coded**: This extension was vibe coded in the most fashionable way, because your development workflow deserves to look and feel as good as your apps.
@@ -44,6 +47,15 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
     node scripts/check-unused-assets.js --path . --ignore-files my_image.dart        # skip files entirely
     node scripts/check-unused-assets.js --path . --ignore-dynamic-files icons.dart   # skip only dynamic patterns
     ```
+
+10. **Audit Semantics**: Open the **Semantics** tab. Expand a file row for exact widget references, edit the suggested dotted identifiers, select the desired fixes, review the combined preview, and apply. The standalone scanner is also available after compilation:
+
+    ```bash
+    node scripts/scan-interactives.js --path /path/to/flutter/project --pretty
+    node scripts/scan-interactives.js --path . --custom-widget AppButton --callback onActivate
+    ```
+
+11. **Install the MCP for Codex**: In the top navigation, click **Install MCP for Codex**. The extension first checks whether the current workspace registration already exists and disables the button when it does. Installation writes a verified user-level Codex MCP registration; it does not create or modify project-level MCP configuration or require a separate Node.js installation. Open a new Codex task afterward to load the tools.
 
 > **Note for iOS/macOS**: Some permissions require a usage description string (e.g., "We need camera access to scan QR codes"). The extension will prompt you to enter these descriptions directly in the UI.
 
@@ -74,6 +86,10 @@ no setup:
 | `list_services` | Available service integrations. |
 | `list_translations` | ARB/JSON translation files + locales + key counts. |
 | `translate_locale` / `add_translation_locale` | Machine-translate a locale or add a new one. |
+| `scan_interactives` | Confidence-based interactive-widget and semantics inventory with exact source references. |
+| `preview_semantics_fixes` / `apply_semantics_fixes` | Preview and apply reviewed, hash-guarded automation identifiers. |
+| `check_android_automation` / `start_android_session` | Validate explicit Appium prerequisites and start Android automation. |
+| Runtime interaction tools | Inspect, tap, type, select, scroll, wait, assert, screenshot, and end a session by exact identifier. |
 
 To register it with other MCP clients (Claude Desktop, Cursor, …) or run it
 standalone, see the dedicated [mcp-server/README.md](mcp-server/README.md).
@@ -83,6 +99,8 @@ standalone, see the dedicated [mcp-server/README.md](mcp-server/README.md).
 - VS Code 1.80.0 or higher.
 - A Flutter project structure (standard `android/`, `ios/`, or `macos/` directories).
 - MCP server / AI-agent integration requires VS Code 1.93+ (ignored on older versions).
+- Semantics inventory is read-only on older Flutter projects; automatic identifiers and native automation require Flutter 3.19+.
+- Android runtime automation additionally requires an already-installed Appium server, UiAutomator2 driver, Android SDK, and connected emulator/device.
 
 ## 📝 Release Notes
 

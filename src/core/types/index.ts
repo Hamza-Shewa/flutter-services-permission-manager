@@ -46,7 +46,13 @@ export type {
     PlatformDetailItem,
     PlatformDetails,
     AppNameLocalization,
-    LanguageInfo
+    LanguageInfo,
+    InteractivesResultMessage,
+    InteractivesLoadingMessage,
+    InteractivesErrorMessage,
+    InteractivesInvalidatedMessage,
+    SemanticsFixPreviewMessage,
+    SemanticsFixAppliedMessage
 } from './webview.js';
 
 // Save Context types
@@ -64,3 +70,12 @@ export type {
     TranslationsResultMessage,
     TranslationWebviewMessage
 } from './translations.js';
+
+export type {
+    InteractiveScanResult,
+    InteractiveFinding,
+    InteractiveFileGroup,
+    SemanticsFixRequest,
+    SemanticsFixPreview,
+    ApplySemanticsResult
+} from '../../features/semantics/types.js';

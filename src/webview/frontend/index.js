@@ -9,6 +9,7 @@ import * as assets from './features/assets/assets.js';
 import * as localization from './features/localization/localization.js';
 import * as translations from './features/localization/translations.js';
 import * as buildDetails from './features/build/build-details.js';
+import * as semantics from './features/semantics/semantics.js';
 import * as utils from './core/utils.js';
 import * as router from './core/router.js';
 
@@ -20,6 +21,7 @@ Object.assign(window, assets);
 Object.assign(window, localization);
 Object.assign(window, translations);
 Object.assign(window, buildDetails);
+Object.assign(window, semantics);
 Object.assign(window, utils);
 Object.assign(window, router);
 
@@ -31,6 +33,7 @@ window.assets = assets;
 window.localization = localization;
 window.translations = translations;
 window.buildDetails = buildDetails;
+window.semantics = semantics;
 window.utils = utils;
 window.router = router;
 window.api = api;

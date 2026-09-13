@@ -9,6 +9,12 @@ import type {
 } from "./permissions.js";
 import type { ServiceEntry, ServiceConfig, UnusedAsset } from "./services.js";
 import type { TranslationFileData } from "./translations.js";
+import type {
+  ApplySemanticsResult,
+  InteractiveScanResult,
+  SemanticsFixPreview,
+  SemanticsFixRequest,
+} from "../../features/semantics/types.js";
 
 /** Platform build metadata item */
 export interface PlatformDetailItem {
@@ -181,7 +187,24 @@ export type WebviewMessage =
     translations: TranslationFileData[];
     dir?: string;
   }
-  | { type: "browseTranslationsDir" };
+  | { type: "browseTranslationsDir" }
+  | { type: "scanInteractives" }
+  | { type: "checkCodexMcp" }
+  | { type: "installCodexMcp" }
+  | {
+    type: "previewSemanticsFixes";
+    requests: SemanticsFixRequest[];
+  }
+  | {
+    type: "applySemanticsFixes";
+    previewId: string;
+  }
+  | {
+    type: "revealSourceReference";
+    path: string;
+    line?: number;
+    column?: number;
+  };
 
 /** Language info */
 export interface LanguageInfo {
@@ -269,7 +292,52 @@ export type WebviewOutgoingMessage =
   | SearchPackagesResultMessage
   | PackageDetailsResultMessage
   | DependencyValidatorStateMessage
-  | DependencyValidationResultMessage;
+  | DependencyValidationResultMessage
+  | InteractivesResultMessage
+  | InteractivesLoadingMessage
+  | InteractivesErrorMessage
+  | InteractivesInvalidatedMessage
+  | SemanticsFixPreviewMessage
+  | SemanticsFixAppliedMessage
+  | CodexMcpStatusMessage;
+
+export interface InteractivesResultMessage {
+  type: "interactivesResult";
+  result: InteractiveScanResult;
+}
+
+export interface InteractivesLoadingMessage {
+  type: "interactivesLoading";
+  loading: boolean;
+}
+
+export interface InteractivesErrorMessage {
+  type: "interactivesError";
+  message: string;
+}
+
+export interface InteractivesInvalidatedMessage {
+  type: "interactivesInvalidated";
+}
+
+export interface SemanticsFixPreviewMessage {
+  type: "semanticsFixPreview";
+  preview: SemanticsFixPreview;
+}
+
+export interface SemanticsFixAppliedMessage {
+  type: "semanticsFixApplied";
+  result: ApplySemanticsResult;
+}
+
+export interface CodexMcpStatusMessage {
+  type: "codexMcpStatus";
+  state: "checking" | "installing" | "installed" | "not-installed" | "outdated" | "unavailable" | "error";
+  serverName?: string;
+  message: string;
+  canInstall: boolean;
+  restartRequired?: boolean;
+}
 
 /** Result of a save operation */
 export interface SaveResult {

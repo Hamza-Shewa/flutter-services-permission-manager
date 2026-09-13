@@ -12,6 +12,7 @@ export * from './services/index.js';
 export * from './build/index.js';
 export * from './migration/index.js';
 export * from './packages/index.js';
+export * from './semantics/index.js';
 export * from './assets/index.js';
 export * from './localization/index.js';
 

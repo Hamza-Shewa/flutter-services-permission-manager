@@ -408,3 +408,11 @@ export {
   handleSaveTranslations,
   handleBrowseTranslationsDir,
 } from './translations.js';
+export {
+  handleScanInteractives,
+  handlePreviewSemanticsFixes,
+  handleApplySemanticsFixes,
+  handleRevealSourceReference,
+  handleCheckCodexMcp,
+  handleInstallCodexMcp,
+} from './semantics.js';

@@ -11,6 +11,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { getInteractiveScannerOptions } from '../../features/semantics/semantics.service.js';
+import { resolveSdkPath } from '../utils/exec.js';
 
 /** Provider id declared in `contributes.mcpServerDefinitionProviders`. */
 export const MCP_PROVIDER_ID = 'flutter-config-manager';
@@ -19,7 +21,7 @@ export const MCP_PROVIDER_ID = 'flutter-config-manager';
 export const MCP_SERVER_LABEL = 'flutter-config-manager';
 
 /** Server version — bump to force a tool refresh. */
-const MCP_SERVER_VERSION = '1.0.0';
+const MCP_SERVER_VERSION = '1.1.0';
 
 /**
  * Register the MCP server definition provider, if supported by the running
@@ -56,10 +58,17 @@ export function registerMcpServerDefinitionProvider(
       // Run in the first workspace folder so the server resolves the project.
       const folder = vscode.workspace.workspaceFolders?.[0];
       if (folder) {
+        const dartConfig = vscode.workspace.getConfiguration('dart');
+        const flutterSdkPath = resolveSdkPath(dartConfig.get<string>('flutterSdkPath'));
+        const flutterExecutable = flutterSdkPath
+          ? path.join(flutterSdkPath, 'bin', process.platform === 'win32' ? 'flutter.bat' : 'flutter')
+          : undefined;
         server.cwd = folder.uri;
         server.env = {
           ...server.env,
           FCM_MCP_PROJECT: folder.uri.fsPath,
+          FCM_INTERACTIVES_OPTIONS: JSON.stringify(getInteractiveScannerOptions()),
+          ...(flutterExecutable ? { FCM_FLUTTER_EXECUTABLE: flutterExecutable } : {}),
         };
       }
       return server;

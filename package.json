@@ -149,6 +149,36 @@
           },
           "default": [],
           "description": "Loader APIs to skip for fully-dynamic detection, e.g. \"Image.asset\" or \"SvgPicture.asset\". Calls with a variable argument (Image.asset(path)) are no longer treated as dynamic references, so they stop flagging every asset as \"maybe used\"; literal calls still count as used."
+        },
+        "flutter-config-manager.interactives.excludedGlobs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Project-relative globs to exclude from the Semantics scanner. Generated Dart files are excluded automatically."
+        },
+        "flutter-config-manager.interactives.customWidgets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Custom Flutter widget class names that should always be inventoried as interactive."
+        },
+        "flutter-config-manager.interactives.callbackNames": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Additional named callback arguments that identify custom interactive widgets."
+        },
+        "flutter-config-manager.interactives.ignoredWidgets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Widget class names to suppress when the Semantics scanner reports a false positive."
+        },
+        "flutter-config-manager.mcp.codexExecutable": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Optional full path to the Codex CLI executable used by the Semantics tab's user-level MCP installer. Leave empty to search PATH and common Windows, macOS, and Linux locations."
         }
       }
     }
@@ -168,6 +198,7 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
+    "@types/emscripten": "^1.41.5",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.19.19",
     "@types/vscode": "^1.80.0",
@@ -180,6 +211,8 @@
     "typescript-eslint": "^8.52.0"
   },
   "dependencies": {
-    "fast-xml-parser": "^5.10.1"
+    "@lumis-sh/wasm-dart": "0.26.3",
+    "fast-xml-parser": "^5.10.1",
+    "web-tree-sitter": "0.26.13"
   }
 }
