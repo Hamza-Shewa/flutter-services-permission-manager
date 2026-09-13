@@ -7,6 +7,7 @@ import {
   getValidatedSemanticsPreview,
   previewSemanticsFixes,
   scanInteractives,
+  buildSemanticsImplementationPrompt,
 } from "./index.js";
 import type {
   ApplySemanticsResult,
@@ -74,6 +75,12 @@ export async function scanWorkspaceInteractives(): Promise<InteractiveScanResult
   const root = workspaceRoot();
   ensureNoDirtyDartDocuments(root);
   return scanInteractives(root, getInteractiveScannerOptions());
+}
+
+export async function copyWorkspaceSemanticsPrompt(): Promise<InteractiveScanResult> {
+  const result = await scanWorkspaceInteractives();
+  await vscode.env.clipboard.writeText(buildSemanticsImplementationPrompt(result));
+  return result;
 }
 
 export async function previewWorkspaceSemanticsFixes(requests: SemanticsFixRequest[]): Promise<SemanticsFixPreview> {

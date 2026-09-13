@@ -4,6 +4,7 @@ import {
     removeServicesFromIOSEntitlements
 } from '../../core/platform/ios/entitlements.service.js';
 import { ServiceConfig } from '../../core/types/index.js';
+import { loadServicesConfig } from '../helpers.js';
 
 suite('iOS Entitlements Service Test Suite', () => {
     const dummyServiceConfig: ServiceConfig = {
@@ -55,6 +56,32 @@ suite('iOS Entitlements Service Test Suite', () => {
             );
             assert.ok(updated.includes('applinks:new.com'));
             assert.ok(!updated.includes('applinks:old.com'));
+        });
+
+        test('preserves non-App-Links associated domains', () => {
+            const existing = emptyEntitlements.replace(
+                '</dict>',
+                '\t<key>com.apple.developer.associated-domains</key>\n' +
+                '\t<array><string>webcredentials:example.com</string><string>applinks:old.com</string></array>\n</dict>',
+            );
+            const updated = updateIOSEntitlementsWithServices(
+                existing,
+                [{ id: 'applinks', values: { domains: 'new.com' } }],
+                [],
+            );
+            assert.ok(updated.includes('webcredentials:example.com'));
+            assert.ok(updated.includes('applinks:new.com'));
+            assert.ok(!updated.includes('applinks:old.com'));
+        });
+
+        test('writes a Stripe merchant identifier from the reviewed value', () => {
+            const updated = updateIOSEntitlementsWithServices(
+                emptyEntitlements,
+                [{ id: 'stripe', values: { merchantId: 'merchant.com.example' } }],
+                loadServicesConfig(),
+            );
+            assert.ok(updated.includes('<key>com.apple.developer.in-app-payments</key>'));
+            assert.ok(updated.includes('<string>merchant.com.example</string>'));
         });
 
         test('inserts service entitlements', () => {

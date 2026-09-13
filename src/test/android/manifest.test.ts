@@ -5,7 +5,7 @@ import {
     updateAndroidManifestWithServices,
     removeServicesFromAndroidManifest
 } from '../../core/platform/android/manifest.service.js';
-import { loadFixture } from '../helpers.js';
+import { loadFixture, loadServicesConfig } from '../helpers.js';
 import { ServiceEntry, ServiceConfig } from '../../core/types/index.js';
 
 suite('Android Manifest Service Test Suite', () => {
@@ -119,6 +119,46 @@ suite('Android Manifest Service Test Suite', () => {
         test('inserts intent-filter in main activity', () => {
             const updated = updateAndroidManifestWithServices(baseManifest, [{ id: 'dummy', values: { apiKey: '12345' } }], [dummyServiceConfig]);
             assert.ok(updated.includes('<action android:name="android.intent.action.VIEW" />'));
+        });
+
+        test('uses current Stripe redirects and migrates the legacy host', () => {
+            const configs = loadServicesConfig();
+            const legacy = baseManifest.replace(
+                '</activity>',
+                '<intent-filter><data android:scheme="flutterstripe" android:host="safepay" /></intent-filter></activity>',
+            );
+            const updated = updateAndroidManifestWithServices(
+                legacy,
+                [{ id: 'stripe', values: { publishableKey: 'pk_test_example' } }],
+                configs,
+            );
+            assert.ok(updated.includes('android:host="redirect"'));
+            assert.ok(!updated.includes('android:host="safepay"'));
+        });
+
+        test('adds removable Twitter callback and Apple Sign-In activity', () => {
+            const configs = loadServicesConfig();
+            const updated = updateAndroidManifestWithServices(baseManifest, [
+                { id: 'twitter', values: { callbackScheme: 'myapp', callbackHost: '' } },
+                { id: 'apple_signin', values: {} },
+            ], configs);
+            assert.ok(updated.includes('android:scheme="myapp"'));
+            assert.ok(!updated.includes('android:host=""'));
+            assert.ok(updated.includes('SignInWithAppleCallback'));
+
+            const removed = removeServicesFromAndroidManifest(updated, ['twitter', 'apple_signin'], configs);
+            assert.ok(!removed.includes('android:scheme="myapp"'));
+            assert.ok(!removed.includes('SignInWithAppleCallback'));
+        });
+
+        test('removes obsolete OneSignal manifest metadata', () => {
+            const configs = loadServicesConfig();
+            const legacy = baseManifest.replace(
+                '<application',
+                '<application><meta-data android:name="onesignal_app_id" android:value="old" /></application><application',
+            );
+            const updated = updateAndroidManifestWithServices(legacy, [{ id: 'onesignal', values: { appId: 'id' } }], configs);
+            assert.ok(!updated.includes('onesignal_app_id'));
         });
     });
 

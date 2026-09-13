@@ -4,6 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import {
   applySemanticsPreviewToFiles,
+  buildSemanticsImplementationPrompt,
   flattenInteractiveFindings,
   previewSemanticsFixes,
   scanInteractives,
@@ -20,10 +21,24 @@ suite("Semantics scanner and fixer", () => {
     assert.ok(result.excludedPaths.includes("lib/generated/model.g.dart"));
     const findings = flattenInteractiveFindings(result);
     assert.strictEqual(findings.length, 6);
+    assert.strictEqual(result.totals.accessibilityMissing, 1);
+    assert.strictEqual(result.totals.accessibilityUncertain, 2);
+    assert.strictEqual(result.totals.automationMissing, 5);
     assert.strictEqual(findings.find((item) => item.widgetType === "TextButton")?.automation, "present");
     assert.strictEqual(findings.find((item) => item.widgetType === "IconButton")?.accessibility, "missing");
     assert.strictEqual(findings.find((item) => item.widgetType === "CustomAction")?.confidence, "medium");
     assert.strictEqual(findings.find((item) => item.widgetType === "WebViewWidget")?.kind, "opaque");
+  });
+
+  test("builds a project-specific shared-widget-first AI prompt", async () => {
+    const result = await scanInteractives(fixture, { callbackNames: ["onActivate"] });
+    const prompt = buildSemanticsImplementationPrompt(result);
+    assert.ok(prompt.includes(result.projectRoot));
+    assert.ok(prompt.includes("Resolve ownership and shared-widget usage before editing"));
+    assert.ok(prompt.includes("resolving its import/export path"));
+    assert.ok(prompt.includes("Only as a last resort"));
+    assert.ok(prompt.includes(`Accessibility missing: ${result.totals.accessibilityMissing}`));
+    assert.ok(prompt.includes("Never use a list index"));
   });
 
   test("previews and applies a content-hashed identifier fix", async () => {

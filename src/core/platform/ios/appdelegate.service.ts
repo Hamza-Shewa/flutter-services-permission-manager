@@ -9,6 +9,15 @@ interface AppDelegateConfig {
     code?: string;
 }
 
+function removeLegacyGeneratedFirebaseSetup(content: string): string {
+    let result = content.replace(/[ \t]*FirebaseApp\.configure\(\)[ \t]*\n?/g, '');
+    const withoutImport = result.replace(/^import Firebase\s*\n?/m, '');
+    if (!/\bFirebase(?:App|Options|Configuration)?\b/.test(withoutImport)) {
+        result = withoutImport;
+    }
+    return result;
+}
+
 /**
  * Updates AppDelegate.swift with service configurations (e.g., Google Maps API key)
  */
@@ -59,9 +68,23 @@ export function updateAppDelegateWithServices(
         const config = servicesConfig.find(c => c.id === service.id);
         if (!config) {continue;}
 
+        if (service.id === 'firebase') {
+            result = removeLegacyGeneratedFirebaseSetup(result);
+        }
+
         // Check for appDelegate config
         const appDelegateConfig = config.ios.appDelegate;
         if (!appDelegateConfig) {continue;}
+
+        const requiredFields = Array.from(appDelegateConfig.code?.matchAll(/\{(\w+)\}/g) ?? [])
+            .map(match => match[1]);
+        if (requiredFields.some(field => !service.values?.[field]?.trim())) {
+            // An optional platform credential was cleared (for example a Maps
+            // iOS key in an Android-only project). Remove an older generated
+            // call instead of emitting an empty native initializer.
+            result = removeServicesFromAppDelegate(result, [service.id], servicesConfig);
+            continue;
+        }
 
         // Add import if needed
         if (appDelegateConfig.import) {
@@ -152,6 +175,10 @@ export function removeServicesFromAppDelegate(
     for (const serviceId of removedServiceIds) {
         const config = servicesConfig.find(c => c.id === serviceId);
         if (!config) {continue;}
+
+        if (serviceId === 'firebase') {
+            result = removeLegacyGeneratedFirebaseSetup(result);
+        }
         
         const appDelegateConfig = config.ios.appDelegate;
         if (!appDelegateConfig) {continue;}

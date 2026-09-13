@@ -71,11 +71,13 @@ import {
   handleSaveTranslations,
   handleBrowseTranslationsDir,
   handleScanInteractives,
+  handleCopySemanticsPrompt,
   handlePreviewSemanticsFixes,
   handleApplySemanticsFixes,
   handleRevealSourceReference,
-  handleCheckCodexMcp,
-  handleInstallCodexMcp,
+  handleCheckMcpClients,
+  handleInstallMcpClient,
+  handleCopyMcpConfig,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -288,8 +290,10 @@ function setupMessageHandler(
     .register("saveTranslations", async (msg) => { if (msg.translations) { await handleSaveTranslations(ref, msg.translations, msg.dir); } })
     .register("browseTranslationsDir", async () => await handleBrowseTranslationsDir(ref))
     .register("scanInteractives", async () => await handleScanInteractives(ref))
-    .register("checkCodexMcp", async () => await handleCheckCodexMcp(ref, extensionRoot))
-    .register("installCodexMcp", async () => await handleInstallCodexMcp(ref, extensionRoot))
+    .register("copySemanticsPrompt", async () => await handleCopySemanticsPrompt(ref))
+    .register("checkMcpClients", async () => await handleCheckMcpClients(ref, extensionRoot))
+    .register("installMcpClient", async (msg) => await handleInstallMcpClient(ref, extensionRoot, msg.client))
+    .register("copyMcpConfig", async () => await handleCopyMcpConfig(ref, extensionRoot))
     .register("previewSemanticsFixes", async (msg) => await handlePreviewSemanticsFixes(ref, msg.requests ?? []))
     .register("applySemanticsFixes", async (msg) => { if (msg.previewId) { await handleApplySemanticsFixes(ref, msg.previewId); } })
     .register("revealSourceReference", async (msg) => { if (msg.path) { await handleRevealSourceReference(ref, msg); } })

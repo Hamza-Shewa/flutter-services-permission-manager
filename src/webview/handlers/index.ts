@@ -264,6 +264,7 @@ export async function handleSaveServices(
     files.iosPlistUri,
     files.iosAppDelegateUri,
     files.iosEntitlementsUri,
+    files.iosPodfileUri,
   );
 
   if (result.success) {
@@ -410,9 +411,13 @@ export {
 } from './translations.js';
 export {
   handleScanInteractives,
+  handleCopySemanticsPrompt,
   handlePreviewSemanticsFixes,
   handleApplySemanticsFixes,
   handleRevealSourceReference,
-  handleCheckCodexMcp,
-  handleInstallCodexMcp,
 } from './semantics.js';
+export {
+  handleCheckMcpClients,
+  handleInstallMcpClient,
+  handleCopyMcpConfig,
+} from './mcp.js';

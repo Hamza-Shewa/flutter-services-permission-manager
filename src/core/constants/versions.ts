@@ -34,11 +34,8 @@ export const SIXTEEN_KB_MINIMUMS = {
 } as const;
 
 /**
- * Minimum plugin versions the FULL migration guarantees when a `plugins {}`
- * block already exists. Versions at/above these are left untouched — forcing
- * newer patch versions onto a project that already builds is what breaks
- * otherwise-working projects (e.g. kotlin-stdlib not found, or the Flutter
- * embedding not being wired up after blindly bumping Kotlin/AGP).
+ * Reference plugin versions enforced by the full migration. The AGP value is
+ * intentionally exact so a remote recommendation cannot move it past 9.3.1.
  */
 export const MIGRATION_MINIMUMS = {
     agp: "9.3.1",

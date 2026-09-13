@@ -8,103 +8,172 @@ import { PlistDocument, detectPlistIndent } from '../../shared/plist-parser.js';
 type ArrayBounds = { openEnd: number; closeStart: number };
 
 function findMatchingArrayBounds(xml: string, arrayStart: number): ArrayBounds | null {
-    const openTag = '<array>';
-    const closeTag = '</array>';
     let depth = 1;
-    let pos = arrayStart + openTag.length;
-
-    while (pos < xml.length) {
-        const nextOpen = xml.indexOf(openTag, pos);
-        const nextClose = xml.indexOf(closeTag, pos);
+    let position = arrayStart + '<array>'.length;
+    while (position < xml.length) {
+        const nextOpen = xml.indexOf('<array>', position);
+        const nextClose = xml.indexOf('</array>', position);
         if (nextClose === -1) {return null;}
-
         if (nextOpen !== -1 && nextOpen < nextClose) {
             depth++;
-            pos = nextOpen + openTag.length;
-            continue;
+            position = nextOpen + '<array>'.length;
+        } else if (--depth === 0) {
+            return { openEnd: arrayStart + '<array>'.length, closeStart: nextClose };
+        } else {
+            position = nextClose + '</array>'.length;
         }
-
-        depth--;
-        if (depth === 0) {
-            return { openEnd: arrayStart + openTag.length, closeStart: nextClose };
-        }
-        pos = nextClose + closeTag.length;
     }
-
     return null;
 }
 
 function stripApplinksBlock(plistContent: string): string {
     const blockRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/gi;
-    return plistContent.replace(blockRegex, '');
+    return plistContent
+        .replace(blockRegex, '')
+        .replace(/\s*<key>CFBundleURLTypes<\/key>\s*<array>\s*<\/array>/gi, '');
 }
 
-function buildApplinksPlistBlock(bundleId: string, scheme: string, indent = '\t\t'): string {
-    const innerIndent = `${indent}\t`;
-    const schemeLine = `${innerIndent}\t<string>${scheme}</string>`;
-
-    return `<!-- start applinks configuration -->\n${indent}<dict>\n${innerIndent}<key>CFBundleTypeRole</key>\n${innerIndent}<string>Editor</string>\n${innerIndent}<key>CFBundleURLName</key>\n${innerIndent}<string>${bundleId}</string>\n${innerIndent}<key>CFBundleURLSchemes</key>\n${innerIndent}<array>\n${schemeLine}\n${innerIndent}</array>\n${indent}</dict>\n<!-- end applinks configuration -->`;
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function replaceOrInsertApplinksBlock(plistContent: string, bundleId: string, scheme: string, block: string): string {
-    const blockRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/gi;
-    let cleaned = plistContent.replace(blockRegex, '');
-
-    const escapedBundle = bundleId ? bundleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
-    const escapedScheme = scheme ? scheme.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
-
-    if (escapedBundle) {
-        const bundleDictRegex = new RegExp(`\\n?[\\t ]*<dict>(?:(?!<dict>)[\\s\\S])*?<key>CFBundleURLName<\\/key>\\s*<string>${escapedBundle}<\\/string>(?:(?!<\\/dict>)[\\s\\S])*?<\\/dict>\\s*`, 'i');
-        cleaned = cleaned.replace(bundleDictRegex, '\n');
+function plistArrayItemExists(arrayContent: string, value: unknown): boolean {
+    if (typeof value === 'string') {
+        return new RegExp(`<string>\\s*${escapeRegExp(value)}\\s*<\\/string>`, 'i').test(arrayContent);
     }
-    if (escapedScheme) {
-        const schemeDictRegex = new RegExp(`\\n?[\\t ]*<dict>(?:(?!<dict>)[\\s\\S])*?<key>CFBundleURLSchemes<\\/key>(?:(?!<dict>)[\\s\\S])*?<string>${escapedScheme}<\\/string>(?:(?!<\\/dict>)[\\s\\S])*?<\\/dict>\\s*`, 'i');
-        cleaned = cleaned.replace(schemeDictRegex, '\n');
+    if (value && typeof value === 'object') {
+        return Object.entries(value).every(([key, itemValue]) => new RegExp(
+            `<key>${escapeRegExp(key)}<\\/key>\\s*<string>${escapeRegExp(String(itemValue))}<\\/string>`,
+            'i'
+        ).test(arrayContent));
+    }
+    return false;
+}
+
+function serializePlistArrayItem(value: unknown, indent: string): string {
+    if (typeof value === 'string') {
+        return `${indent}<string>${value}</string>`;
+    }
+    if (value && typeof value === 'object') {
+        const entries = Object.entries(value)
+            .map(([key, itemValue]) => `${indent}\t<key>${key}</key>\n${indent}\t<string>${itemValue}</string>`)
+            .join('\n');
+        return `${indent}<dict>\n${entries}\n${indent}</dict>`;
+    }
+    return '';
+}
+
+/** Merge service-owned values into a shared plist array without discarding existing entries. */
+function mergePlistArray(plistContent: string, key: string, values: unknown[], baseIndent: string): string {
+    const escapedKey = escapeRegExp(key);
+    const arrayRegex = new RegExp(`(<key>${escapedKey}<\\/key>\\s*<array>)([\\s\\S]*?)(<\\/array>)`, 'i');
+    const match = plistContent.match(arrayRegex);
+    const itemIndent = `${baseIndent}${baseIndent}`;
+
+    if (match) {
+        const additions = values
+            .filter(value => !plistArrayItemExists(match[2], value))
+            .map(value => serializePlistArrayItem(value, itemIndent))
+            .filter(Boolean);
+        if (additions.length === 0) {return plistContent;}
+        const existing = match[2].trimEnd();
+        const body = `${existing}${existing.trim() ? '\n' : ''}${additions.join('\n')}\n${baseIndent}`;
+        return plistContent.replace(arrayRegex, `$1${body}$3`);
     }
 
-    const urlTypesKeyIndex = cleaned.indexOf('<key>CFBundleURLTypes</key>');
-    if (urlTypesKeyIndex !== -1) {
-        const arrayStart = cleaned.indexOf('<array>', urlTypesKeyIndex);
-        if (arrayStart !== -1) {
-            const bounds = findMatchingArrayBounds(cleaned, arrayStart);
-            if (bounds) {
-                const { openEnd, closeStart } = bounds;
-                const arrayBody = cleaned.slice(openEnd, closeStart);
+    const items = values
+        .map(value => serializePlistArrayItem(value, itemIndent))
+        .filter(Boolean)
+        .join('\n');
+    if (!items) {return plistContent;}
+    const entryXml = `${baseIndent}<key>${key}</key>\n${baseIndent}<array>\n${items}\n${baseIndent}</array>\n`;
+    const dictEnd = plistContent.lastIndexOf('</dict>');
+    return dictEnd === -1
+        ? plistContent
+        : plistContent.slice(0, dictEnd) + entryXml + plistContent.slice(dictEnd);
+}
 
-                const dictRegex = /<dict[\s\S]*?<\/dict>/gi;
-                const keptDicts: string[] = [];
-                let dictMatch: RegExpExecArray | null;
-                while ((dictMatch = dictRegex.exec(arrayBody)) !== null) {
-                    const dict = dictMatch[0];
-                    const hasBundle = escapedBundle && new RegExp(`<key>CFBundleURLName<\/key>\s*<string>${escapedBundle}<\/string>`, 'i').test(dict);
-                    const hasScheme = escapedScheme && new RegExp(`<string>${escapedScheme}<\/string>`, 'i').test(dict);
-                    if (hasBundle || hasScheme) {
-                        continue;
-                    }
-                    keptDicts.push(dict.trim());
-                }
+/** Remove only this service's values from a shared plist array. */
+function removePlistArrayItems(plistContent: string, key: string, values: unknown[]): string {
+    const escapedKey = escapeRegExp(key);
+    const arrayRegex = new RegExp(`(<key>${escapedKey}<\\/key>\\s*<array>)([\\s\\S]*?)(<\\/array>)`, 'i');
+    const match = plistContent.match(arrayRegex);
+    if (!match) {return plistContent;}
 
-                const mergedBody = keptDicts.length > 0
-                    ? `${keptDicts.join('\n')}\n${block}`
-                    : block;
+    let body = match[2];
+    for (const value of values) {
+        if (typeof value === 'string') {
+            body = body.replace(
+                new RegExp(`\\s*<string>\\s*${escapeRegExp(value)}\\s*<\\/string>`, 'gi'),
+                '',
+            );
+            continue;
+        }
+        if (value && typeof value === 'object') {
+            const entries = Object.entries(value);
+            body = body.replace(/\s*<dict>[\s\S]*?<\/dict>/gi, block => (
+                entries.every(([itemKey, itemValue]) => new RegExp(
+                    `<key>${escapeRegExp(itemKey)}<\\/key>\\s*<string>\\s*${escapeRegExp(String(itemValue))}\\s*<\\/string>`,
+                    'i',
+                ).test(block)) ? '' : block
+            ));
+        }
+    }
 
-                const beforeClose = cleaned.slice(0, closeStart);
-                const closeIndentMatch = beforeClose.match(/\n([\t ]*)$/);
-                const closeIndent = closeIndentMatch ? closeIndentMatch[1] : '';
+    if (!/<(?:string|dict|array|data|date|integer|real|true|false)\b/i.test(body)) {
+        return plistContent.replace(
+            new RegExp(`\\s*<key>${escapedKey}<\\/key>\\s*<array>[\\s\\S]*?<\\/array>`, 'i'),
+            '',
+        );
+    }
+    return plistContent.replace(arrayRegex, `$1${body}$3`);
+}
 
-                return `${cleaned.slice(0, arrayStart)}<array>\n${mergedBody}\n${closeIndent}${cleaned.slice(closeStart)}`;
-            }
+function upsertServiceUrlScheme(
+    plistContent: string,
+    serviceId: string,
+    scheme: string,
+    urlName: string,
+    baseIndent: string,
+): string {
+    const markerRegex = new RegExp(
+        `\\s*<!-- flutter-config-manager service:${escapeRegExp(serviceId)} url-scheme -->[\\s\\S]*?<!-- end flutter-config-manager service:${escapeRegExp(serviceId)} url-scheme -->\\s*`,
+        'gi',
+    );
+    const cleaned = plistContent.replace(markerRegex, '');
+    const entryIndent = baseIndent.repeat(2);
+    const innerIndent = baseIndent.repeat(3);
+    const itemIndent = baseIndent.repeat(4);
+    const block = [
+        `${entryIndent}<!-- flutter-config-manager service:${serviceId} url-scheme -->`,
+        `${entryIndent}<dict>`,
+        `${innerIndent}<key>CFBundleTypeRole</key>`,
+        `${innerIndent}<string>Editor</string>`,
+        `${innerIndent}<key>CFBundleURLName</key>`,
+        `${innerIndent}<string>${urlName}</string>`,
+        `${innerIndent}<key>CFBundleURLSchemes</key>`,
+        `${innerIndent}<array>`,
+        `${itemIndent}<string>${scheme}</string>`,
+        `${innerIndent}</array>`,
+        `${entryIndent}</dict>`,
+        `${entryIndent}<!-- end flutter-config-manager service:${serviceId} url-scheme -->`,
+    ].join('\n');
+
+    const keyIndex = cleaned.indexOf('<key>CFBundleURLTypes</key>');
+    if (keyIndex !== -1) {
+        const arrayStart = cleaned.indexOf('<array>', keyIndex);
+        const bounds = arrayStart === -1 ? null : findMatchingArrayBounds(cleaned, arrayStart);
+        if (bounds) {
+            const existing = cleaned.slice(bounds.openEnd, bounds.closeStart).trimEnd();
+            const body = `${existing}${existing.trim() ? '\n' : ''}${block}\n${baseIndent}`;
+            return cleaned.slice(0, bounds.openEnd) + body + cleaned.slice(bounds.closeStart);
         }
     }
 
     const dictEnd = cleaned.lastIndexOf('</dict>');
-    if (dictEnd !== -1) {
-        const baseIndent = detectPlistIndent(cleaned);
-        const urlTypesXml = `${baseIndent}<key>CFBundleURLTypes</key>\n${baseIndent}<array>\n${block}\n${baseIndent}</array>\n`;
-        return cleaned.slice(0, dictEnd) + urlTypesXml + cleaned.slice(dictEnd);
-    }
-
-    return cleaned;
+    if (dictEnd === -1) {return cleaned;}
+    const urlTypes = `${baseIndent}<key>CFBundleURLTypes</key>\n${baseIndent}<array>\n${block}\n${baseIndent}</array>\n`;
+    return cleaned.slice(0, dictEnd) + urlTypes + cleaned.slice(dictEnd);
 }
 
 /**
@@ -220,38 +289,28 @@ export function updateIOSPlistWithServices(
     servicesConfig: ServiceConfig[]
 ): string {
     let result = plistContent;
-    let handledApplinks = false;
     const baseIndent = detectPlistIndent(plistContent);
     
     for (const service of services) {
         const config = servicesConfig.find(c => c.id === service.id);
         if (!config?.ios) {continue;}
 
-        if (service.id === 'applinks') {
-            const bundleId = (service.values || {}).bundleId || '';
-            const rawSchemes = (service.values || {}).scheme || '';
-            const firstScheme = Array.isArray(rawSchemes)
-                ? (rawSchemes[0] || '')
-                : String(rawSchemes).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)[0] || '';
-            const scheme = firstScheme;
-            handledApplinks = true;
-            if (bundleId && scheme) {
-                // Try to mirror indentation of existing URL type entries when present
-                const urlTypesKeyIndex = result.indexOf('<key>CFBundleURLTypes</key>');
-                let entryIndent = '\t\t';
-                if (urlTypesKeyIndex !== -1) {
-                    const arrayStart = result.indexOf('<array>', urlTypesKeyIndex);
-                    if (arrayStart !== -1) {
-                        const indentMatch = result.slice(arrayStart, arrayStart + 200).match(/\n([\t ]+)<dict>/);
-                        if (indentMatch) {
-                            entryIndent = indentMatch[1];
-                        }
-                    }
-                }
+        if (service.id === 'firebase') {
+            // Older releases disabled swizzling even though FlutterFire relies
+            // on it for FCM token handling.
+            result = result.replace(
+                /\s*<key>FirebaseAppDelegateProxyEnabled<\/key>\s*<(?:true|false)\/>/gi,
+                '',
+            );
+        }
+        if (service.id === 'twitter') {
+            result = result.replace(/\s*<string>twitterkit-[^<]+<\/string>/gi, '');
+        }
 
-                const applinksBlock = buildApplinksPlistBlock(bundleId, scheme, entryIndent);
-                result = replaceOrInsertApplinksBlock(result, bundleId, scheme, applinksBlock);
-            }
+        if (service.id === 'applinks') {
+            // HTTPS Universal Links are configured through associated-domain
+            // entitlements, not by registering http/https as custom schemes.
+            result = stripApplinksBlock(result);
             continue;
         }
         
@@ -293,25 +352,7 @@ export function updateIOSPlistWithServices(
                         result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
                     }
                 } else if (entry.type === 'array' && entry.staticValue) {
-                    // Skip if already exists
-                    if (result.includes(`<key>${entry.key}</key>`)) {continue;}
-                    
-                    const arrayItems = (entry.staticValue as unknown[]).map(v => {
-                        if (typeof v === 'string') {
-                            return `${baseIndent.repeat(2)}<string>${v}</string>`;
-                        } else if (typeof v === 'object' && v !== null) {
-                            const dictEntries = Object.entries(v).map(([key, val]) => 
-                                `${baseIndent.repeat(3)}<key>${key}</key>\n${baseIndent.repeat(3)}<string>${val}</string>`
-                            ).join('\n');
-                            return `${baseIndent.repeat(2)}<dict>\n${dictEntries}\n${baseIndent.repeat(2)}</dict>`;
-                        }
-                        return '';
-                    }).join('\n');
-                    const entryXml = `${baseIndent}<key>${entry.key}</key>\n${baseIndent}<array>\n${arrayItems}\n${baseIndent}</array>\n`;
-                    const dictEnd = result.lastIndexOf('</dict>');
-                    if (dictEnd !== -1) {
-                        result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
-                    }
+                    result = mergePlistArray(result, entry.key, entry.staticValue as unknown[], baseIndent);
                 }
             }
         }
@@ -319,69 +360,27 @@ export function updateIOSPlistWithServices(
         // Add/update URL schemes in existing CFBundleURLSchemes array
         if (config.ios.urlSchemes && config.ios.urlSchemes.length > 0) {
             for (const scheme of config.ios.urlSchemes) {
-                let value = (service.values || {})[scheme.valueField] || '';
+                let value = scheme.staticValue
+                    || (scheme.valueField ? (service.values || {})[scheme.valueField] : '')
+                    || '';
                 if (!value) {continue;}
                 
                 const newScheme = scheme.prefix ? scheme.prefix + value : value;
                 
-                // Find existing CFBundleURLSchemes array
-                const urlSchemesRegex = /<key>CFBundleURLSchemes<\/key>\s*<array>([\s\S]*?)<\/array>/;
-                const urlSchemesMatch = result.match(urlSchemesRegex);
-                
-                if (urlSchemesMatch) {
-                    const existingSchemes = urlSchemesMatch[1];
-                    
-                    // Check if this exact scheme already exists
-                    if (existingSchemes.includes(`<string>${newScheme}</string>`)) {
-                        continue; // Already exists with same value
-                    }
-                    
-                    // Check if there's an existing scheme with this prefix that needs updating
-                    if (scheme.prefix) {
-                        const prefixPattern = new RegExp(
-                            `<string>${scheme.prefix}[^<]+</string>`,
-                            'g'
-                        );
-                        const prefixMatch = existingSchemes.match(prefixPattern);
-                        
-                        if (prefixMatch && prefixMatch.length > 0) {
-                            // Replace the first matching scheme with the new value
-                            result = result.replace(
-                                prefixMatch[0],
-                                `<string>${newScheme}</string>`
-                            );
-                            continue;
-                        }
-                    }
-                    
-                    // No existing scheme with prefix - add new scheme
-                    const schemasArrayEnd = result.indexOf('</array>', urlSchemesMatch.index!);
-                    const schemeToAdd = `${baseIndent.repeat(4)}<string>${newScheme}</string>\n${baseIndent.repeat(3)}`;
-                    result = result.slice(0, schemasArrayEnd) + schemeToAdd + result.slice(schemasArrayEnd);
-                } else if (result.includes('<key>CFBundleURLTypes</key>')) {
-                    // CFBundleURLTypes exists but no CFBundleURLSchemes found - look for first dict
-                    const urlTypesMatch = result.match(/<key>CFBundleURLTypes<\/key>\s*<array>\s*<dict>/);
-                    if (urlTypesMatch) {
-                        const firstDictEnd = result.indexOf('</dict>', urlTypesMatch.index! + urlTypesMatch[0].length);
-                        const schemesXml = `${baseIndent.repeat(3)}<key>CFBundleURLSchemes</key>\n${baseIndent.repeat(3)}<array>\n${baseIndent.repeat(4)}<string>${newScheme}</string>\n${baseIndent.repeat(3)}</array>\n${baseIndent.repeat(2)}`;
-                        result = result.slice(0, firstDictEnd) + schemesXml + result.slice(firstDictEnd);
-                    }
-                } else {
-                    // No CFBundleURLTypes - create it
-                    const urlTypesXml = `${baseIndent}<key>CFBundleURLTypes</key>\n${baseIndent}<array>\n${baseIndent.repeat(2)}<dict>\n${baseIndent.repeat(3)}<key>CFBundleTypeRole</key>\n${baseIndent.repeat(3)}<string>Editor</string>\n${baseIndent.repeat(3)}<key>CFBundleURLSchemes</key>\n${baseIndent.repeat(3)}<array>\n${baseIndent.repeat(4)}<string>${newScheme}</string>\n${baseIndent.repeat(3)}</array>\n${baseIndent.repeat(2)}</dict>\n${baseIndent}</array>\n`;
-                    const dictEnd = result.lastIndexOf('</dict>');
-                    if (dictEnd !== -1) {
-                        result = result.slice(0, dictEnd) + urlTypesXml + result.slice(dictEnd);
-                    }
-                }
+                result = upsertServiceUrlScheme(
+                    result,
+                    service.id,
+                    newScheme,
+                    scheme.urlName || service.id,
+                    baseIndent,
+                );
             }
         }
     }
 
-    // If applinks service not present, strip any existing applinks block from plist
-    if (!handledApplinks) {
-        result = stripApplinksBlock(result);
-    }
+    // Remove blocks emitted by older releases; Universal Links never require a
+    // CFBundleURLTypes entry for the http/https schemes.
+    result = stripApplinksBlock(result);
     
     return result;
 }
@@ -397,7 +396,7 @@ export function removeServicesFromIOSPlist(
     let result = plistContent;
     
     // Keys that should NOT be removed as they may be shared across services
-    const protectedKeys = ['LSApplicationQueriesSchemes'];
+    const protectedKeys = ['LSApplicationQueriesSchemes', 'SKAdNetworkItems'];
     
     for (const serviceId of removedServiceIds) {
         if (serviceId === 'applinks') {
@@ -408,12 +407,24 @@ export function removeServicesFromIOSPlist(
 
         const config = servicesConfig.find(c => c.id === serviceId);
         if (!config?.ios) {continue;}
+
+        const markerRegex = new RegExp(
+            `\\s*<!-- flutter-config-manager service:${escapeRegExp(serviceId)} url-scheme -->[\\s\\S]*?<!-- end flutter-config-manager service:${escapeRegExp(serviceId)} url-scheme -->\\s*`,
+            'gi',
+        );
+        result = result.replace(markerRegex, '');
         
         // Remove plist entries
         if (config.ios.plistEntries) {
             for (const entry of config.ios.plistEntries) {
-                // Skip protected keys
-                if (protectedKeys.includes(entry.key)) {continue;}
+                // Shared arrays are edited item-by-item so removing one service
+                // cannot discard entries owned by the app or another service.
+                if (protectedKeys.includes(entry.key)) {
+                    if (entry.type === 'array' && Array.isArray(entry.staticValue)) {
+                        result = removePlistArrayItems(result, entry.key, entry.staticValue);
+                    }
+                    continue;
+                }
                 
                 // Remove string entries: <key>xxx</key>\n\t<string>yyy</string>
                 if (entry.type === 'string') {
@@ -449,6 +460,12 @@ export function removeServicesFromIOSPlist(
                     // Remove schemes that start with this prefix
                     const schemeRegex = new RegExp(
                         `\\s*<string>${scheme.prefix}[^<]+</string>`,
+                        'gi'
+                    );
+                    result = result.replace(schemeRegex, '');
+                } else if (scheme.staticValue) {
+                    const schemeRegex = new RegExp(
+                        `\\s*<string>${escapeRegExp(scheme.staticValue)}<\\/string>`,
                         'gi'
                     );
                     result = result.replace(schemeRegex, '');

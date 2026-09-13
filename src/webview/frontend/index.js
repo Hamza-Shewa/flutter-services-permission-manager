@@ -10,6 +10,7 @@ import * as localization from './features/localization/localization.js';
 import * as translations from './features/localization/translations.js';
 import * as buildDetails from './features/build/build-details.js';
 import * as semantics from './features/semantics/semantics.js';
+import * as mcp from './features/mcp/mcp.js';
 import * as utils from './core/utils.js';
 import * as router from './core/router.js';
 
@@ -22,6 +23,7 @@ Object.assign(window, localization);
 Object.assign(window, translations);
 Object.assign(window, buildDetails);
 Object.assign(window, semantics);
+Object.assign(window, mcp);
 Object.assign(window, utils);
 Object.assign(window, router);
 
@@ -34,6 +36,7 @@ window.localization = localization;
 window.translations = translations;
 window.buildDetails = buildDetails;
 window.semantics = semantics;
+window.mcp = mcp;
 window.utils = utils;
 window.router = router;
 window.api = api;

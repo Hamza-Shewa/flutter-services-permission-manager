@@ -151,7 +151,7 @@ export function createServer(root: string): McpServer {
     {
       title: 'List available service integrations',
       description:
-        'Lists the third-party service integrations this tool can configure (Facebook SDK, Google Sign-In, Firebase, AdMob, OneSignal, Stripe, …) and what platform files each touches.',
+        'Lists the extension’s third-party service integrations, required fields, native changes, runtime constants, and setup notes.',
       inputSchema: z.object({}),
     },
     async () => {

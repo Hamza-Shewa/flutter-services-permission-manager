@@ -2,7 +2,7 @@
   "name": "flutter-config-manager",
   "displayName": "Flutter Config Manager",
   "description": "Manage Flutter Android/iOS/macOS permissions, services, and app name localizations. Update manifests, plists, Podfile, and AppDelegate from one VS Code UI.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "hamza-shewa",
   "author": {
     "name": "Hamza Shewa",
@@ -178,7 +178,19 @@
           "type": "string",
           "default": "",
           "scope": "window",
-          "description": "Optional full path to the Codex CLI executable used by the Semantics tab's user-level MCP installer. Leave empty to search PATH and common Windows, macOS, and Linux locations."
+          "description": "Optional full path to the Codex CLI executable used by the global user-level MCP connector. Leave empty to search PATH and common Windows, macOS, and Linux locations."
+        },
+        "flutter-config-manager.mcp.claudeExecutable": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Optional full path to the Claude Code CLI executable used by the user-level MCP installer. Leave empty to search PATH and common platform locations."
+        },
+        "flutter-config-manager.mcp.geminiExecutable": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Optional full path to the Gemini CLI executable used by the user-level MCP installer. Leave empty to search PATH and common platform locations."
         }
       }
     }

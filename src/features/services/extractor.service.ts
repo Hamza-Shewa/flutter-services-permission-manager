@@ -9,6 +9,7 @@ import { extractAndroidAppNameLocalizations, extractAppNameFromManifest } from '
 import { extractIOSAppNameLocalizations, extractAppNameFromInfoPlist } from '../localization/ios.localization.service.js';
 import { extractApplinkIntents } from './intent-parser.js';
 import { resolveStringReference } from '../localization/string-resolver.js';
+import { GENERATED_SERVICES_DART_PATH, extractDartServiceConfig } from './dart-config.service.js';
 
 function joinDomains(domains: string[]): string {
     return Array.from(new Set(domains)).join(', ');
@@ -35,15 +36,10 @@ export async function extractServicesFromAndroid(
         const content = doc.getText();
         const services: ServiceEntry[] = [];
         
-        console.log('[Services Extractor] Extracting services from Android manifest');
-        console.log('[Services Extractor] Services config count:', servicesConfig.length);
-
         for (const serviceConfig of servicesConfig) {
             const extractedValues: Record<string, string> = {};
             let foundService = false;
             
-            console.log(`[Services Extractor] Checking for service: ${serviceConfig.id}`);
-
             if (serviceConfig.id === 'applinks') {
                 const applinksRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/i;
                 const applinksBlock = content.match(applinksRegex)?.[0] ?? '';
@@ -121,8 +117,6 @@ export async function extractServicesFromAndroid(
                     if (valueMatch) {
                         foundService = true;
                         let value = valueMatch[1];
-                        console.log(`[Services Extractor] Found meta-data ${metaDataConfig.name} = ${value}`);
-                        
                         // Resolve string references
                         if (value.startsWith('@')) {
                             const resolved = await resolveStringReference(value, androidManifestUri);
@@ -202,20 +196,55 @@ export async function extractServicesFromAndroid(
 
             // Check queries for service-specific providers
             for (const queryConfig of serviceConfig.android.queries) {
-                if (queryConfig.tag === 'provider' && queryConfig.attributes['android:authorities']) {
-                    const authority = queryConfig.attributes['android:authorities'].replace(/\./g, '\\.');
-                    const providerRegex = new RegExp(`<provider[^>]*android:authorities="${authority}"`, 'i');
-                    
-                    if (providerRegex.test(content)) {
-                        foundService = true;
+                const identifyingAttribute = queryConfig.attributes['android:authorities']
+                    ? ['android:authorities', queryConfig.attributes['android:authorities']]
+                    : queryConfig.attributes['android:name']
+                        ? ['android:name', queryConfig.attributes['android:name']]
+                        : undefined;
+                if (identifyingAttribute) {
+                    const [attribute, rawValue] = identifyingAttribute;
+                    const value = rawValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const queryRegex = new RegExp(
+                        `<${queryConfig.tag}[^>]*${attribute.replace(':', '\\:')}=["']${value}["']`,
+                        'i',
+                    );
+                    if (queryRegex.test(content)) {foundService = true;}
+                }
+            }
+
+            for (const intentFilter of serviceConfig.android.mainActivityIntentFilters ?? []) {
+                const markerRegex = new RegExp(
+                    `<!-- flutter-config-manager service:${serviceConfig.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} -->[\\s\\S]*?<!-- end flutter-config-manager service:${serviceConfig.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} -->`,
+                    'i',
+                );
+                const markedBlock = content.match(markerRegex)?.[0];
+                const source = markedBlock || content;
+                const dataConfigs = intentFilter.children?.filter(child => child.tag === 'data') ?? [];
+                for (const dataConfig of dataConfigs) {
+                    const dataTags = Array.from(source.matchAll(/<data\b[^>]*>/gi)).map(match => match[0]);
+                    for (const dataTag of dataTags) {
+                        let matches = true;
+                        const captured: Record<string, string> = {};
+                        for (const [attribute, template] of Object.entries(dataConfig.attributes)) {
+                            const actual = dataTag.match(new RegExp(`${attribute.replace(':', '\\:')}=["']([^"']*)["']`, 'i'))?.[1];
+                            const placeholder = template.match(/^\{(\w+)\}$/)?.[1];
+                            if (placeholder) {
+                                if (actual) {captured[placeholder] = actual;} else if (serviceConfig.fields.some(field => field.id === placeholder && field.required)) {matches = false;}
+                            } else if (actual !== template) {
+                                matches = false;
+                            }
+                        }
+                        if (matches) {
+                            foundService = true;
+                            Object.assign(extractedValues, captured);
+                            break;
+                        }
                     }
                 }
             }
 
             // If we found indicators of this service, try to get display name from strings.xml
             if (foundService) {
-                console.log(`[Services Extractor] Found service ${serviceConfig.id}`);
-                
                 // For Facebook, try to get display name from app_name or a facebook-specific string
                 if (serviceConfig.id === 'facebook' && !extractedValues['displayName']) {
                     const appName = await resolveStringReference('@string/app_name', androidManifestUri);
@@ -224,18 +253,13 @@ export async function extractServicesFromAndroid(
                     }
                 }
                 
-                // Only add if we have at least one value
-                if (Object.keys(extractedValues).length > 0) {
-                    console.log(`[Services Extractor] Adding service ${serviceConfig.id} with values:`, extractedValues);
-                    services.push({
-                        id: serviceConfig.id,
-                        values: extractedValues
-                    });
-                }
+                services.push({
+                    id: serviceConfig.id,
+                    values: extractedValues
+                });
             }
         }
 
-        console.log(`[Services Extractor] Found ${services.length} services`);
         return services;
     } catch (error) {
         console.error('[Services Extractor] Error extracting services from Android:', error);
@@ -319,6 +343,20 @@ export async function extractServicesFromIOS(
             if (serviceConfig.ios.urlSchemes) {
                 for (const urlScheme of serviceConfig.ios.urlSchemes) {
                     const prefix = urlScheme.prefix || '';
+                    const markerRegex = new RegExp(
+                        `<!-- flutter-config-manager service:${serviceConfig.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} url-scheme -->[\\s\\S]*?<key>CFBundleURLSchemes<\\/key>\\s*<array>[\\s\\S]*?<string>([^<]+)<\\/string>[\\s\\S]*?<!-- end flutter-config-manager service:${serviceConfig.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} url-scheme -->`,
+                        'i',
+                    );
+                    const ownedScheme = content.match(markerRegex)?.[1]?.trim();
+                    if (ownedScheme) {
+                        foundService = true;
+                        if (urlScheme.valueField) {
+                            extractedValues[urlScheme.valueField] = prefix && ownedScheme.startsWith(prefix)
+                                ? ownedScheme.slice(prefix.length)
+                                : ownedScheme;
+                        }
+                        continue;
+                    }
                     
                     // Find all CFBundleURLSchemes arrays and extract all strings
                     const urlSchemesBlockRegex = /<key>CFBundleURLSchemes<\/key>\s*<array>([\s\S]*?)<\/array>/gi;
@@ -333,8 +371,13 @@ export async function extractServicesFromIOS(
                         while ((stringMatch = stringRegex.exec(arrayContent)) !== null) {
                             const schemeValue = stringMatch[1].trim();
                             if (!schemeValue) {continue;}
+
+                            if (urlScheme.staticValue && schemeValue === urlScheme.staticValue) {
+                                foundService = true;
+                                continue;
+                            }
                             
-                            if (prefix && schemeValue.startsWith(prefix)) {
+                            if (prefix && urlScheme.valueField && schemeValue.startsWith(prefix)) {
                                 foundService = true;
                                 const valueWithoutPrefix = schemeValue.substring(prefix.length);
                                 
@@ -342,14 +385,8 @@ export async function extractServicesFromIOS(
                                 if (!extractedValues[urlScheme.valueField]) {
                                     extractedValues[urlScheme.valueField] = valueWithoutPrefix;
                                 }
-                            } else if (!prefix && schemeValue.includes('.googleusercontent.apps.')) {
+                            } else if (!prefix && urlScheme.valueField && schemeValue.includes('.googleusercontent.apps.')) {
                                 // Google reversed client ID
-                                foundService = true;
-                                if (!extractedValues[urlScheme.valueField]) {
-                                    extractedValues[urlScheme.valueField] = schemeValue;
-                                }
-                            } else if (!prefix && urlScheme.valueField === 'scheme') {
-                                // Deep link scheme extraction (no prefix, direct scheme)
                                 foundService = true;
                                 if (!extractedValues[urlScheme.valueField]) {
                                     extractedValues[urlScheme.valueField] = schemeValue;
@@ -360,9 +397,7 @@ export async function extractServicesFromIOS(
                 }
             }
 
-            // Only add service if we found actual values (not empty strings)
-            const hasValidValues = Object.values(extractedValues).some(v => v && v.trim());
-            if (foundService && hasValidValues) {
+            if (foundService) {
                 services.push({
                     id: serviceConfig.id,
                     values: extractedValues
@@ -394,21 +429,35 @@ export async function extractServicesFromIOSEntitlements(
         const services: ServiceEntry[] = [];
 
         for (const serviceConfig of servicesConfig) {
-            if (serviceConfig.id !== 'applinks') {continue;}
-
             const extractedValues: Record<string, string> = {};
             let foundService = false;
 
-            const applinksRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/i;
-            const block = content.match(applinksRegex)?.[0] ?? '';
-
-            const source = block || content;
-            const domainMatches = Array.from(source.matchAll(/<string>applinks:([^<]+)<\/string>/gi));
-            const domains = domainMatches.map(match => match[1]).filter(Boolean);
-
-            if (domains.length > 0) {
-                extractedValues['domains'] = joinDomains(domains.map(d => d.trim()));
-                foundService = true;
+            if (serviceConfig.id === 'applinks') {
+                const associatedDomains = content.match(
+                    /<key>com\.apple\.developer\.associated-domains<\/key>\s*<array>([\s\S]*?)<\/array>/i,
+                )?.[1] ?? '';
+                const domains = Array.from(associatedDomains.matchAll(/<string>applinks:([^<]+)<\/string>/gi))
+                    .map(match => match[1].trim())
+                    .filter(Boolean);
+                if (domains.length > 0) {
+                    extractedValues['domains'] = joinDomains(domains);
+                    foundService = true;
+                }
+            } else {
+                for (const entitlement of serviceConfig.ios.entitlements ?? []) {
+                    const escapedKey = entitlement.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const arrayContent = content.match(
+                        new RegExp(`<key>${escapedKey}<\\/key>\\s*<array>([\\s\\S]*?)<\\/array>`, 'i'),
+                    )?.[1];
+                    if (!arrayContent) {continue;}
+                    foundService = true;
+                    if (entitlement.valueField) {
+                        const values = Array.from(arrayContent.matchAll(/<string>([^<]+)<\/string>/gi))
+                            .map(match => match[1].trim())
+                            .filter(Boolean);
+                        if (values[0]) {extractedValues[entitlement.valueField] = values[0];}
+                    }
+                }
             }
 
             if (foundService) {
@@ -442,8 +491,6 @@ export async function extractServicesFromAppDelegate(
         const content = doc.getText();
         const services: ServiceEntry[] = [];
         
-        console.log('[Services Extractor] Extracting from AppDelegate.swift');
-
         for (const serviceConfig of servicesConfig) {
             const extractedValues: Record<string, string> = {};
             let foundService = false;
@@ -455,7 +502,6 @@ export async function extractServicesFromAppDelegate(
             // Check if import exists
             if (appDelegateConfig.import && content.includes(`import ${appDelegateConfig.import}`)) {
                 foundService = true;
-                console.log(`[Services Extractor] Found import: ${appDelegateConfig.import}`);
             }
             
             // Extract values based on code pattern
@@ -468,19 +514,16 @@ export async function extractServicesFromAppDelegate(
                     if (match && match[1]) {
                         foundService = true;
                         extractedValues['iosApiKey'] = match[1];
-                        console.log(`[Services Extractor] Found Google Maps API key: ${match[1]}`);
                     }
                 } else if (appDelegateConfig.code.includes('FirebaseApp.configure')) {
                     // Firebase detection - just check if the call exists
                     if (content.includes('FirebaseApp.configure()')) {
                         foundService = true;
-                        console.log('[Services Extractor] Found Firebase configuration');
                     }
                 } else if (appDelegateConfig.code.includes('ApplicationDelegate.shared.application')) {
                     // Facebook SDK detection
                     if (content.includes('ApplicationDelegate.shared.application')) {
                         foundService = true;
-                        console.log('[Services Extractor] Found Facebook SDK initialization');
                     }
                 } else {
                     // Generic pattern matching for other services
@@ -508,7 +551,6 @@ export async function extractServicesFromAppDelegate(
             }
 
             if (foundService && Object.keys(extractedValues).length > 0) {
-                console.log(`[Services Extractor] Adding service ${serviceConfig.id} from AppDelegate`);
                 services.push({
                     id: serviceConfig.id,
                     values: extractedValues
@@ -531,12 +573,51 @@ function findPlatformRoot(filePath: string, platformDirName: string): string | u
 }
 
 async function extractAssociatedApplinksFiles(
+    workspaceRoot: vscode.Uri | undefined,
     androidManifestUri: vscode.Uri | undefined,
     iosPlistUri: vscode.Uri | undefined,
     androidMainActivityUri: vscode.Uri | undefined,
     iosPbxprojUri: vscode.Uri | undefined
 ): Promise<Record<string, string>> {
     const values: Record<string, string> = {};
+
+    if (workspaceRoot) {
+        try {
+            const outputRoot = vscode.Uri.joinPath(workspaceRoot, '.flutter-config-manager', 'app-links-hosting');
+            const entries = await vscode.workspace.fs.readDirectory(outputRoot);
+            const domains = entries.filter(([, type]) => type === vscode.FileType.Directory).map(([name]) => name);
+            if (domains.length > 0) {values['domains'] = joinDomains(domains);}
+
+            for (const domain of domains) {
+                const wellKnown = vscode.Uri.joinPath(outputRoot, domain, '.well-known');
+                if (!values['packageName']) {
+                    try {
+                        const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(wellKnown, 'assetlinks.json'));
+                        const json = JSON.parse(Buffer.from(bytes).toString('utf8')) as Array<{ target?: { package_name?: string; sha256_cert_fingerprints?: string[] } }>;
+                        const target = json[0]?.target;
+                        if (target?.package_name) {values['packageName'] = target.package_name;}
+                        if (target?.sha256_cert_fingerprints?.length) {
+                            values['sha256CertFingerprints'] = target.sha256_cert_fingerprints.join(', ');
+                        }
+                    } catch { /* Android hosting artifact is optional. */ }
+                }
+                if (!values['teamId']) {
+                    try {
+                        const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(wellKnown, 'apple-app-site-association'));
+                        const json = JSON.parse(Buffer.from(bytes).toString('utf8')) as { applinks?: { details?: Array<{ appIDs?: string[]; appID?: string }> } };
+                        const appId = json.applinks?.details?.[0]?.appIDs?.[0] || json.applinks?.details?.[0]?.appID;
+                        if (appId?.includes('.')) {
+                            const [teamId, ...bundleParts] = appId.split('.');
+                            values['teamId'] = teamId;
+                            values['bundleId'] = bundleParts.join('.');
+                        }
+                    } catch { /* Apple hosting artifact is optional. */ }
+                }
+            }
+        } catch {
+            // Generated hosting output has not been created yet.
+        }
+    }
 
     try {
         let androidRoot: string | undefined;
@@ -713,6 +794,17 @@ export async function extractServices(
     iosPbxprojUri: vscode.Uri | undefined,
     servicesConfig: ServiceConfig[]
 ): Promise<ServiceEntry[]> {
+    let dartServices: ServiceEntry[] = [];
+    if (workspaceRoot) {
+        try {
+            const uri = vscode.Uri.joinPath(workspaceRoot, ...GENERATED_SERVICES_DART_PATH.split('/'));
+            const content = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8');
+            dartServices = extractDartServiceConfig(content, servicesConfig);
+        } catch {
+            // Runtime constants have not been generated for this project.
+        }
+    }
+
     const [androidServices, iosServices, appDelegateServices, entitlementsServices, appNameService] = await Promise.all([
         extractServicesFromAndroid(androidManifestUri, servicesConfig),
         extractServicesFromIOS(iosPlistUri, servicesConfig),
@@ -724,9 +816,17 @@ export async function extractServices(
     // Merge services, preferring values from all sources
     const mergedServices: Map<string, ServiceEntry> = new Map();
 
+    for (const service of dartServices) {
+        mergedServices.set(service.id, service);
+    }
+
     // Add Android services
     for (const service of androidServices) {
-        mergedServices.set(service.id, service);
+        const existing = mergedServices.get(service.id);
+        mergedServices.set(service.id, {
+            id: service.id,
+            values: { ...existing?.values, ...service.values },
+        });
     }
 
     // Merge iOS plist services
@@ -760,6 +860,7 @@ export async function extractServices(
     }
 
     const applinksAssociatedValues = await extractAssociatedApplinksFiles(
+        workspaceRoot,
         androidManifestUri,
         iosPlistUri,
         androidMainActivityUri,

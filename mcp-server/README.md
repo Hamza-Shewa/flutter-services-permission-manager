@@ -18,7 +18,7 @@ it makes is byte-for-byte identical to what the VS Code UI produces.
 | `list_permissions` | Permissions currently present in the Android manifest and iOS/macOS Info.plist, enriched with catalog metadata. |
 | `add_permission` | Add a permission to Android and/or iOS (preserves existing structure/comments). |
 | `remove_permission` | Remove a permission from Android and/or iOS. |
-| `list_services` | Available third-party service integrations (Facebook, Google Sign-In, Firebase, AdMob, OneSignal, Stripe, …). |
+| `list_services` | Available third-party service integrations and their native/runtime setup metadata. |
 | `list_translations` | ARB/JSON translation files in the project with locale and key counts. |
 | `translate_locale` | Machine-translate a locale file from the reference locale (free keyless providers: MyMemory → Google → LibreTranslate). |
 | `add_translation_locale` | Create a new locale file inheriting reference keys (empty values). |
@@ -51,13 +51,14 @@ no setup needed. AI agents (Copilot, etc.) can then call the tools above.
 
 ### Standalone (Claude Desktop, Cursor, CLI, …)
 
-The easiest Codex setup is the **Install MCP for Codex** button in the
-extension's top navigation. It checks for a matching existing registration
-before enabling installation, then registers the server in the user's Codex config
-on Windows, macOS, and Linux and binds the entry to the current Flutter
-workspace. It uses the editor's bundled Node-compatible runtime, so this path
-does not need a separately installed `node` executable. No `.vscode/mcp.json`
-or other project configuration is written.
+The easiest setup is the **Connect MCP** button in the extension's top
+navigation. It detects and configures Codex, Claude Code, Gemini CLI, and Cursor
+at user scope on Windows, macOS, and Linux. A standard `mcpServers` JSON block
+is available for any other compatible client. Existing matching registrations
+are disabled in the dialog, so repeated clicks do not create duplicates. Each
+entry is bound to the current Flutter workspace and uses the editor's bundled
+Node-compatible runtime; no separate `node` executable or project-level MCP
+file is required.
 
 Compile first (from the repo root):
 

@@ -4,6 +4,7 @@ import {
     removeServicesFromAppDelegate
 } from '../../core/platform/ios/appdelegate.service.js';
 import { ServiceConfig } from '../../core/types/index.js';
+import { loadServicesConfig } from '../helpers.js';
 
 suite('iOS AppDelegate Service Test Suite', () => {
     const dummyServiceConfig: ServiceConfig = {
@@ -119,6 +120,29 @@ import app_links
             );
             assert.ok(updated.includes('import home_widget'));
             assert.ok(updated.includes('import app_links'));
+        });
+
+        test('does not initialize Maps when the optional iOS key is blank', () => {
+            const updated = updateAppDelegateWithServices(
+                emptyAppDelegate,
+                [{ id: 'maps', values: { androidApiKey: 'android-only', iosApiKey: '' } }],
+                loadServicesConfig(),
+            );
+            assert.ok(!updated.includes('import GoogleMaps'));
+            assert.ok(!updated.includes('GMSServices.provideAPIKey'));
+        });
+
+        test('removes legacy generated Firebase native initialization', () => {
+            const legacy = emptyAppDelegate
+                .replace('import Flutter', 'import Flutter\nimport Firebase')
+                .replace('GeneratedPluginRegistrant.register(with: self)', 'FirebaseApp.configure()\n    GeneratedPluginRegistrant.register(with: self)');
+            const updated = updateAppDelegateWithServices(
+                legacy,
+                [{ id: 'firebase', values: {} }],
+                loadServicesConfig(),
+            );
+            assert.ok(!updated.includes('FirebaseApp.configure()'));
+            assert.ok(!updated.includes('import Firebase'));
         });
     });
 

@@ -160,6 +160,11 @@ export function openServiceModal(serviceId, existingValues = {}) {
 
     serviceModalContent.innerHTML = `
             <div class="service-form">
+                ${config.setupNotes?.length ? `
+                  <div class="service-setup-notes">
+                    ${config.setupNotes.map((note) => `<div>• ${escapeAttr(note)}</div>`).join("")}
+                  </div>
+                ` : ""}
                 ${config.fields
         .map((field) => {
           const fieldType = field.type || "text";
@@ -374,13 +379,6 @@ export function saveService() {
   }
 
 export function handleSaveServices() {
-    console.log("[PermissionManager] handleSaveServices called");
-    console.log(
-      "[PermissionManager] Services to save:",
-      JSON.stringify(state.services),
-    );
-
-    console.log("[PermissionManager] Posting saveServices message");
     showToast("Saving services...", "info");
 
     api.postMessage({
@@ -388,4 +386,3 @@ export function handleSaveServices() {
       services: state.services,
     });
   }
-

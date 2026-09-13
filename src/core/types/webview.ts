@@ -15,6 +15,10 @@ import type {
   SemanticsFixPreview,
   SemanticsFixRequest,
 } from "../../features/semantics/types.js";
+import type {
+  McpClientId,
+  McpClientStatus,
+} from "../../features/semantics/codex-mcp-installer.js";
 
 /** Platform build metadata item */
 export interface PlatformDetailItem {
@@ -189,8 +193,10 @@ export type WebviewMessage =
   }
   | { type: "browseTranslationsDir" }
   | { type: "scanInteractives" }
-  | { type: "checkCodexMcp" }
-  | { type: "installCodexMcp" }
+  | { type: "copySemanticsPrompt" }
+  | { type: "checkMcpClients" }
+  | { type: "installMcpClient"; client: McpClientId }
+  | { type: "copyMcpConfig" }
   | {
     type: "previewSemanticsFixes";
     requests: SemanticsFixRequest[];
@@ -299,7 +305,11 @@ export type WebviewOutgoingMessage =
   | InteractivesInvalidatedMessage
   | SemanticsFixPreviewMessage
   | SemanticsFixAppliedMessage
-  | CodexMcpStatusMessage;
+  | SemanticsPromptCopyingMessage
+  | SemanticsPromptCopiedMessage
+  | McpClientsStatusMessage
+  | McpClientInstallingMessage
+  | McpConfigCopiedMessage;
 
 export interface InteractivesResultMessage {
   type: "interactivesResult";
@@ -330,13 +340,30 @@ export interface SemanticsFixAppliedMessage {
   result: ApplySemanticsResult;
 }
 
-export interface CodexMcpStatusMessage {
-  type: "codexMcpStatus";
-  state: "checking" | "installing" | "installed" | "not-installed" | "outdated" | "unavailable" | "error";
-  serverName?: string;
-  message: string;
-  canInstall: boolean;
-  restartRequired?: boolean;
+export interface SemanticsPromptCopyingMessage {
+  type: "semanticsPromptCopying";
+  copying: boolean;
+}
+
+export interface SemanticsPromptCopiedMessage {
+  type: "semanticsPromptCopied";
+}
+
+export interface McpClientsStatusMessage {
+  type: "mcpClientsStatus";
+  clients: McpClientStatus[];
+  manualConfig: string;
+  loading?: boolean;
+  error?: string;
+}
+
+export interface McpClientInstallingMessage {
+  type: "mcpClientInstalling";
+  client: McpClientId;
+}
+
+export interface McpConfigCopiedMessage {
+  type: "mcpConfigCopied";
 }
 
 /** Result of a save operation */

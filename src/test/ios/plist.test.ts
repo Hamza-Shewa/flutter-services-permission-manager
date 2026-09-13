@@ -5,7 +5,7 @@ import {
     removeServicesFromIOSPlist,
     validateIOSPermissionEntries
 } from '../../core/platform/ios/plist.service.js';
-import { loadFixture } from '../helpers.js';
+import { loadFixture, loadServicesConfig } from '../helpers.js';
 import { ServiceConfig, IOSPermissionEntry } from '../../core/types/index.js';
 
 suite('iOS Plist Service Test Suite', () => {
@@ -96,6 +96,70 @@ suite('iOS Plist Service Test Suite', () => {
             const updated = updateIOSPlistWithServices(basePlist, [{ id: 'dummy', values: { apiKey: '12345' } }], [dummyServiceConfig]);
             assert.ok(updated.includes('<key>CFBundleURLTypes</key>'));
             assert.ok(updated.includes('<string>dummy-12345</string>'));
+        });
+
+        test('merges shared query and SKAdNetwork arrays across real services', () => {
+            const configs = loadServicesConfig();
+            const existing = basePlist.replace(
+                '</dict>',
+                '<key>LSApplicationQueriesSchemes</key><array><string>existing</string></array>' +
+                '<key>SKAdNetworkItems</key><array><dict><key>SKAdNetworkIdentifier</key><string>existing.skadnetwork</string></dict></array></dict>',
+            );
+            const updated = updateIOSPlistWithServices(existing, [
+                { id: 'facebook', values: { appId: '123', clientToken: 'token', displayName: 'App' } },
+                { id: 'twitter', values: { callbackScheme: 'myapp' } },
+                { id: 'admob', values: { iosAppId: 'ca-app-pub-1~2', androidAppId: 'ca-app-pub-1~3' } },
+            ], configs);
+            for (const expected of ['existing', 'fbapi', 'twitter', 'existing.skadnetwork', '4fzdc2evr5.skadnetwork']) {
+                assert.ok(updated.includes(expected), `missing ${expected}`);
+            }
+        });
+
+        test('writes Stripe as a static owned URL scheme', () => {
+            const configs = loadServicesConfig();
+            const updated = updateIOSPlistWithServices(
+                basePlist,
+                [{ id: 'stripe', values: { publishableKey: 'pk_test_example' } }],
+                configs,
+            );
+            assert.ok(updated.includes('service:stripe url-scheme'));
+            assert.ok(updated.includes('<string>flutterstripe</string>'));
+            const removed = removeServicesFromIOSPlist(updated, ['stripe'], configs);
+            assert.ok(!removed.includes('<string>flutterstripe</string>'));
+        });
+
+        test('does not register https as a custom scheme for Universal Links', () => {
+            const configs = loadServicesConfig();
+            const updated = updateIOSPlistWithServices(
+                basePlist,
+                [{ id: 'applinks', values: { domains: 'example.com', bundleId: 'com.example.app' } }],
+                configs,
+            );
+            assert.ok(!updated.includes('<string>https</string>'));
+        });
+
+        test('removes only the selected service values from shared arrays', () => {
+            const configs = loadServicesConfig();
+            const withServices = updateIOSPlistWithServices(basePlist, [
+                { id: 'facebook', values: { appId: '123', clientToken: 'token', displayName: 'App' } },
+                { id: 'twitter', values: { callbackScheme: 'myapp' } },
+                { id: 'admob', values: { iosAppId: 'ca-app-pub-1~2', androidAppId: 'ca-app-pub-1~3' } },
+            ], configs).replace(
+                '<string>fbapi</string>',
+                '<string>app-owned</string>\n\t\t<string>fbapi</string>',
+            ).replace(
+                '<dict>\n\t\t\t<key>SKAdNetworkIdentifier</key>',
+                '<dict><key>SKAdNetworkIdentifier</key><string>app-owned.skadnetwork</string></dict>\n\t\t<dict>\n\t\t\t<key>SKAdNetworkIdentifier</key>',
+            );
+
+            const withoutFacebook = removeServicesFromIOSPlist(withServices, ['facebook'], configs);
+            assert.ok(withoutFacebook.includes('app-owned'));
+            assert.ok(withoutFacebook.includes('<string>twitter</string>'));
+            assert.ok(!withoutFacebook.includes('<string>fbapi</string>'));
+
+            const withoutAdMob = removeServicesFromIOSPlist(withoutFacebook, ['admob'], configs);
+            assert.ok(withoutAdMob.includes('app-owned.skadnetwork'));
+            assert.ok(!withoutAdMob.includes('4fzdc2evr5.skadnetwork'));
         });
     });
 

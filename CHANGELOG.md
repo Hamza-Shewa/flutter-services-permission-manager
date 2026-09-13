@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Added a verified, user-level **Install MCP for Codex** action to the global top navigation with existing-install detection, Windows/macOS/Linux executable handling, and collision-safe per-workspace registrations.
+- Added a universal **Connect MCP** dialog to the global top navigation. It detects and installs user-level registrations for Codex, Claude Code, Gemini CLI, and Cursor, provides portable JSON for other clients, handles Windows/macOS/Linux launchers, and prevents duplicate workspace registrations.
 
 ### Added
 
+- **Shared-widget-first Semantics AI prompt**: The Semantics tab now copies a project-specific implementation prompt that resolves custom widget definitions through their import/export paths, extends shared widgets with optional semantic parameters, updates their call sites, reuses existing semantic APIs, and permits leaf wrappers only as a last resort. The prompt includes current audit counts and strict localization, identifier uniqueness, safety, and verification rules.
 - **Semantics Inventory & Reviewed Fixes**: A new **Semantics** tab uses a pinned, checksum-verified Dart Tree-sitter WASM grammar to inventory interactive widgets under `lib/`, group them by source file, open exact references, audit accessibility and stable automation IDs independently, report heuristic confidence, and flag opaque WebView/platform/custom-painted surfaces. Selected dotted `Semantics.identifier` fixes are syntax-checked, previewed, hash-guarded, and applied as one workspace edit.
 - **Semantics MCP Tools**: Added `scan_interactives`, `preview_semantics_fixes`, and `apply_semantics_fixes`, backed by the same scanner and guarded patch engine as the VS Code UI.
 - **Android Runtime Automation MCP Tools**: Added explicit Appium/UiAutomator2 health and session tools plus exact-identifier inspect, tap, type, select, scroll, back, wait, assert, and screenshot primitives. The adapter refuses ambiguous identifiers, redacts entered text, never falls back to coordinates for element targeting, and requires a screen-bound one-use confirmation token for consequential actions.
@@ -34,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Expanded Semantics statistics**: The audit summary now separates accessibility ready/missing/uncertain findings and automation present/missing/dynamic/duplicate identifiers, alongside opaque surfaces and scanned files.
 - **Android Gradle Declarative Migration**: The full migration is now non-destructive — it never forces newer AGP/Kotlin versions onto a project that already builds (existing versions at/above the minimums are kept), never lowers the project's `minSdk`, and only normalizes the Java/Kotlin toolchain for genuinely legacy projects. It also guarantees `google()/mavenCentral()` repositories so bumped Kotlin/AGP artifacts (e.g. `kotlin-stdlib`) resolve, and supports both Groovy `build.gradle` and Kotlin DSL `build.gradle.kts`.
 - **iOS/macOS Permission Value Fields**: Value textareas now auto-resize to fit their content and the Value column flexes to fill available horizontal space; the **Add equivalent** button moved into the row Actions column for both Android and iOS tables.
 - **Categorized Permission Filtering**: Android and iOS catalogs are fully categorized — search by name, description, constant value, or category, filter the tables with category dropdowns, and browse the Add Permission dialog by category tabs.
@@ -41,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Service integration hardening**: Corrected Firebase swizzling behavior, App Links hosting output, modern OneSignal setup, Twitter/X callback handling, Apple Sign-In Android routing, Stripe redirect/Apple Pay configuration, and AdMob SKAdNetwork coverage. Service values now round-trip through a generated Dart config without logging credentials, shared iOS arrays preserve unrelated entries, optional Maps iOS setup no longer emits an empty key, and Services-only saves include Podfile updates.
 - **Literal dot-keys no longer re-nested on translation save**: A flat translation file whose keys merely contain dots — sentence keys ending in `.`/`...` or flat easy_localization keys like `input_field.context_menu.cut` — was being corrupted on save (the key was split on `.` into nested objects, and trailing dots became empty `""` segments, e.g. `"show full description..."` → `{"show full description": {"": {"": "…"}}}`). The manager now tracks exactly which flat keys came from real nested objects/arrays and only re-nests those, so literal dot-keys round-trip unchanged.
 - **Translation buttons doing nothing (Google 429)**: The keyless translation chain used Google's `client=gtx` endpoint, which now returns HTTP 429 and made every "Translate" action return 0 results (appearing as dead buttons). The manager now uses Google's `client=dict-chrome-ex` (with `client=at` fallback), which is live and fast, and reports when a provider is unavailable.
 - **Nested translations corrupting files on save**: Nested easy_localization JSON was coerced to `"[object Object]"` strings and translate-missing skipped nested values. Nested objects/arrays are now flattened for editing and re-nested exactly on save.

@@ -113,6 +113,18 @@ check('list_permissions shows android + ios', () => {
   assert.ok(iosNames.includes('NSCameraUsageDescription'));
 });
 
+// ---- list_services --------------------------------------------------------
+const servicesRes = await client.callTool({ name: 'list_services', arguments: {} });
+const services = JSON.parse(servicesRes.content[0].text);
+check('list_services exposes current runtime and manual setup metadata', () => {
+  const oneSignal = services.find((service) => service.id === 'onesignal');
+  const twitter = services.find((service) => service.id === 'twitter');
+  assert.ok(oneSignal.dartConstants.some((constant) => constant.name === 'oneSignalAppId'));
+  assert.ok(oneSignal.setupNotes.length > 0);
+  assert.ok(twitter.fields.some((field) => field.id === 'callbackScheme'));
+  assert.ok(!twitter.fields.some((field) => field.id === 'consumerSecret'));
+});
+
 // ---- add_permission (android) ----------------------------------------------
 const addRes = await client.callTool({
   name: 'add_permission',

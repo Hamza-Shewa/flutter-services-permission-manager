@@ -9,6 +9,10 @@ import { removeXmlElements } from '../../shared/xml-parser.js';
 const APPLINKS_START = '<!-- start applinks configuration -->';
 const APPLINKS_END = '<!-- end applinks configuration -->';
 
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function normalizeDomains(raw?: string): string[] {
     if (!raw) {return [];}
     return raw
@@ -174,6 +178,22 @@ export function updateAndroidManifestWithServices(
         const config = servicesConfig.find(c => c.id === service.id);
         if (!config?.android) {continue;}
 
+        if (service.id === 'onesignal') {
+            result = result.replace(
+                /\s*<meta-data[^>]*android:name=["'](?:onesignal_app_id|onesignal_google_project_number)["'][^>]*\/?>/gi,
+                '',
+            );
+        }
+
+        if (service.id === 'stripe') {
+            // Migrate the callback emitted by older releases to the host used
+            // by current flutter_stripe PaymentSheet return URLs.
+            result = result.replace(
+                /(android:scheme=["']flutterstripe["'][^>]*android:host=["'])safepay(["'])/gi,
+                '$1redirect$2',
+            );
+        }
+
         if (service.id === 'applinks') {
             const domains = normalizeDomains((service.values || {}).domains);
             const schemes = normalizeSchemes((service.values || {}).scheme);
@@ -273,7 +293,7 @@ export function updateAndroidManifestWithServices(
         // Add MainActivity intent-filters (for URL schemes like Stripe)
         if (config.android.mainActivityIntentFilters && config.android.mainActivityIntentFilters.length > 0) {
             for (const intentFilter of config.android.mainActivityIntentFilters) {
-                const intentFilterXml = buildIntentFilterElement(intentFilter, service.values);
+                const intentFilterXml = buildIntentFilterElement(intentFilter, service.values, service.id);
                 
                 // Find MainActivity and insert intent-filter before </activity>
                 const mainActivityRegex = /<activity[^>]*android:name="[^"]*\.MainActivity"[^>]*>[\s\S]*?<\/activity>/i;
@@ -321,6 +341,19 @@ export function removeServicesFromAndroidManifest(
 
         const config = servicesConfig.find(c => c.id === serviceId);
         if (!config?.android) {continue;}
+
+        if (serviceId === 'onesignal') {
+            result = result.replace(
+                /\s*<meta-data[^>]*android:name=["'](?:onesignal_app_id|onesignal_google_project_number)["'][^>]*\/?>/gi,
+                '',
+            );
+        }
+
+        const markedFilterRegex = new RegExp(
+            `\\s*<!-- flutter-config-manager service:${escapeRegExp(serviceId)} -->[\\s\\S]*?<!-- end flutter-config-manager service:${escapeRegExp(serviceId)} -->\\s*`,
+            'gi'
+        );
+        result = result.replace(markedFilterRegex, '');
         
         // Remove meta-data entries
         if (config.android.metaData) {
@@ -401,7 +434,8 @@ export function removeServicesFromAndroidManifest(
  */
 function buildIntentFilterElement(
     intentFilter: { tag: string; attributes?: Record<string, string>; children?: { tag: string; attributes: Record<string, string> }[] },
-    values: Record<string, string>
+    values: Record<string, string>,
+    serviceId: string,
 ): string {
     const spaces = '        ';
     
@@ -412,22 +446,21 @@ function buildIntentFilterElement(
     const childrenXml = intentFilter.children
         .map(child => {
             const attrs = Object.entries(child.attributes || {})
-                .map(([k, v]) => {
-                    // Replace {fieldId} placeholders with actual values
-                    let value = v;
-                    const match = v.match(/\{(\w+)\}/);
-                    if (match) {
-                        const fieldId = match[1];
-                        value = v.replace(`{${fieldId}}`, (values || {})[fieldId] || '');
-                    }
-                    return `${k}="${value}"`;
+                .flatMap(([k, template]) => {
+                    const fields = Array.from(template.matchAll(/\{(\w+)\}/g)).map(match => match[1]);
+                    if (fields.some(field => !(values || {})[field]?.trim())) {return [];}
+                    const value = fields.reduce(
+                        (current, field) => current.replaceAll(`{${field}}`, (values || {})[field]),
+                        template,
+                    );
+                    return [`${k}="${value}"`];
                 })
                 .join(' ');
-            return `${spaces}    <${child.tag} ${attrs} />`;
+            return `${spaces}    <${child.tag}${attrs ? ` ${attrs}` : ''} />`;
         })
         .join('\n');
     
-    return `${spaces}<intent-filter>\n${childrenXml}\n${spaces}</intent-filter>\n`;
+    return `${spaces}<!-- flutter-config-manager service:${serviceId} -->\n${spaces}<intent-filter>\n${childrenXml}\n${spaces}</intent-filter>\n${spaces}<!-- end flutter-config-manager service:${serviceId} -->\n`;
 }
 
 /**
@@ -440,25 +473,24 @@ function buildXmlElement(
 ): string {
     const spaces = '    '.repeat(indent);
     const attrs = Object.entries(element.attributes || {})
-        .map(([k, v]) => {
-            // Replace {fieldId} placeholders with actual values
-            let value = v;
-            const match = v.match(/\{(\w+)\}/);
-            if (match) {
-                const fieldId = match[1];
-                value = v.replace(`{${fieldId}}`, (values || {})[fieldId] || '');
-            }
-            return `${k}="${value}"`;
+        .flatMap(([k, template]) => {
+            const fields = Array.from(template.matchAll(/\{(\w+)\}/g)).map(match => match[1]);
+            if (fields.some(field => !(values || {})[field]?.trim())) {return [];}
+            const value = fields.reduce(
+                (current, field) => current.replaceAll(`{${field}}`, (values || {})[field]),
+                template,
+            );
+            return [`${k}="${value}"`];
         })
         .join(' ');
     
     if (!element.children || element.children.length === 0) {
-        return `${spaces}<${element.tag} ${attrs} />`;
+        return `${spaces}<${element.tag}${attrs ? ` ${attrs}` : ''} />`;
     }
     
     const childrenXml = (element.children as { tag: string; attributes: Record<string, string>; children?: unknown[] }[])
         .map(child => buildXmlElement(child, values, indent + 1))
         .join('\n');
     
-    return `${spaces}<${element.tag} ${attrs}>\n${childrenXml}\n${spaces}</${element.tag}>`;
+    return `${spaces}<${element.tag}${attrs ? ` ${attrs}` : ''}>\n${childrenXml}\n${spaces}</${element.tag}>`;
 }

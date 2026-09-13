@@ -21,6 +21,23 @@ export interface CodexMcpInstallerOptions {
   projectRoot: string;
   extensionRoot: string;
   configuredCodexExecutable?: string;
+  configuredClaudeExecutable?: string;
+  configuredGeminiExecutable?: string;
+  /** Overrides the user config root for tests and managed environments. */
+  userHome?: string;
+}
+
+export type McpClientId = "codex" | "claude" | "gemini" | "cursor";
+
+export interface McpClientStatus extends CodexMcpInstallStatus {
+  id: McpClientId;
+  label: string;
+  detected: boolean;
+}
+
+export interface McpClientsStatus {
+  clients: McpClientStatus[];
+  manualConfig: string;
 }
 
 export interface ProcessInvocation {
@@ -108,6 +125,9 @@ function executableCandidates(name: string, configured: string | undefined, env:
   if (process.platform === "win32") {
     if (env.APPDATA) { candidates.push(path.join(env.APPDATA, "npm", `${name}.cmd`)); }
     if (env.LOCALAPPDATA) { candidates.push(path.join(env.LOCALAPPDATA, "Programs", name, `${name}.exe`)); }
+    if (name === "cursor" && env.LOCALAPPDATA) {
+      candidates.push(path.join(env.LOCALAPPDATA, "Programs", "cursor", "resources", "app", "bin", "cursor.cmd"));
+    }
   } else {
     candidates.push(
       `/opt/homebrew/bin/${name}`,
@@ -116,6 +136,9 @@ function executableCandidates(name: string, configured: string | undefined, env:
       path.join(home, ".local", "bin", name),
       path.join(home, ".npm-global", "bin", name),
     );
+    if (process.platform === "darwin" && name === "cursor") {
+      candidates.push("/Applications/Cursor.app/Contents/Resources/app/bin/cursor");
+    }
   }
   return [...new Set(candidates)];
 }
@@ -383,4 +406,335 @@ export async function installCodexMcp(
     canInstall: true,
     restartRequired: true,
   };
+}
+
+interface PortableServerDefinition {
+  type?: string;
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+interface JsonMcpConfig {
+  mcpServers?: Record<string, PortableServerDefinition>;
+  [key: string]: unknown;
+}
+
+interface PortableRegistration {
+  serverName: string;
+  serverEntry: string;
+  launcherEntry: string;
+  projectRoot: string;
+  runtimeExecutable: string;
+  args: string[];
+  env: Record<string, string>;
+}
+
+const CLIENT_LABELS: Record<McpClientId, string> = {
+  codex: "Codex",
+  claude: "Claude Code",
+  gemini: "Gemini CLI",
+  cursor: "Cursor",
+};
+
+function portableRegistration(options: CodexMcpInstallerOptions): PortableRegistration {
+  const serverEntry = path.join(options.extensionRoot, "mcp-server", "out", "index.js");
+  if (!fs.existsSync(serverEntry)) {
+    throw new Error("The packaged MCP server is missing. Reinstall or rebuild Flutter Config Manager.");
+  }
+  const projectRoot = path.resolve(options.projectRoot);
+  return {
+    serverName: codexMcpServerName(projectRoot),
+    serverEntry,
+    launcherEntry: path.join(options.extensionRoot, "scripts", "run-mcp-server.mjs"),
+    projectRoot,
+    runtimeExecutable: process.execPath,
+    args: [serverEntry, "--project", projectRoot],
+    env: { ELECTRON_RUN_AS_NODE: "1" },
+  };
+}
+
+function portableDefinitionTargetsWorkspace(
+  definition: PortableServerDefinition | undefined,
+  registration: PortableRegistration,
+): boolean {
+  if (!definition || !Array.isArray(definition.args)) { return false; }
+  const projectFlag = definition.args.indexOf("--project");
+  if (projectFlag < 1 || projectFlag + 1 >= definition.args.length) { return false; }
+  if (normalizeForComparison(definition.args[projectFlag + 1]) !== normalizeForComparison(registration.projectRoot)) {
+    return false;
+  }
+  const entry = normalizeForComparison(definition.args[0]);
+  return entry === normalizeForComparison(registration.serverEntry)
+    || entry === normalizeForComparison(registration.launcherEntry);
+}
+
+function portableDefinitionIsCurrent(
+  definition: PortableServerDefinition | undefined,
+  registration: PortableRegistration,
+): boolean {
+  return !!definition
+    && (definition.type === undefined || definition.type === "stdio")
+    && typeof definition.command === "string"
+    && normalizeForComparison(definition.command) === normalizeForComparison(registration.runtimeExecutable)
+    && sameArguments(definition.args, registration.args)
+    && definition.env?.ELECTRON_RUN_AS_NODE === "1";
+}
+
+function readJsonMcpConfig(configPath: string): JsonMcpConfig {
+  if (!fs.existsSync(configPath)) { return {}; }
+  const parsed = JSON.parse(fs.readFileSync(configPath, "utf8")) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`${configPath} must contain a JSON object.`);
+  }
+  const config = parsed as JsonMcpConfig;
+  if (config.mcpServers !== undefined
+    && (!config.mcpServers || typeof config.mcpServers !== "object" || Array.isArray(config.mcpServers))) {
+    throw new Error(`${configPath} has an invalid mcpServers value.`);
+  }
+  return config;
+}
+
+function writeJsonMcpConfig(configPath: string, config: JsonMcpConfig): void {
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  const temporaryPath = path.join(
+    path.dirname(configPath),
+    `.${path.basename(configPath)}.${process.pid}.${Date.now()}.tmp`,
+  );
+  try {
+    fs.writeFileSync(temporaryPath, `${JSON.stringify(config, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+    fs.renameSync(temporaryPath, configPath);
+  } catch (error) {
+    try { fs.unlinkSync(temporaryPath); } catch { /* Nothing to clean up. */ }
+    throw error;
+  }
+}
+
+function findPortableRegistration(
+  config: JsonMcpConfig,
+  registration: PortableRegistration,
+): [string, PortableServerDefinition] | undefined {
+  return Object.entries(config.mcpServers || {})
+    .find(([, definition]) => portableDefinitionTargetsWorkspace(definition, registration));
+}
+
+function userConfigPath(
+  client: Exclude<McpClientId, "codex">,
+  options?: CodexMcpInstallerOptions,
+): string {
+  const home = options?.userHome || os.homedir();
+  if (client === "claude") {
+    const root = process.env.CLAUDE_CONFIG_DIR || home;
+    return path.join(root, ".claude.json");
+  }
+  if (client === "gemini") {
+    return path.join(home, ".gemini", "settings.json");
+  }
+  return path.join(home, ".cursor", "mcp.json");
+}
+
+function portableStatus(
+  id: Exclude<McpClientId, "codex">,
+  config: JsonMcpConfig,
+  registration: PortableRegistration,
+  executable: string | undefined,
+): McpClientStatus {
+  const matching = findPortableRegistration(config, registration);
+  if (matching) {
+    const current = portableDefinitionIsCurrent(matching[1], registration);
+    return {
+      id,
+      label: CLIENT_LABELS[id],
+      state: current ? "installed" : "outdated",
+      serverName: matching[0],
+      message: current
+        ? `Installed in ${CLIENT_LABELS[id]}'s user configuration.`
+        : `Installed for this workspace, but the registration points to another runtime or extension build.`,
+      detected: !!executable,
+      canInstall: id === "cursor" || !!executable,
+    };
+  }
+
+  const named = config.mcpServers?.[registration.serverName];
+  if (named) {
+    return {
+      id,
+      label: CLIENT_LABELS[id],
+      state: "outdated",
+      serverName: registration.serverName,
+      message: "A registration with this workspace name exists but targets different content.",
+      detected: !!executable,
+      canInstall: id === "cursor" || !!executable,
+    };
+  }
+
+  const detected = !!executable;
+  return {
+    id,
+    label: CLIENT_LABELS[id],
+    state: detected ? "not-installed" : "unavailable",
+    serverName: registration.serverName,
+    message: detected
+      ? `Not installed in ${CLIENT_LABELS[id]}'s user configuration.`
+      : `${CLIENT_LABELS[id]} was not found on this machine.`,
+    detected,
+    canInstall: detected,
+  };
+}
+
+async function checkPortableClient(
+  id: Exclude<McpClientId, "codex">,
+  options: CodexMcpInstallerOptions,
+  registration: PortableRegistration,
+): Promise<McpClientStatus> {
+  try {
+    const configured = id === "claude" ? options.configuredClaudeExecutable : options.configuredGeminiExecutable;
+    const executable = resolveExecutable(id, configured);
+    const config = readJsonMcpConfig(userConfigPath(id, options));
+    return portableStatus(id, config, registration, executable);
+  } catch (error) {
+    return {
+      id,
+      label: CLIENT_LABELS[id],
+      state: "error",
+      serverName: registration.serverName,
+      message: error instanceof Error ? error.message : String(error),
+      detected: !!resolveExecutable(id),
+      canInstall: false,
+    };
+  }
+}
+
+export function createUniversalMcpConfig(options: CodexMcpInstallerOptions): string {
+  const registration = portableRegistration(options);
+  return JSON.stringify({
+    mcpServers: {
+      [registration.serverName]: {
+        type: "stdio",
+        command: registration.runtimeExecutable,
+        args: registration.args,
+        env: registration.env,
+      },
+    },
+  }, null, 2);
+}
+
+export async function checkMcpClients(
+  options: CodexMcpInstallerOptions,
+): Promise<McpClientsStatus> {
+  const registration = portableRegistration(options);
+  const [codex, claude, gemini, cursor] = await Promise.all([
+    checkCodexMcpInstallation(options),
+    checkPortableClient("claude", options, registration),
+    checkPortableClient("gemini", options, registration),
+    checkPortableClient("cursor", options, registration),
+  ]);
+  return {
+    clients: [
+      { ...codex, id: "codex", label: CLIENT_LABELS.codex, detected: codex.state !== "unavailable" },
+      claude,
+      gemini,
+      cursor,
+    ],
+    manualConfig: createUniversalMcpConfig(options),
+  };
+}
+
+async function installCliClient(
+  id: "claude" | "gemini",
+  options: CodexMcpInstallerOptions,
+  registration: PortableRegistration,
+): Promise<McpClientStatus> {
+  const configured = id === "claude" ? options.configuredClaudeExecutable : options.configuredGeminiExecutable;
+  const executable = resolveExecutable(id, configured);
+  if (!executable) {
+    throw new Error(`${CLIENT_LABELS[id]} CLI was not found. Install it or configure its executable path in Flutter Config Manager settings.`);
+  }
+  const configPath = userConfigPath(id, options);
+  const before = readJsonMcpConfig(configPath);
+  const existing = findPortableRegistration(before, registration)
+    || (before.mcpServers?.[registration.serverName]
+      ? [registration.serverName, before.mcpServers[registration.serverName]] as [string, PortableServerDefinition]
+      : undefined);
+  if (existing && portableDefinitionIsCurrent(existing[1], registration)) {
+    return portableStatus(id, before, registration, executable);
+  }
+  if (existing) {
+    await runExecutable(executable, ["mcp", "remove", "--scope", "user", existing[0]]);
+  }
+
+  const addArgs = buildUserScopedMcpAddArguments(
+    id,
+    registration.serverName,
+    registration.runtimeExecutable,
+    registration.args,
+  );
+  await runExecutable(executable, addArgs);
+  const after = readJsonMcpConfig(configPath);
+  const status = portableStatus(id, after, registration, executable);
+  if (status.state !== "installed") {
+    throw new Error(`${CLIENT_LABELS[id]} accepted the command, but its user-level MCP registration could not be verified.`);
+  }
+  return { ...status, restartRequired: true };
+}
+
+/** Official Claude and Gemini CLI argument layouts differ around stdio args. */
+export function buildUserScopedMcpAddArguments(
+  id: "claude" | "gemini",
+  serverName: string,
+  runtimeExecutable: string,
+  serverArgs: string[],
+): string[] {
+  return id === "claude"
+    ? [
+      "mcp", "add", "--scope", "user", "--transport", "stdio", serverName,
+      "-e", "ELECTRON_RUN_AS_NODE=1", "--", runtimeExecutable, ...serverArgs,
+    ]
+    : [
+      "mcp", "add", "--scope", "user", "--transport", "stdio",
+      "-e", "ELECTRON_RUN_AS_NODE=1", serverName, runtimeExecutable, ...serverArgs,
+    ];
+}
+
+function installCursorClient(
+  registration: PortableRegistration,
+  options: CodexMcpInstallerOptions,
+): McpClientStatus {
+  const configPath = userConfigPath("cursor", options);
+  const config = readJsonMcpConfig(configPath);
+  const matching = findPortableRegistration(config, registration);
+  if (matching && portableDefinitionIsCurrent(matching[1], registration)) {
+    return portableStatus("cursor", config, registration, resolveExecutable("cursor"));
+  }
+  config.mcpServers = config.mcpServers || {};
+  if (matching && matching[0] !== registration.serverName) {
+    delete config.mcpServers[matching[0]];
+  }
+  config.mcpServers[registration.serverName] = {
+    type: "stdio",
+    command: registration.runtimeExecutable,
+    args: registration.args,
+    env: registration.env,
+  };
+  writeJsonMcpConfig(configPath, config);
+  const status = portableStatus("cursor", readJsonMcpConfig(configPath), registration, resolveExecutable("cursor"));
+  if (status.state !== "installed") {
+    throw new Error("Cursor's global MCP registration could not be verified.");
+  }
+  return { ...status, restartRequired: true };
+}
+
+export async function installMcpClient(
+  client: McpClientId,
+  options: CodexMcpInstallerOptions,
+): Promise<McpClientStatus> {
+  const registration = portableRegistration(options);
+  if (client === "codex") {
+    const status = await installCodexMcp(options);
+    return { ...status, id: client, label: CLIENT_LABELS[client], detected: true };
+  }
+  if (client === "cursor") {
+    return installCursorClient(registration, options);
+  }
+  return installCliClient(client, options, registration);
 }

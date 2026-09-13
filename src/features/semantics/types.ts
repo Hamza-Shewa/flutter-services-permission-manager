@@ -76,7 +76,12 @@ export interface InteractiveScanTotals {
   filesScanned: number;
   findings: number;
   automationReady: number;
+  automationMissing: number;
+  automationDynamic: number;
+  automationDuplicate: number;
   accessibilityReady: number;
+  accessibilityMissing: number;
+  accessibilityUncertain: number;
   opaque: number;
 }
 

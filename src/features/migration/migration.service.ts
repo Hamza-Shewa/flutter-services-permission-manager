@@ -199,7 +199,12 @@ function detectApacheHttpUsage(androidDir: string): boolean {
  */
 export async function migrateAndroidSetup(): Promise<MigrationReport> {
     const layout = getAndroidLayout();
-    const versions = await getRecommendedVersions();
+    // Full migration follows the reference configuration exactly. Keep AGP
+    // pinned even when the remote version lookup reports a newer 9.x release.
+    const versions = {
+        ...(await getRecommendedVersions()),
+        agp: MIGRATION_MINIMUMS.agp
+    };
     const details: string[] = [];
 
     let firebase = { googleServices: false, firebasePerf: false, crashlytics: false };

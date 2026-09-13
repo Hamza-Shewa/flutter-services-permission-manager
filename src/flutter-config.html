@@ -2167,6 +2167,13 @@
 
     .semantics-stat strong { display: block; font-size: 20px; }
     .semantics-stat span { color: var(--text-secondary); font-size: 12px; }
+    .semantics-ai-prompt {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      margin: 12px 0; padding: 12px; border: 1px solid var(--border-default);
+      border-radius: var(--radius-md); background: var(--bg-secondary);
+    }
+    .semantics-ai-prompt p { margin: 3px 0 0; color: var(--text-secondary); font-size: 12px; }
+    .semantics-ai-project { display: block; margin-top: 5px; color: var(--text-secondary); font-size: 11px; overflow-wrap: anywhere; }
     .semantics-file-row { cursor: pointer; }
     .semantics-file-row:hover { background: var(--bg-elevated); }
     .semantics-details-row td { background: var(--bg-tertiary); padding: 0 !important; }
@@ -2221,6 +2228,38 @@
       .tabs-mcp-control { width: 100%; margin-left: 0; margin-top: 6px; }
       .mcp-install-status { flex: 1; max-width: none; }
     }
+    .mcp-client-list { display: grid; gap: 8px; margin: 14px 0; }
+    .mcp-client-row {
+      display: grid;
+      grid-template-columns: minmax(120px, .7fr) minmax(220px, 1.8fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+    }
+    .mcp-client-meta { color: var(--text-secondary); font-size: 11px; overflow-wrap: anywhere; }
+    .mcp-client-state { font-size: 11px; font-weight: 700; }
+    .mcp-client-state.installed { color: #81c784; }
+    .mcp-client-state.outdated { color: #ffcc80; }
+    .mcp-client-state.unavailable, .mcp-client-state.error { color: #ef9a9a; }
+    .mcp-manual-config { max-height: 190px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .service-setup-notes {
+      display: grid;
+      gap: 6px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    @media (max-width: 650px) {
+      .mcp-client-row { grid-template-columns: 1fr; }
+      .mcp-client-row button { justify-self: start; }
+    }
   </style>
 </head>
 
@@ -2259,11 +2298,32 @@
       <button type="button" class="tab" data-tab="semantics" role="tab" aria-selected="false">♿ Semantics</button>
     </div>
     <div class="tabs-mcp-control">
-      <span id="codexMcpStatus" class="mcp-install-status" data-state="checking" role="status" aria-live="polite"
-        title="MCP registration is stored in the user-level Codex configuration.">Checking user-level MCP…</span>
-      <button id="installCodexMcpButton" type="button" class="btn-secondary">Install MCP for Codex</button>
+      <span id="mcpClientsSummary" class="mcp-install-status" data-state="checking" role="status" aria-live="polite"
+        title="MCP registrations are stored in each client's user-level configuration.">Checking MCP clients…</span>
+      <button id="connectMcpButton" type="button" class="btn-secondary">Connect MCP</button>
     </div>
   </nav>
+
+  <div class="modal-backdrop" id="mcpConnectionsBackdrop" style="display:none;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mcpConnectionsTitle" style="max-width:820px; width:min(820px, 94vw);">
+      <h3 id="mcpConnectionsTitle">Connect Flutter Config Manager MCP</h3>
+      <p style="color:var(--text-secondary); font-size:12px;">
+        Install the same bundled MCP server in a client's user-level configuration. Existing matching registrations
+        are detected first and cannot be installed twice. Each entry targets this Flutter workspace.
+      </p>
+      <div id="mcpConnectionsError" style="display:none; color:#ef9a9a; margin:10px 0;"></div>
+      <div id="mcpClientList" class="mcp-client-list"></div>
+      <details>
+        <summary>Other MCP client — standard stdio configuration</summary>
+        <pre id="mcpManualConfig" class="mcp-manual-config"></pre>
+        <button id="copyMcpConfigButton" type="button" class="btn-secondary">Copy configuration</button>
+      </details>
+      <div class="modal-actions">
+        <button id="mcpConnectionsRefresh" type="button" class="btn-secondary">Check again</button>
+        <button id="mcpConnectionsClose" type="button" class="btn-primary">Done</button>
+      </div>
+    </div>
+  </div>
 
   <section class="section platform-details" data-tab="build">
     <div class="section-header">
@@ -3077,6 +3137,14 @@
       not claimed as completely inspected. Automation IDs use <code>Semantics.identifier</code>.
     </p>
     <div id="semanticsSummary" class="semantics-summary" style="display:none;"></div>
+    <div class="semantics-ai-prompt">
+      <div>
+        <strong>AI shared-widget remediation</strong>
+        <p>Copies a project-specific implementation prompt that reuses shared widget APIs before allowing leaf wrappers.</p>
+        <code id="semanticsPromptProject" class="semantics-ai-project">The active Flutter workspace will be included.</code>
+      </div>
+      <button id="copySemanticsPromptButton" type="button" class="btn-secondary">Copy AI prompt</button>
+    </div>
     <div class="toolbar">
       <input id="semanticsSearch" type="search" placeholder="Search file, widget, kind, or identifier" />
       <select id="semanticsStatusFilter">

@@ -14,5 +14,10 @@ export {
 } from './extractor.service.js';
 
 export { validateServiceEntry } from './validator.service.js';
+export {
+    GENERATED_SERVICES_DART_PATH,
+    buildDartServiceConfig,
+    extractDartServiceConfig,
+} from './dart-config.service.js';
 
 export { extractApplinkIntents } from './intent-parser.js';

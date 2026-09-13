@@ -3,8 +3,7 @@ import { bus } from "../../core/bus.js";
 import * as api from "../../core/api.js";
 import {
   previewSemanticsFixesButton,
-  installCodexMcpButton,
-  codexMcpStatus,
+  copySemanticsPromptButton,
   scanInteractivesButton,
   semanticsEmpty,
   semanticsError,
@@ -14,6 +13,7 @@ import {
   semanticsPreviewBackdrop,
   semanticsPreviewCancel,
   semanticsPreviewList,
+  semanticsPromptProject,
   semanticsSearch,
   semanticsStatusFilter,
   semanticsSummary,
@@ -78,7 +78,12 @@ function renderSummary(result) {
   const stats = [
     [result.totals.findings, "Interactive candidates"],
     [result.totals.automationReady, "Automation ready"],
+    [result.totals.automationMissing, "Missing identifiers"],
+    [result.totals.automationDuplicate, "Duplicate identifiers"],
+    [result.totals.automationDynamic, "Dynamic identifiers"],
     [result.totals.accessibilityReady, "Accessibility ready"],
+    [result.totals.accessibilityMissing, "Missing a11y semantics"],
+    [result.totals.accessibilityUncertain, "A11y uncertain"],
     [result.totals.opaque, "Opaque surfaces"],
     [result.totals.filesScanned, "Files scanned"],
   ];
@@ -93,6 +98,7 @@ function renderSummary(result) {
     semanticsSummary.appendChild(card);
   });
   semanticsSummary.style.display = "grid";
+  if (semanticsPromptProject) { semanticsPromptProject.textContent = result.projectRoot; }
 }
 
 function findingElement(finding) {
@@ -248,7 +254,7 @@ function showPreview(preview) {
 }
 
 scanInteractivesButton?.addEventListener("click", scan);
-installCodexMcpButton?.addEventListener("click", () => api.installCodexMcp());
+copySemanticsPromptButton?.addEventListener("click", () => api.copySemanticsPrompt());
 previewSemanticsFixesButton?.addEventListener("click", () => api.previewSemanticsFixes([...selected.values()]));
 semanticsSearch?.addEventListener("input", renderInteractives);
 semanticsStatusFilter?.addEventListener("change", renderInteractives);
@@ -303,22 +309,13 @@ bus.on("semanticsFixApplied", () => {
   if (semanticsPreviewBackdrop) { semanticsPreviewBackdrop.style.display = "none"; }
   if (semanticsPreviewApply) { semanticsPreviewApply.disabled = false; }
 });
-bus.on("codexMcpStatus", (message) => {
-  if (codexMcpStatus) {
-    codexMcpStatus.dataset.state = message.state;
-    const suffix = message.serverName ? ` (${message.serverName})` : "";
-    codexMcpStatus.textContent = `${message.message}${suffix}`;
-    codexMcpStatus.title = `${message.message}${suffix} Registration is stored in the user-level Codex configuration.`;
-  }
-  if (installCodexMcpButton) {
-    const busy = message.state === "checking" || message.state === "installing";
-    installCodexMcpButton.disabled = busy || !message.canInstall || message.state === "installed";
-    installCodexMcpButton.textContent = message.state === "installing"
-      ? "Installing MCP…"
-      : message.state === "installed" ? "MCP installed for Codex" : "Install MCP for Codex";
-  }
+bus.on("semanticsPromptCopying", (message) => {
+  if (!copySemanticsPromptButton) { return; }
+  copySemanticsPromptButton.disabled = !!message.copying;
+  copySemanticsPromptButton.textContent = message.copying ? "Scanning…" : "Copy AI prompt";
 });
-
-// MCP serves the whole extension, so check its user-level registration as soon
-// as the global navigation loads rather than waiting for the Semantics tab.
-api.checkCodexMcp();
+bus.on("semanticsPromptCopied", () => {
+  if (!copySemanticsPromptButton) { return; }
+  copySemanticsPromptButton.textContent = "Copied";
+  setTimeout(() => { copySemanticsPromptButton.textContent = "Copy AI prompt"; }, 1600);
+});

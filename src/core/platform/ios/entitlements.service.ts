@@ -4,8 +4,7 @@
 
 import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
 
-const APPLINKS_START = '<!-- start applinks configuration -->';
-const APPLINKS_END = '<!-- end applinks configuration -->';
+const APPLINKS_MARKERS = /\s*<!-- start applinks configuration -->|<!-- end applinks configuration -->\s*/gi;
 
 function normalizeDomains(raw?: string): string[] {
     if (!raw) {return [];}
@@ -19,37 +18,38 @@ function normalizeDomains(raw?: string): string[] {
         .filter(Boolean);
 }
 
-function buildApplinksEntitlementsBlock(domains: string[]): string {
-    const uniqueDomains = Array.from(new Set(domains));
-    const domainStrings = uniqueDomains
-        .map(domain => `\t\t<string>applinks:${domain}</string>`)
-        .join('\n');
-
-    return [
-        `\t${APPLINKS_START}`,
-        `\t<key>com.apple.developer.associated-domains</key>`,
-        `\t<array>`,
-        domainStrings,
-        `\t</array>`,
-        `\t${APPLINKS_END}`,
-    ].join('\n');
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function replaceOrInsertApplinksBlock(entitlementsContent: string, block: string): string {
-    const blockRegex = /<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->/i;
-    let cleaned = entitlementsContent.replace(blockRegex, '');
-
-    const keyRegex = /\s*<key>com\.apple\.developer\.associated-domains<\/key>\s*<array>[\s\S]*?<\/array>/i;
-    if (keyRegex.test(cleaned)) {
-        return cleaned.replace(keyRegex, `\n${block}`);
+function setStringArray(
+    content: string,
+    key: string,
+    values: string[],
+    replacePrefix?: string,
+): string {
+    const keyRegex = new RegExp(`(<key>${escapeRegExp(key)}<\\/key>\\s*<array>)([\\s\\S]*?)(<\\/array>)`, 'i');
+    const match = content.match(keyRegex);
+    const desired = Array.from(new Set(values.filter(Boolean)));
+    if (match) {
+        const existing = Array.from(match[2].matchAll(/<string>([^<]*)<\/string>/gi))
+            .map(item => item[1].trim())
+            .filter(value => !replacePrefix || !value.startsWith(replacePrefix));
+        const merged = replacePrefix ? [...existing, ...desired] : desired;
+        if (merged.length === 0) {
+            return content.replace(new RegExp(`\\s*<key>${escapeRegExp(key)}<\\/key>\\s*<array>[\\s\\S]*?<\\/array>`, 'i'), '');
+        }
+        const body = `\n${merged.map(value => `\t\t<string>${value}</string>`).join('\n')}\n\t`;
+        return content.replace(keyRegex, `$1${body}$3`);
     }
 
-    const dictEnd = cleaned.lastIndexOf('</dict>');
+    if (desired.length === 0) {return content;}
+    const entry = `\t<key>${key}</key>\n\t<array>\n${desired.map(value => `\t\t<string>${value}</string>`).join('\n')}\n\t</array>\n`;
+    const dictEnd = content.lastIndexOf('</dict>');
     if (dictEnd === -1) {
-        return cleaned;
+        return content;
     }
-
-    return cleaned.slice(0, dictEnd) + block + '\n' + cleaned.slice(dictEnd);
+    return content.slice(0, dictEnd) + entry + content.slice(dictEnd);
 }
 
 export function updateIOSEntitlementsWithServices(
@@ -58,6 +58,7 @@ export function updateIOSEntitlementsWithServices(
     servicesConfig: ServiceConfig[]
 ): string {
     let result = entitlementsContent;
+    result = result.replace(APPLINKS_MARKERS, '');
 
     for (const service of services) {
         if (service.id === 'applinks') {
@@ -65,8 +66,12 @@ export function updateIOSEntitlementsWithServices(
             if (domains.length === 0) {
                 continue;
             }
-            const applinksBlock = buildApplinksEntitlementsBlock(domains);
-            result = replaceOrInsertApplinksBlock(result, applinksBlock);
+            result = setStringArray(
+                result,
+                'com.apple.developer.associated-domains',
+                domains.map(domain => `applinks:${domain}`),
+                'applinks:',
+            );
             continue;
         }
 
@@ -74,18 +79,17 @@ export function updateIOSEntitlementsWithServices(
         if (!config?.ios?.entitlements || config.ios.entitlements.length === 0) {continue;}
 
         for (const entitlement of config.ios.entitlements) {
-            if (entitlement.type !== 'array' || !('staticValue' in entitlement)) {continue;}
-            if (result.includes(`<key>${entitlement.key}</key>`)) {continue;}
-
-            const arrayItems = (entitlement.staticValue as unknown[])
-                .map(value => `\t\t<string>${value}</string>`)
-                .join('\n');
-            const entryXml = `\t<key>${entitlement.key}</key>\n\t<array>\n${arrayItems}\n\t</array>\n`;
-
-            const dictEnd = result.lastIndexOf('</dict>');
-            if (dictEnd !== -1) {
-                result = result.slice(0, dictEnd) + entryXml + result.slice(dictEnd);
-            }
+            if (entitlement.type !== 'array') {continue;}
+            const staticValues = Array.isArray(entitlement.staticValue)
+                ? entitlement.staticValue.map(value => String(value))
+                : [];
+            const dynamicValue = entitlement.valueField
+                ? service.values?.[entitlement.valueField]?.trim()
+                : undefined;
+            result = setStringArray(result, entitlement.key, [
+                ...staticValues,
+                ...(dynamicValue ? [dynamicValue] : []),
+            ]);
         }
     }
 
@@ -100,8 +104,8 @@ export function removeServicesFromIOSEntitlements(
     let result = entitlementsContent;
 
     if (removedServiceIds.includes('applinks')) {
-        const applinksRegex = /\s*<!-- start applinks configuration -->[\s\S]*?<!-- end applinks configuration -->\s*/i;
-        result = result.replace(applinksRegex, '');
+        result = result.replace(APPLINKS_MARKERS, '');
+        result = setStringArray(result, 'com.apple.developer.associated-domains', [], 'applinks:');
     }
 
     for (const serviceId of removedServiceIds) {

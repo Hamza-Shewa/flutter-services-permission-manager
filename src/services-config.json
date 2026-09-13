@@ -10,7 +10,9 @@
           "id": "appId",
           "label": "App ID",
           "placeholder": "Your Facebook App ID (e.g., 1234567890)",
-          "required": true
+          "required": true,
+          "pattern": "^[0-9]+$",
+          "patternError": "Facebook App ID must contain digits only."
         },
         {
           "id": "clientToken",
@@ -130,6 +132,10 @@
       "name": "Firebase Cloud Messaging",
       "description": "Push notifications via Firebase",
       "icon": "🔥",
+      "setupNotes": [
+        "Run flutterfire configure and initialize Firebase from Dart with DefaultFirebaseOptions.currentPlatform.",
+        "This service manages notification-channel metadata only; it does not replace FlutterFire CLI setup or Dart initialization."
+      ],
       "fields": [
         {
           "id": "channelId",
@@ -139,18 +145,8 @@
         }
       ],
       "ios": {
-        "plistEntries": [
-          {
-            "key": "FirebaseAppDelegateProxyEnabled",
-            "type": "boolean",
-            "staticValue": false
-          }
-        ],
-        "urlSchemes": [],
-        "appDelegate": {
-          "import": "Firebase",
-          "code": "FirebaseApp.configure()"
-        }
+        "plistEntries": [],
+        "urlSchemes": []
       },
       "android": {
         "metaData": [
@@ -169,6 +165,10 @@
       "name": "App Links / Universal Links",
       "description": "Deep linking for Android App Links and iOS Universal Links",
       "icon": "🔗",
+      "setupNotes": [
+        "Deploy the generated association files from .flutter-config-manager/app-links-hosting to every listed HTTPS domain.",
+        "The extension configures HTTPS App Links and Universal Links; custom URL schemes belong in a separate integration."
+      ],
       "fields": [
         {
           "id": "domains",
@@ -178,17 +178,12 @@
           "type": "list"
         },
         {
-          "id": "scheme",
-          "label": "URL Scheme",
-          "placeholder": "https or http",
-          "required": true,
-          "type": "list"
-        },
-        {
           "id": "packageName",
           "label": "Android Package Name",
           "placeholder": "com.example.app",
-          "required": true
+          "required": true,
+          "pattern": "^[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+$",
+          "patternError": "Enter a valid Android application ID."
         },
         {
           "id": "sha256CertFingerprints",
@@ -201,13 +196,17 @@
           "id": "teamId",
           "label": "Apple Team ID",
           "placeholder": "ABCDE12345",
-          "required": true
+          "required": true,
+          "pattern": "^[A-Z0-9]{10}$",
+          "patternError": "Apple Team ID must contain 10 uppercase letters or digits."
         },
         {
           "id": "bundleId",
           "label": "iOS Bundle ID",
           "placeholder": "com.example.app.ios",
-          "required": true
+          "required": true,
+          "pattern": "^[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+$",
+          "patternError": "Enter a valid iOS bundle identifier."
         },
         {
           "id": "flutterDeepLinkingEnabled",
@@ -230,59 +229,57 @@
     {
       "id": "onesignal",
       "name": "OneSignal",
-      "description": "Push notifications via OneSignal",
+      "description": "OneSignal Flutter SDK setup checklist",
       "icon": "🔔",
+      "setupNotes": [
+        "Import lib/flutter_config_manager_services.dart and call OneSignal.initialize with FlutterConfigManagerServices.oneSignalAppId during Dart startup.",
+        "On iOS, add Push Notifications, Background Modes, an App Group, and a OneSignalNotificationServiceExtension target in Xcode. The extension does not create Xcode targets automatically."
+      ],
+      "dartConstants": [
+        { "name": "oneSignalAppId", "valueField": "appId" }
+      ],
       "fields": [
         {
           "id": "appId",
           "label": "OneSignal App ID",
           "placeholder": "Your OneSignal App ID (UUID)",
-          "required": true
+          "required": true,
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+          "patternError": "OneSignal App ID must be a valid UUID."
         }
       ],
       "ios": {
         "plistEntries": [],
-        "urlSchemes": [],
-        "podfileTargets": [
-          {
-            "targetName": "OneSignalNotificationServiceExtension",
-            "code": "  use_frameworks!\n  pod 'OneSignalXCFramework', '>= 5.0.0', '< 6.0'"
-          }
-        ]
+        "urlSchemes": []
       },
       "android": {
-        "metaData": [
-          {
-            "name": "onesignal_app_id",
-            "valueField": "appId"
-          },
-          {
-            "name": "onesignal_google_project_number",
-            "valueField": "senderId",
-            "defaultValue": "REMOTE"
-          }
-        ],
+        "metaData": [],
         "queries": [],
         "applicationData": []
       }
     },
     {
       "id": "twitter",
-      "name": "Twitter/X Login",
-      "description": "Twitter authentication integration",
+      "name": "Twitter/X OAuth Callback",
+      "description": "Native callback routing for a Twitter/X OAuth client",
       "icon": "🐦",
+      "setupNotes": [
+        "Register the same callback URL in the X developer portal and pass it to your Dart OAuth client.",
+        "OAuth credentials are deliberately not stored in native project files or extension logs."
+      ],
       "fields": [
         {
-          "id": "consumerKey",
-          "label": "Consumer Key (API Key)",
-          "placeholder": "Your Twitter API Key",
-          "required": true
+          "id": "callbackScheme",
+          "label": "Callback Scheme",
+          "placeholder": "myapp",
+          "required": true,
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*$",
+          "patternError": "Callback scheme must start with a letter and contain only letters, digits, +, -, or ."
         },
         {
-          "id": "consumerSecret",
-          "label": "Consumer Secret",
-          "placeholder": "Your Twitter API Secret",
-          "required": true
+          "id": "callbackHost",
+          "label": "Callback Host (optional)",
+          "placeholder": "oauth"
         }
       ],
       "ios": {
@@ -295,8 +292,8 @@
         ],
         "urlSchemes": [
           {
-            "prefix": "twitterkit-",
-            "valueField": "consumerKey"
+            "valueField": "callbackScheme",
+            "urlName": "twitter-oauth"
           }
         ]
       },
@@ -310,7 +307,18 @@
             }
           }
         ],
-        "applicationData": []
+        "applicationData": [],
+        "mainActivityIntentFilters": [
+          {
+            "tag": "intent-filter",
+            "children": [
+              { "tag": "action", "attributes": { "android:name": "android.intent.action.VIEW" } },
+              { "tag": "category", "attributes": { "android:name": "android.intent.category.DEFAULT" } },
+              { "tag": "category", "attributes": { "android:name": "android.intent.category.BROWSABLE" } },
+              { "tag": "data", "attributes": { "android:scheme": "{callbackScheme}", "android:host": "{callbackHost}" } }
+            ]
+          }
+        ]
       }
     },
     {
@@ -318,12 +326,19 @@
       "name": "Apple Sign-In",
       "description": "Sign in with Apple (iOS 13+)",
       "icon": "🍎",
+      "setupNotes": [
+        "The iOS entitlement and Android callback activity are configured here.",
+        "A Service ID is needed only for Web or Android authentication and must also be used by your Dart and server-side sign-in flow."
+      ],
+      "dartConstants": [
+        { "name": "appleServiceId", "valueField": "serviceId" }
+      ],
       "fields": [
         {
           "id": "serviceId",
-          "label": "Service ID",
+          "label": "Service ID (Web/Android only)",
           "placeholder": "Your Apple Service ID",
-          "required": true
+          "required": false
         }
       ],
       "ios": {
@@ -340,7 +355,26 @@
       "android": {
         "metaData": [],
         "queries": [],
-        "applicationData": []
+        "applicationData": [
+          {
+            "tag": "activity",
+            "attributes": {
+              "android:name": "com.aboutyou.dart_packages.sign_in_with_apple.SignInWithAppleCallback",
+              "android:exported": "true"
+            },
+            "children": [
+              {
+                "tag": "intent-filter",
+                "children": [
+                  { "tag": "action", "attributes": { "android:name": "android.intent.action.VIEW" } },
+                  { "tag": "category", "attributes": { "android:name": "android.intent.category.DEFAULT" } },
+                  { "tag": "category", "attributes": { "android:name": "android.intent.category.BROWSABLE" } },
+                  { "tag": "data", "attributes": { "android:scheme": "signinwithapple", "android:path": "callback" } }
+                ]
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -348,25 +382,45 @@
       "name": "Stripe Payments",
       "description": "Stripe payment processing with flutterstripe URL scheme for payment callbacks",
       "icon": "💳",
+      "setupNotes": [
+        "Import lib/flutter_config_manager_services.dart, initialize Stripe.publishableKey from FlutterConfigManagerServices.stripePublishableKey, set Stripe.urlScheme to flutterstripe, then call applySettings.",
+        "When Apple Pay is enabled, also set Stripe.merchantIdentifier in Dart and enable the merchant in your Apple developer account."
+      ],
+      "dartConstants": [
+        { "name": "stripePublishableKey", "valueField": "publishableKey" },
+        { "name": "stripeMerchantId", "valueField": "merchantId" }
+      ],
       "fields": [
         {
           "id": "publishableKey",
           "label": "Publishable Key",
           "placeholder": "pk_live_xxx or pk_test_xxx",
-          "required": true
+          "required": true,
+          "pattern": "^pk_(?:test|live)_[A-Za-z0-9_]+$",
+          "patternError": "Enter a Stripe publishable key beginning with pk_test_ or pk_live_."
         },
         {
           "id": "merchantId",
           "label": "Merchant ID (Apple Pay)",
           "placeholder": "merchant.com.yourcompany",
-          "required": false
+          "required": false,
+          "pattern": "^merchant\\.[A-Za-z0-9.-]+$",
+          "patternError": "Apple merchant IDs must begin with merchant."
         }
       ],
       "ios": {
         "plistEntries": [],
         "urlSchemes": [
           {
-            "prefix": "flutterstripe"
+            "staticValue": "flutterstripe",
+            "urlName": "flutterstripe"
+          }
+        ],
+        "entitlements": [
+          {
+            "key": "com.apple.developer.in-app-payments",
+            "type": "array",
+            "valueField": "merchantId"
           }
         ]
       },
@@ -381,7 +435,7 @@
               { "tag": "action", "attributes": { "android:name": "android.intent.action.VIEW" } },
               { "tag": "category", "attributes": { "android:name": "android.intent.category.DEFAULT" } },
               { "tag": "category", "attributes": { "android:name": "android.intent.category.BROWSABLE" } },
-              { "tag": "data", "attributes": { "android:scheme": "flutterstripe", "android:host": "safepay" } }
+              { "tag": "data", "attributes": { "android:scheme": "flutterstripe", "android:host": "redirect" } }
             ]
           }
         ]
@@ -437,18 +491,26 @@
       "name": "Google AdMob",
       "description": "Mobile advertising with AdMob",
       "icon": "📺",
+      "setupNotes": [
+        "Initialize MobileAds.instance from Dart before loading ads.",
+        "Only add App Tracking Transparency permission when your consent flow actually requests access to the IDFA."
+      ],
       "fields": [
         {
           "id": "iosAppId",
           "label": "iOS App ID",
           "placeholder": "ca-app-pub-xxx~xxx",
-          "required": true
+          "required": true,
+          "pattern": "^ca-app-pub-[0-9]+~[0-9]+$",
+          "patternError": "Enter an AdMob app ID, not an ad unit ID."
         },
         {
           "id": "androidAppId",
           "label": "Android App ID",
           "placeholder": "ca-app-pub-xxx~xxx",
-          "required": true
+          "required": true,
+          "pattern": "^ca-app-pub-[0-9]+~[0-9]+$",
+          "patternError": "Enter an AdMob app ID, not an ad unit ID."
         }
       ],
       "ios": {
@@ -463,14 +525,56 @@
             "type": "array",
             "staticValue": [
               { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" },
+              { "SKAdNetworkIdentifier": "4fzdc2evr5.skadnetwork" },
+              { "SKAdNetworkIdentifier": "2fnua5tdw4.skadnetwork" },
+              { "SKAdNetworkIdentifier": "ydx93a7ass.skadnetwork" },
+              { "SKAdNetworkIdentifier": "p78axxw29g.skadnetwork" },
+              { "SKAdNetworkIdentifier": "v72qych5uu.skadnetwork" },
+              { "SKAdNetworkIdentifier": "ludvb6z3bs.skadnetwork" },
+              { "SKAdNetworkIdentifier": "cp8zw746q7.skadnetwork" },
+              { "SKAdNetworkIdentifier": "3sh42y64q3.skadnetwork" },
+              { "SKAdNetworkIdentifier": "c6k4g5qg8m.skadnetwork" },
+              { "SKAdNetworkIdentifier": "s39g8k73mm.skadnetwork" },
+              { "SKAdNetworkIdentifier": "wg4vff78zm.skadnetwork" },
+              { "SKAdNetworkIdentifier": "3qy4746246.skadnetwork" },
+              { "SKAdNetworkIdentifier": "f38h382jlk.skadnetwork" },
+              { "SKAdNetworkIdentifier": "hs6bdukanm.skadnetwork" },
+              { "SKAdNetworkIdentifier": "mlmmfzh3r3.skadnetwork" },
+              { "SKAdNetworkIdentifier": "v4nxqhlyqp.skadnetwork" },
+              { "SKAdNetworkIdentifier": "wzmmz9fp6w.skadnetwork" },
+              { "SKAdNetworkIdentifier": "su67r6k2v3.skadnetwork" },
+              { "SKAdNetworkIdentifier": "yclnxrl5pm.skadnetwork" },
+              { "SKAdNetworkIdentifier": "t38b2kh725.skadnetwork" },
+              { "SKAdNetworkIdentifier": "7ug5zh24hu.skadnetwork" },
+              { "SKAdNetworkIdentifier": "gta9lk7p23.skadnetwork" },
+              { "SKAdNetworkIdentifier": "vutu7akeur.skadnetwork" },
+              { "SKAdNetworkIdentifier": "y5ghdn5j9k.skadnetwork" },
               { "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork" },
-              { "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork" }
+              { "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork" },
+              { "SKAdNetworkIdentifier": "47vhws6wlr.skadnetwork" },
+              { "SKAdNetworkIdentifier": "kbd757ywx3.skadnetwork" },
+              { "SKAdNetworkIdentifier": "9t245vhmpl.skadnetwork" },
+              { "SKAdNetworkIdentifier": "a2p9lx4jpn.skadnetwork" },
+              { "SKAdNetworkIdentifier": "22mmun2rn5.skadnetwork" },
+              { "SKAdNetworkIdentifier": "44jx6755aq.skadnetwork" },
+              { "SKAdNetworkIdentifier": "k674qkevps.skadnetwork" },
+              { "SKAdNetworkIdentifier": "4468km3ulz.skadnetwork" },
+              { "SKAdNetworkIdentifier": "2u9pt9hc89.skadnetwork" },
+              { "SKAdNetworkIdentifier": "8s468mfl3y.skadnetwork" },
+              { "SKAdNetworkIdentifier": "klf5c3l5u5.skadnetwork" },
+              { "SKAdNetworkIdentifier": "ppxm28t8ap.skadnetwork" },
+              { "SKAdNetworkIdentifier": "kbmxgpxpgc.skadnetwork" },
+              { "SKAdNetworkIdentifier": "uw77j35x4d.skadnetwork" },
+              { "SKAdNetworkIdentifier": "578prtvx9j.skadnetwork" },
+              { "SKAdNetworkIdentifier": "4dzt52r2t5.skadnetwork" },
+              { "SKAdNetworkIdentifier": "tl55sbb4fm.skadnetwork" },
+              { "SKAdNetworkIdentifier": "c3frkrj4fj.skadnetwork" },
+              { "SKAdNetworkIdentifier": "e5fvkxwrpn.skadnetwork" },
+              { "SKAdNetworkIdentifier": "8c4e2ghe7u.skadnetwork" },
+              { "SKAdNetworkIdentifier": "3rd42ekr43.skadnetwork" },
+              { "SKAdNetworkIdentifier": "97r2b46745.skadnetwork" },
+              { "SKAdNetworkIdentifier": "3qcr597p9d.skadnetwork" }
             ]
-          },
-          {
-            "key": "NSUserTrackingUsageDescription",
-            "type": "string",
-            "staticValue": "This identifier will be used to deliver personalized ads to you."
           }
         ],
         "urlSchemes": []

@@ -62,7 +62,9 @@ export interface IOSPlistEntry {
 /** iOS URL scheme configuration */
 export interface IOSUrlScheme {
     prefix?: string;
-    valueField: string;
+    valueField?: string;
+    staticValue?: string;
+    urlName?: string;
 }
 
 /** iOS entitlement configuration */
@@ -70,6 +72,7 @@ export interface IOSEntitlement {
     key: string;
     type: string;
     staticValue?: unknown;
+    valueField?: string;
 }
 
 /** iOS AppDelegate code configuration */
@@ -107,6 +110,11 @@ export interface IOSPodfileTarget {
     code: string;
 }
 
+export interface DartServiceConstant {
+    name: string;
+    valueField: string;
+}
+
 /** iOS service configuration */
 export interface IOSServiceConfig {
     plistEntries: IOSPlistEntry[];
@@ -132,6 +140,8 @@ export interface ServiceConfig {
     description: string;
     icon: string;
     fields: ServiceField[];
+    setupNotes?: string[];
+    dartConstants?: DartServiceConstant[];
     ios: IOSServiceConfig;
     android: AndroidServiceConfig;
 }
