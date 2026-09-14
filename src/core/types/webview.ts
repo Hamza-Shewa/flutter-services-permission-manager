@@ -194,6 +194,7 @@ export type WebviewMessage =
   | { type: "browseTranslationsDir" }
   | { type: "scanInteractives" }
   | { type: "copySemanticsPrompt" }
+  | { type: "dumpAndroidUi"; mode: "export" | "clipboard" }
   | { type: "checkMcpClients" }
   | { type: "installMcpClient"; client: McpClientId }
   | { type: "copyMcpConfig" }

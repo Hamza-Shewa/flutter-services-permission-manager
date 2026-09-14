@@ -26,6 +26,7 @@ CONTRIBUTING.md
 flutter-service-manager.skill
 coverage/**
 test-fast-xml.js
+current-screen-semantics.yaml
 mcp-server/test-fixture/**
 mcp-server/smoke-test.mjs
 mcp-server/tsconfig.json

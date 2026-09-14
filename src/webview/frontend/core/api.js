@@ -33,6 +33,7 @@ export function saveTranslations(translations, dir) { vscode.postMessage({ type:
 export function browseTranslationsDir() { vscode.postMessage({ type: "browseTranslationsDir" }); }
 export function scanInteractives() { vscode.postMessage({ type: "scanInteractives" }); }
 export function copySemanticsPrompt() { vscode.postMessage({ type: "copySemanticsPrompt" }); }
+export function dumpAndroidUi(mode) { vscode.postMessage({ type: "dumpAndroidUi", mode }); }
 export function checkMcpClients() { vscode.postMessage({ type: "checkMcpClients" }); }
 export function installMcpClient(client) { vscode.postMessage({ type: "installMcpClient", client }); }
 export function copyMcpConfig() { vscode.postMessage({ type: "copyMcpConfig" }); }

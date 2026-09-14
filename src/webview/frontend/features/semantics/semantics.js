@@ -4,9 +4,11 @@ import * as api from "../../core/api.js";
 import {
   previewSemanticsFixesButton,
   copySemanticsPromptButton,
+  dumpAndroidUiSelect,
   scanInteractivesButton,
   semanticsEmpty,
   semanticsError,
+  semanticsDumpStatus,
   semanticsKindFilter,
   semanticsLoading,
   semanticsPreviewApply,
@@ -255,6 +257,11 @@ function showPreview(preview) {
 
 scanInteractivesButton?.addEventListener("click", scan);
 copySemanticsPromptButton?.addEventListener("click", () => api.copySemanticsPrompt());
+dumpAndroidUiSelect?.addEventListener("change", () => {
+  const mode = dumpAndroidUiSelect.value;
+  dumpAndroidUiSelect.value = "";
+  if (mode === "export" || mode === "clipboard") { api.dumpAndroidUi(mode); }
+});
 previewSemanticsFixesButton?.addEventListener("click", () => api.previewSemanticsFixes([...selected.values()]));
 semanticsSearch?.addEventListener("input", renderInteractives);
 semanticsStatusFilter?.addEventListener("change", renderInteractives);
@@ -318,4 +325,40 @@ bus.on("semanticsPromptCopied", () => {
   if (!copySemanticsPromptButton) { return; }
   copySemanticsPromptButton.textContent = "Copied";
   setTimeout(() => { copySemanticsPromptButton.textContent = "Copy AI prompt"; }, 1600);
+});
+bus.on("semanticsDumpLoading", (message) => {
+  if (dumpAndroidUiSelect) {
+    dumpAndroidUiSelect.disabled = !!message.loading;
+  }
+  if (message.loading && semanticsDumpStatus) {
+    semanticsDumpStatus.style.display = "block";
+    semanticsDumpStatus.style.color = "var(--text-secondary)";
+    semanticsDumpStatus.textContent = "Finding adb and reading the current accessibility hierarchy…";
+  }
+});
+bus.on("semanticsDumpSaved", (message) => {
+  if (!semanticsDumpStatus) { return; }
+  const summary = message.summary || {};
+  semanticsDumpStatus.style.display = "block";
+  semanticsDumpStatus.style.color = "#81c784";
+  semanticsDumpStatus.textContent = `Exported ${summary.buttons ?? 0} buttons, ${summary.input_fields ?? 0} input fields, and ${summary.embedded_actions ?? 0} embedded actions from ${message.deviceId} to ${message.path}.`;
+});
+bus.on("semanticsDumpCopied", (message) => {
+  if (!semanticsDumpStatus) { return; }
+  const summary = message.summary || {};
+  semanticsDumpStatus.style.display = "block";
+  semanticsDumpStatus.style.color = "#81c784";
+  semanticsDumpStatus.textContent = `Copied YAML with ${summary.buttons ?? 0} buttons, ${summary.input_fields ?? 0} input fields, and ${summary.embedded_actions ?? 0} embedded actions from ${message.deviceId}.`;
+});
+bus.on("semanticsDumpCancelled", () => {
+  if (!semanticsDumpStatus) { return; }
+  semanticsDumpStatus.style.display = "block";
+  semanticsDumpStatus.style.color = "var(--text-secondary)";
+  semanticsDumpStatus.textContent = "UI semantics export cancelled.";
+});
+bus.on("semanticsDumpError", (message) => {
+  if (!semanticsDumpStatus) { return; }
+  semanticsDumpStatus.style.display = "block";
+  semanticsDumpStatus.style.color = "#ef9a9a";
+  semanticsDumpStatus.textContent = message.message;
 });

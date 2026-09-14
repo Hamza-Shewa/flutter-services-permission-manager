@@ -29,6 +29,8 @@ For every actionable finding, use this strict priority order:
 - Do not classify widgets as shared merely because class names match. A shared widget must resolve to the same project-owned definition and be used at multiple call sites or intentionally live in a shared/component layer.
 - Distinguish Flutter SDK and dependency-package widgets from project-owned widgets. Never modify external package source.
 - Inspect parents and children so one logical control gets one semantic boundary; do not create duplicate or competing semantic nodes.
+- Before proposing any label or identifier, derive the control's domain intent from all available evidence in this order: resolved project-relative source path, owning component/class/function name, call-site variable or field name, surrounding feature/screen, visible or localized text, callback name, and actual interaction role. Record which evidence determined the result.
+- Prefer the most specific domain-bearing owner over a generic implementation widget. For example, a VisitorArea component implemented with MobileButton is a visitor-area control, not a "mobile button" control. Use the resolved path to disambiguate generic names such as ActionButton, ItemTile, or CustomField.
 
 2. Reuse an existing semantic contract
 - If the resolved widget already accepts parameters such as semanticsIdentifier, semanticIdentifier, semanticsLabel, semanticLabel, semanticsHint, tooltip, or another clearly equivalent API, reuse its established names and types.
@@ -55,7 +57,23 @@ Identifier rules
 
 Accessibility rules
 - A visible Text child, TextField decoration, tooltip, or existing localized semantic expression may already provide an accessible name. Do not add redundant labels just to increase a counter.
-- Never invent or hardcode user-facing English. Reuse an existing localized Dart expression. If no correct localized expression exists, leave the accessibility item unresolved and report the exact file/control needing product copy.
+- Convert component and path tokens into a concise human phrase: split PascalCase/camelCase/snake_case/kebab-case, preserve recognized acronyms, remove purely technical suffixes, and append the actual control role exactly once. This prompt requires role-explicit label candidates. VisitorArea used as a button must produce the canonical English label candidate "visitor area button"; VisitorAreaButton must produce the same phrase, never "visitor area button button". A dropdown named BranchSelector should produce "branch selector dropdown". Generic shared names such as MobileButton must not override the owning feature name.
+- Treat that canonical phrase as semantic intent, then search visible text and the project's localization APIs/catalogs for the equivalent user-facing expression. Reuse an existing localized Dart expression whenever available. The English example "visitor area button" describes the required meaning; do not hardcode it into Arabic or multilingual production UI when a localized expression exists.
+- If no correct localized expression exists, do not silently invent production copy. Leave the code change unresolved, report the exact file/control plus the derived canonical phrase, and recommend the localization key/value that should be added. Reuse an existing hardcoded visible literal only when it already supplies the same meaning; do not introduce a new hardcoded English literal solely for semantics.
+- Validate the derived phrase against behavior. Names that describe layout, styling, implementation, or callbacks—such as "container", "mobile", "changed", "pressed", or "gesture detector"—are invalid unless they are genuinely part of the user-facing domain meaning.
+- Every Semantics node with an explicit label or hint must also set textDirection: Directionality.of(context). This is required for custom Semantics-wrapped GestureDetector controls, dropdown/select controls, and any other explicit semantic text. Do not infer direction from the string and do not hardcode TextDirection.rtl or TextDirection.ltr; Directionality.of(context) must work for both Arabic and English.
+- Keep one semantics boundary per logical control. The Arabic literals below illustrate the required node shape; in production, replace them with the project's existing localized expressions:
+
+  Semantics(
+    identifier: 'pages.login_screens.open_bank_account.branches.select',
+    label: 'الفرع',
+    hint: 'إختر الفرع',
+    textDirection: Directionality.of(context),
+    button: true,
+    child: control,
+  )
+
+- When extending a shared widget with semantic label/hint parameters, obtain Directionality.of(context) inside its build method and attach it to the same single Semantics boundary. Do not add another outer Semantics wrapper merely to supply textDirection.
 - Keep labels concise and user-facing; keep implementation details in identifiers, not labels.
 - Preserve disabled state, focus behavior, gestures, merge/exclude semantics behavior, and tap targets.
 
@@ -65,5 +83,11 @@ Safe execution and verification
 - Refuse an unsafe rewrite instead of removing const, changing widget behavior, or applying a broad wrapper.
 - Run dart format on changed Dart files, flutter analyze, and relevant tests.
 - Run scan_interactives again. Report before/after counts for accessibility missing/uncertain, automation missing/dynamic/duplicate, the shared widget definitions changed, call sites updated, wrapper fallbacks used, and any opaque/manual items that remain.
+- No forced semantics handle, SemanticsBinding.ensureSemantics call, or special QA build flag should be needed on Android. With the target screen displayed, verify the native accessibility hierarchy using:
+
+  adb shell uiautomator dump /sdcard/window.xml
+  adb exec-out cat /sdcard/window.xml
+
+  The exact Semantics.identifier values must appear as resource-id and explicit labels/hints must appear in content-desc. If the dump contains only Flutter's host FrameLayout with empty resource-id/content-desc, first audit missing textDirection on explicit label/hint nodes—especially custom GestureDetector and dropdown controls—then inspect duplicate or overly broad semantics boundaries.
 `;
 }

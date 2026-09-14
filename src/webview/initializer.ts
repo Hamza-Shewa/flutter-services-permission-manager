@@ -72,6 +72,7 @@ import {
   handleBrowseTranslationsDir,
   handleScanInteractives,
   handleCopySemanticsPrompt,
+  handleDumpAndroidUi,
   handlePreviewSemanticsFixes,
   handleApplySemanticsFixes,
   handleRevealSourceReference,
@@ -291,6 +292,7 @@ function setupMessageHandler(
     .register("browseTranslationsDir", async () => await handleBrowseTranslationsDir(ref))
     .register("scanInteractives", async () => await handleScanInteractives(ref))
     .register("copySemanticsPrompt", async () => await handleCopySemanticsPrompt(ref))
+    .register("dumpAndroidUi", async (msg) => await handleDumpAndroidUi(ref, msg.mode === "clipboard" ? "clipboard" : "export"))
     .register("checkMcpClients", async () => await handleCheckMcpClients(ref, extensionRoot))
     .register("installMcpClient", async (msg) => await handleInstallMcpClient(ref, extensionRoot, msg.client))
     .register("copyMcpConfig", async () => await handleCopyMcpConfig(ref, extensionRoot))

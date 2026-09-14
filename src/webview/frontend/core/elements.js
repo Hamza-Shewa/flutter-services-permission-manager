@@ -207,6 +207,8 @@ export const transStatus = document.getElementById("transStatus");
 // Semantics inventory elements
 export const scanInteractivesButton = document.getElementById("scanInteractivesButton");
 export const copySemanticsPromptButton = document.getElementById("copySemanticsPromptButton");
+export const dumpAndroidUiSelect = document.getElementById("dumpAndroidUiSelect");
+export const semanticsDumpStatus = document.getElementById("semanticsDumpStatus");
 export const semanticsPromptProject = document.getElementById("semanticsPromptProject");
 export const connectMcpButton = document.getElementById("connectMcpButton");
 export const mcpClientsSummary = document.getElementById("mcpClientsSummary");

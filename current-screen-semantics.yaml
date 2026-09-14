@@ -1,0 +1,127 @@
+schema_version: 2
+captured_at: "2026-09-14T09:07:00+02:00"
+source: adb_uiautomator
+normalization:
+  merge_identifier_wrappers_with_actionable_children: true
+  include_actionable_nodes_missing_labels_or_identifiers: true
+  separate_embedded_field_actions: true
+screen:
+  package: mitt.JamBank
+  activity: mitt.JamBank.MainActivity
+  device: emulator-5554
+  model: sdk_gphone16k_arm64
+  android_api: 37
+  rotation: 0
+  physical_size: {width: 1280, height: 2856}
+  density_dpi: 480
+summary:
+  primary_controls: 7
+  buttons: 5
+  input_fields: 2
+  embedded_actions: 1
+  with_identifier: 5
+  without_identifier: 2
+  duplicate_identifiers: 0
+controls:
+  - type: input_field
+    identifier: pages.login_screens.login.components.mobile_field.mobile_text_field.changed
+    android_class: android.widget.EditText
+    label: رقم الهاتف
+    hint: 9X XXX XXXX
+    actions: [tap, enter_text]
+    state: {enabled: true, focusable: true, password: false}
+    bounds: {left: 0, top: 1016, right: 1280, bottom: 1238, width: 1280, height: 222}
+    center: {x: 640, y: 1127}
+    audit: {identifier: present, accessibility: ready}
+
+  - type: input_field
+    identifier: pages.login_screens.login.components.pin_field.mobile_text_field.changed
+    android_class: android.widget.EditText
+    label: كلمة المرور
+    hint: null
+    actions: [tap, enter_text]
+    state: {enabled: true, focusable: true, password: true}
+    bounds: {left: 0, top: 1250, right: 1280, bottom: 1469, width: 1280, height: 219}
+    center: {x: 640, y: 1359}
+    audit: {identifier: present, accessibility: ready}
+
+  - type: button
+    identifier: pages.login_screens.login.components.button.mobile_button.pressed
+    android_class: android.widget.Button
+    label: تــســجــيــل الــدخــول
+    actions: [tap]
+    state: {enabled: true, focusable: true}
+    bounds: {left: 102, top: 1618, right: 1178, bottom: 1813, width: 1076, height: 195}
+    center: {x: 640, y: 1715}
+    audit: {identifier: present, accessibility: ready}
+    merged_nodes:
+      identifier_wrapper: "0.0.0.0.0.0.0.0.0.0.5"
+      actionable_child: "0.0.0.0.0.0.0.0.0.0.5.0"
+
+  - type: button
+    identifier: pages.login_screens.login.components.text_button.text_button.pressed
+    android_class: android.widget.Button
+    label: اضغط هنا
+    actions: [tap]
+    state: {enabled: true, focusable: true}
+    bounds: {left: 122, top: 1888, right: 407, bottom: 2059, width: 285, height: 171}
+    center: {x: 264, y: 1973}
+    audit: {identifier: present, accessibility: ready}
+    merged_nodes:
+      identifier_wrapper: "0.0.0.0.0.0.0.0.0.0.7"
+      actionable_child: "0.0.0.0.0.0.0.0.0.0.7.0"
+
+  - type: button
+    identifier: widgets.chat_bot_button.floating_action_button.pressed
+    android_class: android.widget.ImageView
+    label: floating action button
+    actions: [tap]
+    state: {enabled: true, focusable: true}
+    bounds: {left: 48, top: 2297, right: 216, bottom: 2465, width: 168, height: 168}
+    center: {x: 132, y: 2381}
+    audit: {identifier: present, accessibility: generic_label}
+    merged_nodes:
+      identifier_wrapper: "0.0.0.0.0.0.0.0.0.2"
+      actionable_child: "0.0.0.0.0.0.0.0.0.2.0"
+
+  - type: button
+    identifier: null
+    android_class: android.widget.Button
+    label: مساحة الزوار
+    actions: [tap]
+    state: {enabled: true, focusable: true}
+    bounds: {left: 38, top: 2526, right: 614, bottom: 2701, width: 576, height: 175}
+    center: {x: 326, y: 2613}
+    audit: {identifier: missing, accessibility: ready}
+
+  - type: button
+    identifier: null
+    android_class: android.widget.ImageView
+    label: null
+    actions: [tap]
+    state: {enabled: true, focusable: true}
+    bounds: {left: 678, top: 2526, right: 1254, bottom: 2701, width: 576, height: 175}
+    center: {x: 966, y: 2613}
+    audit: {identifier: missing, accessibility: missing}
+    note: Visible logo button; its purpose cannot be determined safely from the UIAutomator tree.
+
+embedded_actions:
+  - type: input_accessory
+    owner_identifier: pages.login_screens.login.components.pin_field.mobile_text_field.changed
+    identifier: null
+    android_class: android.view.View
+    label: null
+    inferred_purpose: password_visibility_toggle
+    actions: [tap]
+    bounds: {left: 48, top: 1293, right: 192, bottom: 1437, width: 144, height: 144}
+    center: {x: 120, y: 1365}
+    audit: {identifier: missing, accessibility: missing}
+    note: Reported separately because it is embedded in the password field.
+
+ignored_nodes:
+  - identifier: app.components.skeleton.gesture_detector.tap
+    reason: Full-screen gesture/scroll container, not a standalone control.
+  - node_path: "0.0.0.0.0.0.0.0"
+    reason: Anonymous full-screen clickable container, not a standalone control.
+  - node_path: "0.0.0.0.0.0.0.0.1"
+    reason: Anonymous system-overlay clickable region, not app content.

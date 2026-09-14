@@ -36,9 +36,21 @@ suite("Semantics scanner and fixer", () => {
     assert.ok(prompt.includes(result.projectRoot));
     assert.ok(prompt.includes("Resolve ownership and shared-widget usage before editing"));
     assert.ok(prompt.includes("resolving its import/export path"));
+    assert.ok(prompt.includes("resolved project-relative source path"));
+    assert.ok(prompt.includes("VisitorArea used as a button"));
+    assert.ok(prompt.includes('"visitor area button"'));
+    assert.ok(prompt.includes("never \"visitor area button button\""));
+    assert.ok(prompt.includes("Generic shared names such as MobileButton"));
+    assert.ok(prompt.includes("recommend the localization key/value"));
     assert.ok(prompt.includes("Only as a last resort"));
     assert.ok(prompt.includes(`Accessibility missing: ${result.totals.accessibilityMissing}`));
     assert.ok(prompt.includes("Never use a list index"));
+    assert.ok(prompt.includes("textDirection: Directionality.of(context)"));
+    assert.ok(prompt.includes("custom Semantics-wrapped GestureDetector controls"));
+    assert.ok(prompt.includes("adb shell uiautomator dump /sdcard/window.xml"));
+    assert.ok(prompt.includes("resource-id"));
+    assert.ok(prompt.includes("content-desc"));
+    assert.ok(prompt.includes("No forced semantics handle"));
   });
 
   test("previews and applies a content-hashed identifier fix", async () => {

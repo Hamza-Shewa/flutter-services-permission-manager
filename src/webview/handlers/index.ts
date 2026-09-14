@@ -412,6 +412,7 @@ export {
 export {
   handleScanInteractives,
   handleCopySemanticsPrompt,
+  handleDumpAndroidUi,
   handlePreviewSemanticsFixes,
   handleApplySemanticsFixes,
   handleRevealSourceReference,

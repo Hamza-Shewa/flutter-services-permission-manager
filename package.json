@@ -174,6 +174,12 @@
           "default": [],
           "description": "Widget class names to suppress when the Semantics scanner reports a false positive."
         },
+        "flutter-config-manager.android.adbPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "description": "Optional full path to adb or adb.exe for Semantics UI dumps. Leave empty to use ANDROID_SDK_ROOT, ANDROID_HOME, standard Windows/macOS/Linux SDK locations, or PATH."
+        },
         "flutter-config-manager.mcp.codexExecutable": {
           "type": "string",
           "default": "",

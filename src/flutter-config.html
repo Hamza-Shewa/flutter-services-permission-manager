@@ -3127,6 +3127,11 @@
       <div class="section-header-with-button">
         <h2>♿ Interactive Widgets &amp; Semantics</h2>
         <div style="display:flex; gap:8px;">
+          <select id="dumpAndroidUiSelect" class="btn-secondary" aria-label="Dump current Android UI semantics" title="Read the connected Android device's current accessibility tree. No dumpui shell command is required." style="width:auto;">
+            <option value="" selected>Dump current UI…</option>
+            <option value="export">Export YAML to file</option>
+            <option value="clipboard">Copy YAML to clipboard</option>
+          </select>
           <button id="previewSemanticsFixesButton" type="button" class="btn-secondary" disabled>Preview selected fixes</button>
           <button id="scanInteractivesButton" type="button" class="btn-primary">Scan Dart sources</button>
         </div>
@@ -3136,6 +3141,7 @@
       Confidence-based static audit of <code>lib/**/*.dart</code>. Opaque and runtime-generated controls are flagged,
       not claimed as completely inspected. Automation IDs use <code>Semantics.identifier</code>.
     </p>
+    <div id="semanticsDumpStatus" style="display:none; margin:8px 0; padding:9px 11px; border:1px solid var(--border-default); border-radius:var(--radius-sm); color:var(--text-secondary); font-size:12px;"></div>
     <div id="semanticsSummary" class="semantics-summary" style="display:none;"></div>
     <div class="semantics-ai-prompt">
       <div>
