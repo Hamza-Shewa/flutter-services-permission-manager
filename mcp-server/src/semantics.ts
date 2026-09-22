@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { spawnSync } from "node:child_process";
 
 import {
   applySemanticsPreviewToFiles,
@@ -11,6 +10,7 @@ import type {
   InteractiveScannerOptions,
   SemanticsFixRequest,
 } from "../../out/features/semantics/types.js";
+import { checkFlutterVersion, findFlutterExecutable, probeFlutterVersion } from "../../out/core/shared/flutter-locator.js";
 
 const scannerOptionsShape = {
   excludedGlobs: z.array(z.string()).optional(),
@@ -55,14 +55,16 @@ function optionsFrom(args: Record<string, unknown>): InteractiveScannerOptions {
 }
 
 function ensureIdentifierCompatibility(root: string): void {
-  const executable = process.env.FCM_FLUTTER_EXECUTABLE || "flutter";
-  const result = spawnSync(executable, ["--version", "--machine"], { cwd: root, encoding: "utf8" });
+  const executable = findFlutterExecutable({ projectRoot: root });
+  if (!executable) {
+    throw new Error("Flutter 3.19 or newer is required for Semantics.identifier fixes, but no Flutter executable was found. Set FCM_FLUTTER_EXECUTABLE or FLUTTER_ROOT if Flutter isn't on PATH.");
+  }
+  const result = probeFlutterVersion(executable, root);
   if (result.status !== 0) {
     throw new Error("Flutter 3.19 or newer is required for Semantics.identifier fixes, but the Flutter SDK version could not be verified.");
   }
-  const version = String((JSON.parse(result.stdout) as { frameworkVersion?: string }).frameworkVersion ?? "");
-  const [major, minor] = version.split(".").map(Number);
-  if (!Number.isFinite(major) || !Number.isFinite(minor) || major < 3 || (major === 3 && minor < 19)) {
+  const { ok, version } = checkFlutterVersion(result.stdout);
+  if (!ok) {
     throw new Error(`Flutter 3.19 or newer is required for Semantics.identifier fixes; detected ${version || "unknown"}.`);
   }
 }

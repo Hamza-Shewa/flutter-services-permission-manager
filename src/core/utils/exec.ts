@@ -2,6 +2,7 @@ import { exec, ExecException, ExecOptions } from 'child_process';
 import * as os from 'os';
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { findFlutterExecutable } from '../shared/flutter-locator.js';
 
 export function getExecEnv(): NodeJS.ProcessEnv {
     const env = { ...process.env };
@@ -45,7 +46,14 @@ export function getFlutterCommand(): string {
     if (flutterSdkPath) {
         return `"${path.join(flutterSdkPath, 'bin', exeName)}"`;
     }
-    return exeName;
+    // `dart.flutterSdkPath` isn't always set (Dart/Flutter extension not
+    // installed, or the setting left blank) - fall back to the same
+    // environment/PATH/shell-rc search used by the standalone mcp-server, so
+    // a Flutter install that isn't on this process's bare PATH still works.
+    const resolved = findFlutterExecutable({
+        projectRoot: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+    });
+    return resolved ? `"${resolved}"` : exeName;
 }
 
 export function getDartCommand(): string {

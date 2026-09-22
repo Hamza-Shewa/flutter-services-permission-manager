@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import { execWithEnv, getFlutterCommand } from "../../core/utils/exec.js";
+import { checkFlutterVersion } from "../../core/shared/flutter-locator.js";
 import {
   consumeSemanticsPreview,
   getPreviewContents,
@@ -56,17 +57,16 @@ function ensureIdentifierCompatibility(root: string): Promise<void> {
         reject(new Error("Flutter 3.19 or newer is required for Semantics.identifier fixes, but the project Flutter SDK version could not be verified."));
         return;
       }
-      try {
-        const version = String((JSON.parse(stdout) as { frameworkVersion?: string }).frameworkVersion ?? "");
-        const [major, minor] = version.split(".").map(Number);
-        if (!Number.isFinite(major) || !Number.isFinite(minor) || major < 3 || (major === 3 && minor < 19)) {
-          reject(new Error(`Flutter 3.19 or newer is required for Semantics.identifier fixes; detected ${version || "unknown"}.`));
-          return;
-        }
-        resolve();
-      } catch {
+      const { ok, version } = checkFlutterVersion(stdout);
+      if (!version) {
         reject(new Error("Flutter 3.19 or newer is required for Semantics.identifier fixes, but flutter --version returned an unreadable result."));
+        return;
       }
+      if (!ok) {
+        reject(new Error(`Flutter 3.19 or newer is required for Semantics.identifier fixes; detected ${version}.`));
+        return;
+      }
+      resolve();
     });
   });
 }

@@ -10,6 +10,7 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
 import { flattenInteractiveFindings, scanInteractives } from "../../out/features/semantics/index.js";
+import { checkFlutterVersion, findFlutterExecutable, probeFlutterVersion } from "../../out/core/shared/flutter-locator.js";
 
 const DEFAULT_APPIUM_URL = "http://127.0.0.1:4723";
 const MAX_WAIT_MS = 30_000;
@@ -71,21 +72,16 @@ function sdkRoot(): string | undefined {
 }
 
 function ensureFlutterIdentifierSupport(root: string): string {
-  const executable = resolveExecutable(process.platform === "win32" ? "flutter.bat" : "flutter", [
-    process.env.FCM_FLUTTER_EXECUTABLE ?? "",
-    process.env.FLUTTER_ROOT ? path.join(process.env.FLUTTER_ROOT, "bin", process.platform === "win32" ? "flutter.bat" : "flutter") : "",
-    path.join(root, ".fvm", "flutter_sdk", "bin", process.platform === "win32" ? "flutter.bat" : "flutter"),
-  ]);
+  const executable = findFlutterExecutable({ projectRoot: root });
   if (!executable) {
     throw new Error("Flutter 3.19 or newer is required for native semantics identifiers, but no Flutter executable was found.");
   }
-  const result = spawnSync(executable, ["--version", "--machine"], { cwd: root, encoding: "utf8" });
+  const result = probeFlutterVersion(executable, root);
   if (result.status !== 0) {
     throw new Error("Flutter 3.19 or newer is required, but flutter --version failed.");
   }
-  const version = String((JSON.parse(result.stdout) as { frameworkVersion?: string }).frameworkVersion ?? "");
-  const [major, minor] = version.split(".").map(Number);
-  if (!Number.isFinite(major) || !Number.isFinite(minor) || major < 3 || (major === 3 && minor < 19)) {
+  const { ok, version } = checkFlutterVersion(result.stdout);
+  if (!ok) {
     throw new Error(`Flutter 3.19 or newer is required for native semantics identifiers; detected ${version || "unknown"}.`);
   }
   return version;

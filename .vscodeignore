@@ -32,3 +32,126 @@ mcp-server/smoke-test.mjs
 mcp-server/tsconfig.json
 mcp-server/src/**
 mcp-server/node_modules/.cache/**
+
+# A tool-created git-worktree directory (e.g. Kilo Code's `.kilo/worktrees/<name>/`)
+# duplicates the whole repo, including build/coverage output - never part of the
+# extension itself, and must never ship.
+.kilo/**
+
+# `mcp-server/` is compiled ahead of time (`npm run compile:mcp`) into
+# `mcp-server/out/`; only its own runtime `dependencies` (not `devDependencies`)
+# are needed at runtime. vsce only understands the *root* package.json's
+# dependency/devDependency split, so this nested project's own devDependencies
+# (the entire TypeScript compiler + its `.d.ts` lib files, ~25MB) would
+# otherwise be bundled wholesale.
+mcp-server/node_modules/typescript/**
+mcp-server/node_modules/@types/**
+
+# Test fixtures, snapshot images, and docs bundled inside published npm
+# packages themselves (not devDependencies - these ship with the package even
+# in production installs) are never needed at runtime.
+**/node_modules/**/test/**
+**/node_modules/**/tests/**
+**/node_modules/**/__image_snapshots__/**
+**/node_modules/**/*.test.*
+**/node_modules/**/docs/**
+**/node_modules/zod/src/**
+
+# `mcp-server` only ever imports `@modelcontextprotocol/sdk/server/mcp.js` and
+# `.../server/stdio.js` (see `mcp-server/src/index.ts`) - it never uses the
+# SDK's optional HTTP/SSE transport or OAuth support. Verified by tracing the
+# actual require/import graph from the compiled entry point
+# (`mcp-server/out/index.js`): none of the packages below, nor the SDK's own
+# `server/auth/**`/`server/express.js`/`server/streamableHttp.js`/`examples/**`,
+# are ever reachable at runtime - they're pure dead weight (~9MB) pulled in
+# only because they're declared as the SDK's dependencies for a feature this
+# server doesn't use.
+mcp-server/node_modules/@hono/**
+mcp-server/node_modules/hono/**
+mcp-server/node_modules/express/**
+mcp-server/node_modules/express-rate-limit/**
+mcp-server/node_modules/body-parser/**
+mcp-server/node_modules/cors/**
+mcp-server/node_modules/cookie/**
+mcp-server/node_modules/cookie-signature/**
+mcp-server/node_modules/qs/**
+mcp-server/node_modules/router/**
+mcp-server/node_modules/send/**
+mcp-server/node_modules/serve-static/**
+mcp-server/node_modules/finalhandler/**
+mcp-server/node_modules/raw-body/**
+mcp-server/node_modules/range-parser/**
+mcp-server/node_modules/proxy-addr/**
+mcp-server/node_modules/ipaddr.js/**
+mcp-server/node_modules/ip-address/**
+mcp-server/node_modules/iconv-lite/**
+mcp-server/node_modules/jose/**
+mcp-server/node_modules/eventsource/**
+mcp-server/node_modules/eventsource-parser/**
+mcp-server/node_modules/pkce-challenge/**
+mcp-server/node_modules/path-to-regexp/**
+mcp-server/node_modules/accepts/**
+mcp-server/node_modules/negotiator/**
+mcp-server/node_modules/type-is/**
+mcp-server/node_modules/media-typer/**
+mcp-server/node_modules/mime-db/**
+mcp-server/node_modules/mime-types/**
+mcp-server/node_modules/content-disposition/**
+mcp-server/node_modules/content-type/**
+mcp-server/node_modules/etag/**
+mcp-server/node_modules/fresh/**
+mcp-server/node_modules/vary/**
+mcp-server/node_modules/on-finished/**
+mcp-server/node_modules/unpipe/**
+mcp-server/node_modules/parseurl/**
+mcp-server/node_modules/encodeurl/**
+mcp-server/node_modules/escape-html/**
+mcp-server/node_modules/forwarded/**
+mcp-server/node_modules/http-errors/**
+mcp-server/node_modules/statuses/**
+mcp-server/node_modules/depd/**
+mcp-server/node_modules/setprototypeof/**
+mcp-server/node_modules/toidentifier/**
+mcp-server/node_modules/ee-first/**
+mcp-server/node_modules/bytes/**
+mcp-server/node_modules/ms/**
+mcp-server/node_modules/debug/**
+mcp-server/node_modules/merge-descriptors/**
+mcp-server/node_modules/object-assign/**
+mcp-server/node_modules/object-inspect/**
+mcp-server/node_modules/safer-buffer/**
+mcp-server/node_modules/side-channel/**
+mcp-server/node_modules/side-channel-list/**
+mcp-server/node_modules/side-channel-map/**
+mcp-server/node_modules/side-channel-weakmap/**
+mcp-server/node_modules/call-bind-apply-helpers/**
+mcp-server/node_modules/call-bound/**
+mcp-server/node_modules/get-intrinsic/**
+mcp-server/node_modules/get-proto/**
+mcp-server/node_modules/gopd/**
+mcp-server/node_modules/hasown/**
+mcp-server/node_modules/has-symbols/**
+mcp-server/node_modules/dunder-proto/**
+mcp-server/node_modules/es-define-property/**
+mcp-server/node_modules/es-errors/**
+mcp-server/node_modules/es-object-atoms/**
+mcp-server/node_modules/function-bind/**
+mcp-server/node_modules/math-intrinsics/**
+mcp-server/node_modules/json-schema-typed/**
+mcp-server/node_modules/require-from-string/**
+mcp-server/node_modules/is-promise/**
+mcp-server/node_modules/isexe/**
+mcp-server/node_modules/which/**
+mcp-server/node_modules/path-key/**
+mcp-server/node_modules/shebang-command/**
+mcp-server/node_modules/shebang-regex/**
+mcp-server/node_modules/cross-spawn/**
+mcp-server/node_modules/inherits/**
+mcp-server/node_modules/once/**
+mcp-server/node_modules/wrappy/**
+mcp-server/node_modules/undici-types/**
+mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/server/auth/**
+mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/server/express.js
+mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/server/streamableHttp.js
+mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/server/sse.js
+mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/examples/**
