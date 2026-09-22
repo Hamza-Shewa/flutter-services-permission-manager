@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import type { WebviewRef } from './index.js';
 import { toErrorMessage } from '../../core/shared/index.js';
-import { detectIconSourceKind, generateIconPreview, generateIcons, getCurrentIconPreviews } from '../../features/icons/icons.service.js';
+import { generateSourcePreview } from '../../core/shared/image-compose.js';
+import { detectIconSourceKind, generateIcons, getCurrentIconPreviews } from '../../features/icons/icons.service.js';
 import type { AndroidIconFamilySelection, IconComposeOptions, IconPlatformTarget } from '../../features/icons/types.js';
 import { readFileContent, type ProjectFiles } from '../../core/workspace.service.js';
 
@@ -25,12 +26,11 @@ export async function handleRequestCurrentIconPreview(ref: WebviewRef, files: Pr
 }
 
 /**
- * Opens a native file picker restricted to PNG/JPEG/SVG images and reports
- * the selection back to the webview so it can be confirmed before generating.
- * Renders the initial preview using whatever scale/background the webview
- * already has set, so switching source images doesn't reset those controls.
+ * Opens a native file picker restricted to PNG/JPEG/SVG images and sends the
+ * webview one downscaled copy of the pick; every preview after that is drawn
+ * in the webview itself, so adjusting the controls never round-trips here.
  */
-export async function handleBrowseIconSource(ref: WebviewRef, compose: IconComposeOptions): Promise<void> {
+export async function handleBrowseIconSource(ref: WebviewRef): Promise<void> {
     try {
         const picked = await vscode.window.showOpenDialog({
             canSelectMany: false,
@@ -46,38 +46,16 @@ export async function handleBrowseIconSource(ref: WebviewRef, compose: IconCompo
             ref.webview.postMessage({ type: 'saveResult', success: false, message: 'Unsupported file type. Choose a PNG, JPEG, or SVG image.' });
             return;
         }
-        let previewDataUrl: string | undefined;
-        try {
-            previewDataUrl = (await generateIconPreview(file.fsPath, compose)).dataUrl;
-        } catch (previewError) {
-            console.warn('Icon preview render failed:', toErrorMessage(previewError));
-        }
+        const preview = await generateSourcePreview(file.fsPath);
         ref.webview.postMessage({
             type: 'iconSourceSelected',
             path: file.fsPath,
             fileName: file.fsPath.split(/[\\/]/).pop() ?? file.fsPath,
             kind,
-            previewDataUrl,
+            preview,
         });
     } catch (error) {
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to open file picker: ${toErrorMessage(error)}` });
-    }
-}
-
-/**
- * Re-renders the preview for the already-selected source with a new
- * scale/background, without touching any files - used while the user drags
- * the resize slider or changes the background color.
- */
-export async function handleRequestIconPreview(
-    ref: WebviewRef,
-    payload: { sourcePath: string } & IconComposeOptions,
-): Promise<void> {
-    try {
-        const preview = await generateIconPreview(payload.sourcePath, payload);
-        ref.webview.postMessage({ type: 'iconPreviewUpdated', previewDataUrl: preview.dataUrl });
-    } catch (error) {
-        console.warn('Icon preview render failed:', toErrorMessage(error));
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to load the source image: ${toErrorMessage(error)}` });
     }
 }
 
@@ -101,6 +79,7 @@ export async function handleGenerateIcons(
             iosPlistUri: files.iosPlistUri,
             scalePercent: payload.scalePercent,
             backgroundColor: payload.backgroundColor,
+            trimMargins: payload.trimMargins,
             androidFamilies: payload.androidFamilies,
         });
         ref.webview.postMessage({ type: 'iconsGenerated', result });

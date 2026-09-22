@@ -193,7 +193,7 @@ export async function translateMany(
 
   // Slow fallback: per-item requests through the provider chain.
   if (remaining.length > 0) {
-    const CONCURRENCY = 6;
+    const CONCURRENCY = 4;
     let index = 0;
     async function worker(): Promise<void> {
       while (index < remaining.length) {

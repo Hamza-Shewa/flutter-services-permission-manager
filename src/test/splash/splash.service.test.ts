@@ -5,10 +5,11 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { Jimp } from "jimp";
 import {
+  clampSplashLogoSize,
   clampSplashScalePercent,
+  DEFAULT_SPLASH_LOGO_SIZE,
   detectSplashSourceKind,
   generateSplash,
-  generateSplashPreview,
   getCurrentSplashPreviews,
 } from "../../features/splash/splash.service.js";
 
@@ -142,8 +143,8 @@ suite("Splash screen generation", () => {
     assert.ok(fs.existsSync(xxxhdpiFile));
     const decodedMdpi = await Jimp.fromBuffer(fs.readFileSync(mdpiFile));
     const decodedXxxhdpi = await Jimp.fromBuffer(fs.readFileSync(xxxhdpiFile));
-    assert.strictEqual(decodedMdpi.width, 288);
-    assert.strictEqual(decodedXxxhdpi.width, 288 * 4);
+    assert.strictEqual(decodedMdpi.width, DEFAULT_SPLASH_LOGO_SIZE);
+    assert.strictEqual(decodedXxxhdpi.width, DEFAULT_SPLASH_LOGO_SIZE * 4);
     // Foreground is composed transparent (no baked background) - it's a real PNG with alpha to spare.
     assert.strictEqual(decodedMdpi.getPixelColor(decodedMdpi.width / 2, decodedMdpi.height / 2) >>> 0, 0xff0000ff);
 
@@ -224,12 +225,45 @@ suite("Splash screen generation", () => {
     assert.ok(fs.existsSync(at1x));
     const decoded1x = await Jimp.fromBuffer(fs.readFileSync(at1x));
     const decoded3x = await Jimp.fromBuffer(fs.readFileSync(at3x));
-    assert.strictEqual(decoded1x.width, 120);
-    assert.strictEqual(decoded3x.width, 360);
+    assert.strictEqual(decoded1x.width, DEFAULT_SPLASH_LOGO_SIZE);
+    assert.strictEqual(decoded3x.width, DEFAULT_SPLASH_LOGO_SIZE * 3);
 
     const storyboard = fs.readFileSync(path.join(runnerDir, "Base.lproj", "LaunchScreen.storyboard"), "utf8");
     assert.match(storyboard, /<color key="backgroundColor"[^>]*red="0"[^>]*green="1"[^>]*blue="0"[^>]*alpha="1"/);
-    assert.match(storyboard, /<image name="LaunchImage"[^>]*width="120"[^>]*height="120"/);
+    assert.match(storyboard, new RegExp(`<image name="LaunchImage"[^>]*width="${DEFAULT_SPLASH_LOGO_SIZE}"[^>]*height="${DEFAULT_SPLASH_LOGO_SIZE}"`));
+  });
+
+  test("generateSplash honors a custom logo size on both platforms", async () => {
+    const workDir = mkTempDir("fcm-splash-logo-size-");
+    const sourcePath = path.join(workDir, "source.png");
+    await writeSourcePng(sourcePath);
+    const appDir = path.join(workDir, "android", "app");
+    scaffoldAndroidSplash(appDir);
+    const runnerDir = path.join(workDir, "ios", "Runner");
+    scaffoldIOSSplash(runnerDir);
+
+    const result = await generateSplash({
+      sourcePath,
+      platforms: "both",
+      androidManifestUri: vscode.Uri.file(path.join(appDir, "src", "main", "AndroidManifest.xml")),
+      iosPlistUri: vscode.Uri.file(path.join(runnerDir, "Info.plist")),
+      logoSize: 96,
+    });
+    assert.strictEqual(result.success, true, result.message);
+
+    const xxhdpi = await Jimp.fromBuffer(fs.readFileSync(path.join(appDir, "src", "main", "res", "drawable-xxhdpi", "launch_image.png")));
+    assert.strictEqual(xxhdpi.width, 96 * 3);
+    const ios2x = await Jimp.fromBuffer(fs.readFileSync(path.join(runnerDir, "Assets.xcassets", "LaunchImage.imageset", "LaunchImage@2x.png")));
+    assert.strictEqual(ios2x.width, 192);
+    const storyboard = fs.readFileSync(path.join(runnerDir, "Base.lproj", "LaunchScreen.storyboard"), "utf8");
+    assert.match(storyboard, /<image name="LaunchImage"[^>]*width="96"[^>]*height="96"/);
+  });
+
+  test("clampSplashLogoSize clamps to [48, 480] and defaults when missing", () => {
+    assert.strictEqual(clampSplashLogoSize(undefined), DEFAULT_SPLASH_LOGO_SIZE);
+    assert.strictEqual(clampSplashLogoSize(10), 48);
+    assert.strictEqual(clampSplashLogoSize(1000), 480);
+    assert.strictEqual(clampSplashLogoSize(150.4), 150);
   });
 
   test("generateSplash reports a clear error when LaunchScreen.storyboard doesn't exist", async () => {
@@ -266,32 +300,6 @@ suite("Splash screen generation", () => {
     assert.strictEqual(result.success, true, result.message);
     assert.strictEqual(result.androidFiles.length, 5);
     assert.strictEqual(result.iosFiles.length, 3);
-  });
-
-  test("generateSplashPreview renders a phone-shaped rectangle with the background color outside the foreground", async () => {
-    const workDir = mkTempDir("fcm-splash-preview-");
-    const sourcePath = path.join(workDir, "source.png");
-    await writeSourcePng(sourcePath, 64);
-
-    const preview = await generateSplashPreview(sourcePath, { backgroundColor: "#3355FF" });
-    assert.ok(preview.height > preview.width, "expected a portrait phone-shaped preview");
-    const decoded = await Jimp.fromBuffer(Buffer.from(preview.dataUrl.slice("data:image/png;base64,".length), "base64"));
-    assert.strictEqual(decoded.width, preview.width);
-    assert.strictEqual(decoded.height, preview.height);
-    // Corner: background color, not the foreground.
-    assert.strictEqual(decoded.getPixelColor(1, 1) >>> 0, 0x3355ffff);
-    // Center: the red foreground.
-    assert.strictEqual(decoded.getPixelColor(Math.floor(preview.width / 2), Math.floor(preview.height / 2)) >>> 0, 0xff0000ff);
-  });
-
-  test("generateSplashPreview leaves the backdrop transparent when no background color is given", async () => {
-    const workDir = mkTempDir("fcm-splash-preview-transparent-");
-    const sourcePath = path.join(workDir, "source.png");
-    await writeSourcePng(sourcePath, 64);
-
-    const preview = await generateSplashPreview(sourcePath);
-    const decoded = await Jimp.fromBuffer(Buffer.from(preview.dataUrl.slice("data:image/png;base64,".length), "base64"));
-    assert.strictEqual(decoded.getPixelColor(1, 1) & 0xff, 0);
   });
 
   test("getCurrentSplashPreviews returns undefined when nothing exists yet, and the existing file unmodified once it does", async () => {

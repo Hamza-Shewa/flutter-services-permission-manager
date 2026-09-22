@@ -339,29 +339,40 @@ function renderKeysTable() {
     for (const t of translations) {
       const value = t.keys[key] ?? "";
       const missing = value === "" ? " missing-cell" : "";
-      row += `<td class="trans-value-cell${missing}"><textarea data-locale="${esc(t.locale)}" data-key="${esc(key)}" placeholder="…" rows="1">${esc(value)}</textarea></td>`;
+      row += `<td class="trans-value-cell${missing}"><textarea data-locale="${esc(t.locale)}" data-key="${esc(key)}" placeholder="…" rows="${estimateRows(value)}">${esc(value)}</textarea></td>`;
     }
     row += "</tr>";
     return row;
   });
   transTableBody.innerHTML = rows.join("");
+}
 
-  // Wire inputs
-  transTableBody.querySelectorAll("textarea").forEach((ta) => {
-    ta.addEventListener("input", (e) => {
-      const { locale, key } = ta.dataset;
-      updateTranslationValue(locale, key, ta.value);
-      const cell = ta.closest("td");
-      if (cell) {
-        cell.classList.toggle("missing-cell", ta.value.trim() === "");
-      }
-    });
-  });
+// Sized from content, not scrollHeight: reading layout per textarea forced one reflow per cell.
+function estimateRows(value) {
+  const lines = value.split("\n");
+  let rows = 0;
+  for (const line of lines) {
+    rows += Math.max(1, Math.ceil(line.length / 40));
+  }
+  return Math.min(8, rows);
+}
 
-  // Auto-grow rows
-  transTableBody.querySelectorAll("textarea").forEach((ta) => {
-    ta.style.height = "auto";
-    ta.style.height = `${Math.max(34, ta.scrollHeight)}px`;
+function growTextarea(ta) {
+  ta.style.height = "auto";
+  ta.style.height = `${Math.max(34, ta.scrollHeight)}px`;
+}
+
+if (transTableBody) {
+  transTableBody.addEventListener("input", (e) => {
+    const ta = e.target;
+    if (!(ta instanceof HTMLTextAreaElement)) { return; }
+    const { locale, key } = ta.dataset;
+    updateTranslationValue(locale, key, ta.value);
+    const cell = ta.closest("td");
+    if (cell) {
+      cell.classList.toggle("missing-cell", ta.value.trim() === "");
+    }
+    growTextarea(ta);
   });
 }
 
@@ -444,7 +455,7 @@ export function addLocaleFromDropdown(code) {
 export function updateTranslationValue(locale, key, value) {
   const file = (state.translations || []).find((t) => t.locale === locale);
   if (!file) { return; }
-  file.keys = { ...file.keys, [key]: value };
+  file.keys[key] = value;
 }
 
 export function handleAutoAddMissing() {

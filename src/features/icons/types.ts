@@ -19,6 +19,7 @@ export type IconSourceKind = "png" | "jpeg" | "svg";
 export interface IconComposeOptions {
   scalePercent?: number;
   backgroundColor?: string;
+  trimMargins?: boolean;
 }
 
 /**

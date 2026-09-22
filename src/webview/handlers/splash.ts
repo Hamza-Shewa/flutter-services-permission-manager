@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import type { WebviewRef } from './index.js';
 import { toErrorMessage } from '../../core/shared/index.js';
-import { detectSplashSourceKind, generateSplashPreview, generateSplash, getCurrentSplashPreviews } from '../../features/splash/splash.service.js';
+import { generateSourcePreview, type ImageComposeOptions } from '../../core/shared/image-compose.js';
+import { detectSplashSourceKind, generateSplash, getCurrentSplashPreviews } from '../../features/splash/splash.service.js';
 import type { SplashPlatformTarget } from '../../features/splash/types.js';
-import type { ImageComposeOptions } from '../../core/shared/image-compose.js';
 import { type ProjectFiles } from '../../core/workspace.service.js';
 
 /**
@@ -24,12 +24,11 @@ export async function handleRequestCurrentSplashPreview(ref: WebviewRef, files: 
 }
 
 /**
- * Opens a native file picker restricted to PNG/JPEG/SVG images and reports
- * the selection back to the webview so it can be confirmed before generating.
- * Renders the initial preview using whatever scale/background the webview
- * already has set, so switching source images doesn't reset those controls.
+ * Opens a native file picker restricted to PNG/JPEG/SVG images and sends the
+ * webview one downscaled copy of the pick; the phone mockup is drawn in the
+ * webview itself, so adjusting the controls never round-trips here.
  */
-export async function handleBrowseSplashSource(ref: WebviewRef, compose: ImageComposeOptions): Promise<void> {
+export async function handleBrowseSplashSource(ref: WebviewRef): Promise<void> {
     try {
         const picked = await vscode.window.showOpenDialog({
             canSelectMany: false,
@@ -45,38 +44,16 @@ export async function handleBrowseSplashSource(ref: WebviewRef, compose: ImageCo
             ref.webview.postMessage({ type: 'saveResult', success: false, message: 'Unsupported file type. Choose a PNG, JPEG, or SVG image.' });
             return;
         }
-        let preview: { dataUrl: string; width: number; height: number } | undefined;
-        try {
-            preview = await generateSplashPreview(file.fsPath, compose);
-        } catch (previewError) {
-            console.warn('Splash preview render failed:', toErrorMessage(previewError));
-        }
+        const preview = await generateSourcePreview(file.fsPath);
         ref.webview.postMessage({
             type: 'splashSourceSelected',
             path: file.fsPath,
             fileName: file.fsPath.split(/[\\/]/).pop() ?? file.fsPath,
             kind,
-            previewDataUrl: preview?.dataUrl,
+            preview,
         });
     } catch (error) {
-        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to open file picker: ${toErrorMessage(error)}` });
-    }
-}
-
-/**
- * Re-renders the preview for the already-selected source with a new
- * scale/background, without touching any files - used while the user drags
- * the resize slider or changes the background color.
- */
-export async function handleRequestSplashPreview(
-    ref: WebviewRef,
-    payload: { sourcePath: string } & ImageComposeOptions,
-): Promise<void> {
-    try {
-        const preview = await generateSplashPreview(payload.sourcePath, payload);
-        ref.webview.postMessage({ type: 'splashPreviewUpdated', previewDataUrl: preview.dataUrl });
-    } catch (error) {
-        console.warn('Splash preview render failed:', toErrorMessage(error));
+        ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to load the source image: ${toErrorMessage(error)}` });
     }
 }
 
@@ -86,7 +63,7 @@ export async function handleRequestSplashPreview(
  */
 export async function handleGenerateSplash(
     ref: WebviewRef,
-    payload: { sourcePath: string; platforms: SplashPlatformTarget } & ImageComposeOptions,
+    payload: { sourcePath: string; platforms: SplashPlatformTarget; logoSize?: number } & ImageComposeOptions,
     files: ProjectFiles,
 ): Promise<void> {
     ref.webview.postMessage({ type: 'splashGenerating', generating: true });
@@ -98,6 +75,8 @@ export async function handleGenerateSplash(
             iosPlistUri: files.iosPlistUri,
             scalePercent: payload.scalePercent,
             backgroundColor: payload.backgroundColor,
+            trimMargins: payload.trimMargins,
+            logoSize: payload.logoSize,
         });
         ref.webview.postMessage({ type: 'splashGenerated', result });
         if (result.success) {

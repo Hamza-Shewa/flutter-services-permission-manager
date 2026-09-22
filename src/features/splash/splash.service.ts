@@ -37,10 +37,10 @@ import { toErrorMessage } from "../../core/shared/index.js";
 import {
   clampScalePercent,
   composeWorkingImage,
-  createColorCanvas,
   DEFAULT_WORKING_CANVAS_SIZE,
   detectImageSourceKind,
-  loadRasterSourceCached,
+  loadForeground,
+  readPngSize,
   renderSquarePng,
   type ImageComposeOptions,
   type RasterImage,
@@ -56,8 +56,15 @@ import type {
 export const detectSplashSourceKind = detectImageSourceKind;
 export const clampSplashScalePercent = clampScalePercent;
 
-/** Splash foreground baseline size (dp) at mdpi - a modest logo-sized image, not a full-bleed background. */
-const ANDROID_SPLASH_IMAGE_SIZE_DP = 288;
+/** Logo box edge in dp (Android) / pt (iOS) - one value so both platforms show the logo at the same physical size. */
+export const DEFAULT_SPLASH_LOGO_SIZE = 200;
+const MIN_SPLASH_LOGO_SIZE = 48;
+const MAX_SPLASH_LOGO_SIZE = 480;
+
+export function clampSplashLogoSize(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) { return DEFAULT_SPLASH_LOGO_SIZE; }
+  return Math.min(MAX_SPLASH_LOGO_SIZE, Math.max(MIN_SPLASH_LOGO_SIZE, Math.round(value)));
+}
 
 /** Density -> scale factor relative to mdpi */
 const ANDROID_DENSITY_SCALES: Readonly<Record<string, number>> = {
@@ -69,9 +76,6 @@ const ANDROID_DENSITY_SCALES: Readonly<Record<string, number>> = {
 };
 
 const STANDARD_DENSITIES = Object.keys(ANDROID_DENSITY_SCALES);
-
-/** Splash foreground baseline size (pt) at 1x on iOS, matching the Android baseline's on-screen weight closely enough. */
-const IOS_SPLASH_IMAGE_SIZE_PT = 120;
 
 function androidAppDirFromManifest(manifestUri: vscode.Uri): string {
   // .../android/app/src/main/AndroidManifest.xml -> .../android/app
@@ -145,10 +149,11 @@ export interface AndroidSplashGenerationOptions {
   androidManifestUri: vscode.Uri;
   foreground: RasterImage;
   backgroundColor: string;
+  logoSize: number;
 }
 
 async function generateAndroidSplash(options: AndroidSplashGenerationOptions): Promise<GeneratedSplashFile[]> {
-  const { androidManifestUri, foreground, backgroundColor } = options;
+  const { androidManifestUri, foreground, backgroundColor, logoSize } = options;
   const androidAppDir = androidAppDirFromManifest(androidManifestUri);
   const resDir = path.join(androidAppDir, "src", "main", "res");
   const resourceName = "launch_image";
@@ -164,7 +169,7 @@ async function generateAndroidSplash(options: AndroidSplashGenerationOptions): P
   const files: GeneratedSplashFile[] = [];
   for (const density of STANDARD_DENSITIES) {
     const scale = ANDROID_DENSITY_SCALES[density] ?? 1;
-    const sizePx = Math.round(ANDROID_SPLASH_IMAGE_SIZE_DP * scale);
+    const sizePx = Math.round(logoSize * scale);
     const png = await renderSquarePng(foreground, sizePx);
     const filePath = path.join(resDir, `drawable-${density}`, `${resourceName}.png`);
     files.push(await writeSplashFile(filePath, png, sizePx, sizePx, "Android"));
@@ -189,10 +194,11 @@ export interface IOSSplashGenerationOptions {
   iosPlistUri: vscode.Uri;
   foreground: RasterImage;
   backgroundColor: string;
+  logoSize: number;
 }
 
 async function generateIOSSplash(options: IOSSplashGenerationOptions): Promise<GeneratedSplashFile[]> {
-  const { iosPlistUri, foreground, backgroundColor } = options;
+  const { iosPlistUri, foreground, backgroundColor, logoSize } = options;
   const runnerDir = path.dirname(iosPlistUri.fsPath);
   const storyboardPath = path.join(runnerDir, "Base.lproj", "LaunchScreen.storyboard");
   const imageSetDir = path.join(runnerDir, "Assets.xcassets", "LaunchImage.imageset");
@@ -201,7 +207,7 @@ async function generateIOSSplash(options: IOSSplashGenerationOptions): Promise<G
   }
 
   const storyboardXml = fs.readFileSync(storyboardPath, "utf8");
-  const updatedStoryboard = rewriteLaunchScreenStoryboard(storyboardXml, backgroundColor, IOS_SPLASH_IMAGE_SIZE_PT);
+  const updatedStoryboard = rewriteLaunchScreenStoryboard(storyboardXml, backgroundColor, logoSize);
   await vscode.workspace.fs.writeFile(vscode.Uri.file(storyboardPath), Buffer.from(updatedStoryboard, "utf8"));
 
   const files: GeneratedSplashFile[] = [];
@@ -211,7 +217,7 @@ async function generateIOSSplash(options: IOSSplashGenerationOptions): Promise<G
     { suffix: "@3x", scale: 3 },
   ];
   for (const { suffix, scale } of scales) {
-    const sizePx = Math.round(IOS_SPLASH_IMAGE_SIZE_PT * scale);
+    const sizePx = Math.round(logoSize * scale);
     const png = await renderSquarePng(foreground, sizePx);
     const filePath = path.join(imageSetDir, `LaunchImage${suffix}.png`);
     files.push(await writeSplashFile(filePath, png, sizePx, sizePx, "iOS"));
@@ -224,6 +230,8 @@ export interface GenerateSplashOptions extends ImageComposeOptions {
   platforms: SplashPlatformTarget;
   androidManifestUri?: vscode.Uri;
   iosPlistUri?: vscode.Uri;
+  /** Logo box edge in dp/pt; clamped to 48-480, default 200. */
+  logoSize?: number;
 }
 
 export async function generateSplash(options: GenerateSplashOptions): Promise<SplashGenerationResult> {
@@ -249,16 +257,17 @@ export async function generateSplash(options: GenerateSplashOptions): Promise<Sp
   const backgroundColor = options.backgroundColor ?? "#FFFFFF";
 
   try {
-    const source = await loadRasterSourceCached(sourcePath, kind);
+    const source = await loadForeground(sourcePath, kind, !!options.trimMargins);
     const scalePercent = clampSplashScalePercent(options.scalePercent);
+    const logoSize = clampSplashLogoSize(options.logoSize);
     // The background is written as a native color, not baked into the image - the foreground is always composed transparent.
     const foreground = composeWorkingImage(source, scalePercent, undefined, DEFAULT_WORKING_CANVAS_SIZE);
 
     const androidFiles = wantsAndroid
-      ? await generateAndroidSplash({ androidManifestUri: options.androidManifestUri!, foreground, backgroundColor })
+      ? await generateAndroidSplash({ androidManifestUri: options.androidManifestUri!, foreground, backgroundColor, logoSize })
       : [];
     const iosFiles = wantsIOS
-      ? await generateIOSSplash({ iosPlistUri: options.iosPlistUri!, foreground, backgroundColor })
+      ? await generateIOSSplash({ iosPlistUri: options.iosPlistUri!, foreground, backgroundColor, logoSize })
       : [];
 
     const parts: string[] = [];
@@ -275,66 +284,30 @@ export async function generateSplash(options: GenerateSplashOptions): Promise<Sp
   }
 }
 
-/**
- * Renders the composed foreground centered on a phone-shaped rectangle
- * filled with the chosen background color (or a transparent checkerboard
- * when none is set), as a small preview - the same mockup shape a real
- * device screen has, unlike the square previews used for app icons.
- */
-export async function generateSplashPreview(sourcePath: string, compose: ImageComposeOptions = {}): Promise<SplashPreview> {
-  const kind = detectSplashSourceKind(sourcePath);
-  if (!kind) {
-    throw new Error("Unsupported file type. Choose a PNG, JPEG, or SVG image.");
+/** Reads the largest existing candidate PNG (by its real pixel size) as a preview. */
+function readLargestExisting(filePaths: string[]): SplashPreview | undefined {
+  let best: { bytes: Buffer; width: number; height: number } | undefined;
+  for (const filePath of filePaths) {
+    if (!fs.existsSync(filePath)) { continue; }
+    const bytes = fs.readFileSync(filePath);
+    const size = readPngSize(bytes);
+    if (size && (!best || size.width > best.width)) {
+      best = { bytes, ...size };
+    }
   }
-  const source = await loadRasterSourceCached(sourcePath, kind);
-  const rectWidth = 160;
-  const rectHeight = 320;
-  const foregroundCanvasSize = Math.round(rectWidth * 0.6);
-  const foreground = composeWorkingImage(source, clampSplashScalePercent(compose.scalePercent), undefined, foregroundCanvasSize);
-
-  const canvas = createColorCanvas(rectWidth, rectHeight, compose.backgroundColor);
-  const offsetX = Math.round((rectWidth - foregroundCanvasSize) / 2);
-  const offsetY = Math.round((rectHeight - foregroundCanvasSize) / 2);
-  canvas.composite(foreground, offsetX, offsetY);
-  const buffer = await canvas.getBuffer("image/png");
-
-  return { dataUrl: `data:image/png;base64,${buffer.toString("base64")}`, width: rectWidth, height: rectHeight };
-}
-
-/** Picks the highest-resolution candidate whose file actually exists on disk. */
-function pickLargestExisting(candidates: { filePath: string; sizePx: number }[]): { filePath: string; sizePx: number } | undefined {
-  const existing = candidates.filter((candidate) => fs.existsSync(candidate.filePath));
-  return existing.reduce<{ filePath: string; sizePx: number } | undefined>(
-    (best, candidate) => (!best || candidate.sizePx > best.sizePx ? candidate : best),
-    undefined,
-  );
-}
-
-function readAsSplashPreview(filePath: string, sizePx: number): SplashPreview {
-  return { dataUrl: `data:image/png;base64,${fs.readFileSync(filePath).toString("base64")}`, width: sizePx, height: sizePx };
+  return best
+    ? { dataUrl: `data:image/png;base64,${best.bytes.toString("base64")}`, width: best.width, height: best.height }
+    : undefined;
 }
 
 function getCurrentAndroidSplashPreview(androidManifestUri: vscode.Uri): SplashPreview | undefined {
-  const androidAppDir = androidAppDirFromManifest(androidManifestUri);
-  const resDir = path.join(androidAppDir, "src", "main", "res");
-  const candidates = STANDARD_DENSITIES.map((density) => {
-    const scale = ANDROID_DENSITY_SCALES[density] ?? 1;
-    return { filePath: path.join(resDir, `drawable-${density}`, "launch_image.png"), sizePx: Math.round(ANDROID_SPLASH_IMAGE_SIZE_DP * scale) };
-  });
-  const best = pickLargestExisting(candidates);
-  return best ? readAsSplashPreview(best.filePath, best.sizePx) : undefined;
+  const resDir = path.join(androidAppDirFromManifest(androidManifestUri), "src", "main", "res");
+  return readLargestExisting(STANDARD_DENSITIES.map((density) => path.join(resDir, `drawable-${density}`, "launch_image.png")));
 }
 
 function getCurrentIOSSplashPreview(iosPlistUri: vscode.Uri): SplashPreview | undefined {
-  const runnerDir = path.dirname(iosPlistUri.fsPath);
-  const imageSetDir = path.join(runnerDir, "Assets.xcassets", "LaunchImage.imageset");
-  const candidates = [
-    { filePath: path.join(imageSetDir, "LaunchImage.png"), sizePx: IOS_SPLASH_IMAGE_SIZE_PT },
-    { filePath: path.join(imageSetDir, "LaunchImage@2x.png"), sizePx: IOS_SPLASH_IMAGE_SIZE_PT * 2 },
-    { filePath: path.join(imageSetDir, "LaunchImage@3x.png"), sizePx: IOS_SPLASH_IMAGE_SIZE_PT * 3 },
-  ];
-  const best = pickLargestExisting(candidates);
-  return best ? readAsSplashPreview(best.filePath, best.sizePx) : undefined;
+  const imageSetDir = path.join(path.dirname(iosPlistUri.fsPath), "Assets.xcassets", "LaunchImage.imageset");
+  return readLargestExisting(["LaunchImage.png", "LaunchImage@2x.png", "LaunchImage@3x.png"].map((name) => path.join(imageSetDir, name)));
 }
 
 export interface CurrentSplashPreviewOptions {

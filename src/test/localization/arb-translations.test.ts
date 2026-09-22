@@ -86,6 +86,30 @@ suite('ARB / JSON Translations Service Test Suite', () => {
             assert.strictEqual(parseTranslationContent('not json', 'en.json'), null);
         });
 
+        test('rejects numeric data JSON such as Lottie animations', () => {
+            const lottie = JSON.stringify({
+                v: '5.7.4', fr: 30, ip: 0, op: 60, w: 512, h: 512,
+                layers: [{ ks: { o: { k: 100 }, p: { k: [256, 256, 0] } } }],
+            });
+            assert.strictEqual(parseTranslationContent(lottie, 'assets/anim.json'), null);
+        });
+
+        test('rejects files with too many keys', () => {
+            const huge: Record<string, string> = {};
+            for (let i = 0; i < 20_001; i++) {
+                huge[`k${i}`] = 'v';
+            }
+            assert.strictEqual(parseTranslationContent(JSON.stringify(huge), 'en.json'), null);
+        });
+
+        test('rejects pathologically deep nesting', () => {
+            let node: unknown = 'leaf';
+            for (let i = 0; i < 20; i++) {
+                node = { n: node };
+            }
+            assert.strictEqual(parseTranslationContent(JSON.stringify({ root: node }), 'en.json'), null);
+        });
+
         test('flattens nested objects into dot-path keys', () => {
             const content = JSON.stringify({
                 app_name: 'Mishkat',

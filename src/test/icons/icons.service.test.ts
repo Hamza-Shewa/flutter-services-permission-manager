@@ -9,16 +9,40 @@ import {
   computeAndroidIconTargets,
   computeAppIconPixelSize,
   detectIconSourceKind,
-  generateIconPreview,
   generateIcons,
   getCurrentIconPreviews,
   parseAppIconPoints,
   parseAppIconScale,
   synthesizeAppIconFilename,
 } from "../../features/icons/icons.service.js";
+import {
+  clampScalePercent,
+  composeWorkingImage,
+  findContentBounds,
+  generateSourcePreview,
+  loadForeground,
+  renderSquarePng,
+  type RasterImage,
+} from "../../core/shared/image-compose.js";
 
 function mkTempDir(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+}
+
+const PREVIEW_PX = 256;
+
+async function composePreview(sourcePath: string, options: { scalePercent?: number; backgroundColor?: string; trimMargins?: boolean } = {}) {
+  const source = await loadForeground(sourcePath, "png", !!options.trimMargins);
+  const working = composeWorkingImage(source, clampScalePercent(options.scalePercent), options.backgroundColor, PREVIEW_PX);
+  return Jimp.fromBuffer(await renderSquarePng(working, PREVIEW_PX));
+}
+
+/** A transparent canvas with an opaque square of `color` at [x, y, size]. */
+async function writePaddedSource(filePath: string, canvas: number, x: number, y: number, size: number, color = 0xff0000ff): Promise<void> {
+  const image = new Jimp({ width: canvas, height: canvas, color: 0x00000000 });
+  const square = new Jimp({ width: size, height: size, color });
+  image.composite(square, x, y);
+  await image.write(filePath as `${string}.png`);
 }
 
 async function writeSourcePng(filePath: string, size = 32): Promise<void> {
@@ -89,7 +113,7 @@ suite("App icon generation", () => {
     assert.strictEqual(clampIconScalePercent(Number.NaN), 100);
   });
 
-  test("generateIconPreview at 200% zooms in and crops the outer edge away", async () => {
+  test("composing at 200% zooms in and crops the outer edge away", async () => {
     const workDir = mkTempDir("fcm-preview-zoom-");
     const sourcePath = path.join(workDir, "source.png");
     // A green field with a small red marker in the very corner. At 200% the
@@ -104,10 +128,8 @@ suite("App icon generation", () => {
     });
     await image.write(sourcePath as `${string}.png`);
 
-    const preview100 = await generateIconPreview(sourcePath, { scalePercent: 100 });
-    const preview200 = await generateIconPreview(sourcePath, { scalePercent: 200 });
-    const decoded100 = await Jimp.fromBuffer(Buffer.from(preview100.dataUrl.slice("data:image/png;base64,".length), "base64"));
-    const decoded200 = await Jimp.fromBuffer(Buffer.from(preview200.dataUrl.slice("data:image/png;base64,".length), "base64"));
+    const decoded100 = await composePreview(sourcePath, { scalePercent: 100 });
+    const decoded200 = await composePreview(sourcePath, { scalePercent: 200 });
 
     // At 100%, the whole source is visible, so the corner marker still shows.
     assert.strictEqual(decoded100.getPixelColor(2, 2), 0xff0000ff);
@@ -115,45 +137,82 @@ suite("App icon generation", () => {
     assert.strictEqual(decoded200.getPixelColor(2, 2), 0x00ff00ff);
   });
 
-  test("generateIconPreview pads with the background color when scaled down", async () => {
+  test("composing pads with the background color when scaled down", async () => {
     const workDir = mkTempDir("fcm-preview-bg-");
     const sourcePath = path.join(workDir, "source.png");
     await writeSourcePng(sourcePath, 64);
 
-    const preview = await generateIconPreview(sourcePath, { scalePercent: 50, backgroundColor: "#336699" });
-    const base64 = preview.dataUrl.slice("data:image/png;base64,".length);
-    const decoded = await Jimp.fromBuffer(Buffer.from(base64, "base64"));
+    const decoded = await composePreview(sourcePath, { scalePercent: 50, backgroundColor: "#336699" });
 
     // Corner is in the padding area at 50% scale -> filled with the chosen background color.
     assert.strictEqual(decoded.getPixelColor(2, 2), 0x336699ff);
     // Center is still the (red) foreground.
-    const center = decoded.getPixelColor(preview.size / 2, preview.size / 2);
-    assert.strictEqual(center, 0xff0000ff);
+    assert.strictEqual(decoded.getPixelColor(PREVIEW_PX / 2, PREVIEW_PX / 2), 0xff0000ff);
   });
 
-  test("generateIconPreview leaves padding transparent when no background color is given", async () => {
+  test("composing leaves padding transparent when no background color is given", async () => {
     const workDir = mkTempDir("fcm-preview-transparent-");
     const sourcePath = path.join(workDir, "source.png");
     await writeSourcePng(sourcePath, 64);
 
-    const preview = await generateIconPreview(sourcePath, { scalePercent: 50 });
-    const base64 = preview.dataUrl.slice("data:image/png;base64,".length);
-    const decoded = await Jimp.fromBuffer(Buffer.from(base64, "base64"));
-
+    const decoded = await composePreview(sourcePath, { scalePercent: 50 });
     assert.strictEqual(decoded.getPixelColor(2, 2) & 0xff, 0);
   });
 
-  test("generateIconPreview at 100% scale with no background reproduces the plain source for an already-square opaque image", async () => {
+  test("composing at 100% with no background reproduces an already-square opaque source", async () => {
     const workDir = mkTempDir("fcm-preview-default-");
     const sourcePath = path.join(workDir, "source.png");
     await writeSourcePng(sourcePath, 64);
 
-    const preview = await generateIconPreview(sourcePath);
-    const base64 = preview.dataUrl.slice("data:image/png;base64,".length);
-    const decoded = await Jimp.fromBuffer(Buffer.from(base64, "base64"));
-
+    const decoded = await composePreview(sourcePath);
     assert.strictEqual(decoded.getPixelColor(2, 2), 0xff0000ff);
-    assert.strictEqual(decoded.getPixelColor(preview.size / 2, preview.size / 2), 0xff0000ff);
+    assert.strictEqual(decoded.getPixelColor(PREVIEW_PX / 2, PREVIEW_PX / 2), 0xff0000ff);
+  });
+
+  test("findContentBounds finds the opaque artwork inside transparent padding", async () => {
+    const workDir = mkTempDir("fcm-bounds-alpha-");
+    const sourcePath = path.join(workDir, "source.png");
+    await writePaddedSource(sourcePath, 100, 20, 30, 40);
+    const source = (await Jimp.fromBuffer(fs.readFileSync(sourcePath))) as unknown as RasterImage;
+    assert.deepStrictEqual(findContentBounds(source), { x: 20, y: 30, width: 40, height: 40 });
+  });
+
+  test("findContentBounds treats a uniform opaque border as background", async () => {
+    const workDir = mkTempDir("fcm-bounds-opaque-");
+    const sourcePath = path.join(workDir, "source.png");
+    const image = new Jimp({ width: 80, height: 80, color: 0xffffffff });
+    image.composite(new Jimp({ width: 20, height: 10, color: 0x0000ffff }), 30, 35);
+    await image.write(sourcePath as `${string}.png`);
+    const source = (await Jimp.fromBuffer(fs.readFileSync(sourcePath))) as unknown as RasterImage;
+    assert.deepStrictEqual(findContentBounds(source), { x: 30, y: 35, width: 20, height: 10 });
+  });
+
+  test("trimMargins scales relative to the artwork instead of the source's padding", async () => {
+    const workDir = mkTempDir("fcm-trim-");
+    const sourcePath = path.join(workDir, "source.png");
+    // A 25%-wide red square centered-ish on a transparent canvas: untrimmed, the corner stays empty.
+    await writePaddedSource(sourcePath, 100, 40, 40, 25);
+
+    const untrimmed = await composePreview(sourcePath);
+    const trimmed = await composePreview(sourcePath, { trimMargins: true });
+    assert.strictEqual(untrimmed.getPixelColor(10, 10) & 0xff, 0);
+    // Trimmed at 100%, the artwork fills the canvas edge to edge.
+    assert.strictEqual(trimmed.getPixelColor(10, 10) >>> 0, 0xff0000ff);
+  });
+
+  test("generateSourcePreview downscales large sources and reports normalized bounds and a suggested background", async () => {
+    const workDir = mkTempDir("fcm-source-preview-");
+    const sourcePath = path.join(workDir, "source.png");
+    const image = new Jimp({ width: 1024, height: 1024, color: 0x112233ff });
+    image.composite(new Jimp({ width: 512, height: 512, color: 0xffcc00ff }), 256, 256);
+    await image.write(sourcePath as `${string}.png`);
+
+    const preview = await generateSourcePreview(sourcePath);
+    assert.strictEqual(preview.width, 512);
+    assert.strictEqual(preview.sourceWidth, 1024);
+    assert.strictEqual(preview.hasTransparency, false);
+    assert.strictEqual(preview.suggestedBackground, "#112233");
+    assert.deepStrictEqual(preview.contentBounds, { x: 0.25, y: 0.25, width: 0.5, height: 0.5 });
   });
 
   test("generateIcons writes Android launcher mipmap PNGs at the correct sizes", async () => {
@@ -396,22 +455,20 @@ suite("App icon generation", () => {
     assert.strictEqual(decoded.getPixelColor(24, 1) & 0xff, 0);
   });
 
-  test("generateIconPreview returns a square PNG data URL for a non-square source", async () => {
+  test("generateSourcePreview keeps a non-square source's aspect ratio", async () => {
     const workDir = mkTempDir("fcm-preview-");
     const sourcePath = path.join(workDir, "source.png");
     const image = new Jimp({ width: 300, height: 150, color: 0x00ff00ff });
     await image.write(sourcePath as `${string}.png`);
 
-    const preview = await generateIconPreview(sourcePath);
+    const preview = await generateSourcePreview(sourcePath);
     assert.ok(preview.dataUrl.startsWith("data:image/png;base64,"));
-    const base64 = preview.dataUrl.slice("data:image/png;base64,".length);
-    const decoded = await Jimp.fromBuffer(Buffer.from(base64, "base64"));
-    assert.strictEqual(decoded.width, preview.size);
-    assert.strictEqual(decoded.height, preview.size);
+    assert.strictEqual(preview.width, 300);
+    assert.strictEqual(preview.height, 150);
   });
 
-  test("generateIconPreview rejects unsupported file types", async () => {
-    await assert.rejects(() => generateIconPreview("photo.gif"), /Unsupported file type/);
+  test("generateSourcePreview rejects unsupported file types", async () => {
+    await assert.rejects(() => generateSourcePreview("photo.gif"), /Unsupported file type/);
   });
 
   test("generateIcons reports a clear error for an unsupported file type", async () => {

@@ -11,6 +11,8 @@
 import type { TranslationFileData } from '../../core/types/index.js';
 import { translateMany, translateText } from './machine-translator.js';
 
+const LOCALE_CONCURRENCY = 3;
+
 /** Result of a batch translation action. */
 export interface TranslateResult {
   translations: TranslationFileData[];
@@ -54,23 +56,60 @@ function flattenValue(
   keyPath: string,
   value: unknown,
   out: Record<string, string>,
-  nestedPaths?: string[],
+  nestedPaths: string[],
+  stats: FlattenStats,
+  depth: number,
 ): void {
+  if (stats.aborted) {
+    return;
+  }
+  if (depth > MAX_TRANSLATION_DEPTH) {
+    stats.aborted = true;
+    return;
+  }
   if (Array.isArray(value)) {
     value.forEach((item, index) => {
-      flattenValue(`${keyPath}.${index}`, item, out, nestedPaths);
+      flattenValue(`${keyPath}.${index}`, item, out, nestedPaths, stats, depth + 1);
     });
     return;
   }
   if (isPlainObject(value)) {
     for (const [childKey, childValue] of Object.entries(value)) {
-      flattenValue(`${keyPath}.${childKey}`, childValue, out, nestedPaths);
+      flattenValue(`${keyPath}.${childKey}`, childValue, out, nestedPaths, stats, depth + 1);
     }
     return;
   }
-  out[keyPath] = typeof value === 'string' ? value : String(value ?? '');
-  if (nestedPaths) {
-    nestedPaths.push(keyPath);
+  addLeaf(keyPath, value, out, stats);
+  nestedPaths.push(keyPath);
+}
+
+interface FlattenStats {
+  leaves: number;
+  nonString: number;
+  aborted: boolean;
+}
+
+// Guards against non-translation JSON (Lottie animations, fixtures, configs) that
+// would otherwise flatten into hundreds of thousands of keys and hang the host + webview.
+export const MAX_TRANSLATION_FILE_CHARS = 2_000_000;
+export const MAX_TRANSLATION_KEYS = 20_000;
+const MAX_TRANSLATION_DEPTH = 12;
+
+function addLeaf(
+  keyPath: string,
+  value: unknown,
+  out: Record<string, string>,
+  stats: FlattenStats,
+): void {
+  if (typeof value === 'string') {
+    out[keyPath] = value;
+  } else {
+    out[keyPath] = String(value ?? '');
+    stats.nonString += 1;
+  }
+  stats.leaves += 1;
+  if (stats.leaves > MAX_TRANSLATION_KEYS) {
+    stats.aborted = true;
   }
 }
 
@@ -142,6 +181,9 @@ export function parseTranslationContent(
   content: string,
   fileName: string,
 ): TranslationFileData | null {
+  if (content.length > MAX_TRANSLATION_FILE_CHARS) {
+    return null;
+  }
   let raw: Record<string, unknown>;
   try {
     raw = JSON.parse(content) as Record<string, unknown>;
@@ -156,15 +198,24 @@ export function parseTranslationContent(
   const metadata: Record<string, unknown> = {};
   const keys: Record<string, string> = {};
   const nestedPaths: string[] = [];
+  const stats: FlattenStats = { leaves: 0, nonString: 0, aborted: false };
 
   for (const [key, value] of Object.entries(raw)) {
     if (key.startsWith('@')) {
       metadata[key] = value;
     } else if (isPlainObject(value) || Array.isArray(value)) {
-      flattenValue(key, value, keys, nestedPaths);
+      flattenValue(key, value, keys, nestedPaths, stats, 1);
     } else {
-      keys[key] = typeof value === 'string' ? value : String(value ?? '');
+      addLeaf(key, value, keys, stats);
     }
+    if (stats.aborted) {
+      return null;
+    }
+  }
+
+  // Real translation files are overwhelmingly strings; data JSON is mostly numbers/booleans.
+  if (!isArb && stats.nonString * 2 > stats.leaves) {
+    return null;
   }
 
   let locale = getLocaleFromFileName(fileName);
@@ -232,6 +283,28 @@ export function serializeTranslationContent(data: TranslationFileData): string {
   return `${JSON.stringify(unflattenTranslationKeys(obj, nestedKeys), null, 2)}\n`;
 }
 
+/** Folder names whose JSON/ARB files are auto-detected (e.g. `assets/translations`, `assets/locales`, `lib/l10n`). */
+export const LOCALIZATION_DIR_NAMES = ['l10n', 'translations', 'translation', 'locales', 'locale', 'lang', 'langs', 'i18n', 'arb'];
+
+// Includes plugin/tool copies (Pods, .symlinks, .kilo worktrees) that hold other packages' or stale translations.
+export const TRANSLATION_IGNORED_DIRS = [
+  'build', '.dart_tool', 'node_modules', '.git', 'out', 'dist', 'coverage', '.kilo', '.history',
+  '.idea', '.vscode-test', 'Pods', '.symlinks', '.plugin_symlinks', '.fvm', '.pub-cache', 'ephemeral',
+];
+
+/** True when a workspace-relative POSIX path should be auto-detected as a translation file. */
+export function isTranslationCandidate(relPath: string): boolean {
+  const parts = relPath.split('/');
+  const dirs = parts.slice(0, -1);
+  if (dirs.some((d) => TRANSLATION_IGNORED_DIRS.includes(d))) {
+    return false;
+  }
+  if (/\.arb$/i.test(relPath)) {
+    return true;
+  }
+  return /\.json$/i.test(relPath) && dirs.some((d) => LOCALIZATION_DIR_NAMES.includes(d.toLowerCase()));
+}
+
 /**
  * Normalize a user-provided directory (strip leading/trailing slashes).
  * Returns `undefined` when empty so callers can fall back to auto-discovery.
@@ -285,18 +358,20 @@ export function autoAddMissingKeys(
     return translations;
   }
 
-  const refNested = reference.nestedPaths;
+  const refNested = new Set(reference.nestedPaths ?? []);
   return translations.map((t) => {
     if (t.locale === reference.locale) {
       return t;
     }
     const keys = { ...t.keys };
     const nestedPaths = t.nestedPaths ? [...t.nestedPaths] : [];
+    const nestedSet = new Set(nestedPaths);
     let changed = false;
     for (const key of Object.keys(reference.keys)) {
       if (keys[key] === undefined) {
         keys[key] = '';
-        if (refNested?.includes(key) && !nestedPaths.includes(key)) {
+        if (refNested.has(key) && !nestedSet.has(key)) {
+          nestedSet.add(key);
           nestedPaths.push(key);
         }
         changed = true;
@@ -339,10 +414,12 @@ export async function translateLocale(
   const translated = await translateMany(toTranslate, target.locale, reference.locale);
   const keys = { ...target.keys };
   const nestedPaths = target.nestedPaths ? [...target.nestedPaths] : [];
-  const refNested = reference.nestedPaths;
+  const nestedSet = new Set(nestedPaths);
+  const refNested = new Set(reference.nestedPaths ?? []);
   for (const [key, value] of Object.entries(translated)) {
     keys[key] = value;
-    if (refNested?.includes(key) && !nestedPaths.includes(key)) {
+    if (refNested.has(key) && !nestedSet.has(key)) {
+      nestedSet.add(key);
       nestedPaths.push(key);
     }
   }
@@ -372,15 +449,19 @@ export async function translateAllLocales(
 
   const targets = translations.filter((t) => t.locale !== reference.locale);
 
-  // Each locale is translated independently against the same starting
-  // snapshot, then merged back in - this runs every locale in parallel
-  // instead of one after another, so the total wait is bounded by the
-  // slowest single locale rather than the sum of all of them. The free
-  // translation providers are often slow or rate-limited, and that
-  // sequential sum was what made "Translate all" feel like it could freeze
-  // the extension on a project with several locales.
-  const results = await Promise.all(
-    targets.map((target) => translateLocale(translations, target.locale, reference.locale, missingOnly)),
+  // Locales run through a small pool against the same starting snapshot. Unbounded
+  // parallelism multiplied by per-item fallback workers opened hundreds of sockets at once.
+  const refLocale = reference.locale;
+  const results: TranslateResult[] = new Array(targets.length);
+  let next = 0;
+  async function worker(): Promise<void> {
+    while (next < targets.length) {
+      const i = next++;
+      results[i] = await translateLocale(translations, targets[i].locale, refLocale, missingOnly);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(LOCALE_CONCURRENCY, targets.length) }, () => worker()),
   );
 
   let current = translations;

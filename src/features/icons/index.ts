@@ -14,7 +14,6 @@ export {
     synthesizeAppIconFilename,
     clampIconScalePercent,
     generateIcons,
-    generateIconPreview,
     getCurrentIconPreviews,
 } from './icons.service.js';
 

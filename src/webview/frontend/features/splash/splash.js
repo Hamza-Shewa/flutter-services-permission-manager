@@ -2,189 +2,241 @@ import { state } from "../../core/state.js";
 import { bus } from "../../core/bus.js";
 import * as api from "../../core/api.js";
 import {
-  splashBrowseButton,
-  splashSourceLabel,
-  splashPlatformAndroid,
-  splashPlatformIOS,
-  splashPlatformBoth,
-  splashGenerateButton,
-  splashLoading,
-  splashResult,
-  splashFileList,
-  splashPreviewRow,
-  splashPreviewImage,
-  splashAdjustRow,
-  splashScaleSlider,
-  splashScaleValue,
-  splashBackgroundColor,
-  splashBackgroundTransparent,
-  splashBackgroundRow,
-  splashCurrentRow,
-  splashCurrentAndroidCard,
-  splashCurrentAndroid,
-  splashCurrentAndroidLabel,
-  splashCurrentIOSCard,
-  splashCurrentIOS,
-  splashCurrentIOSLabel,
-  splashCurrentEmpty,
-} from "../../core/elements.js";
+  loadImage,
+  sourceRect,
+  drawContained,
+  frameScheduler,
+  marginFraction,
+  bindRange,
+} from "../../core/image-preview.js";
+import {
+  byId,
+  bindBackground,
+  selectedPlatform,
+  applyPlatformAvailability,
+  setBusy,
+  renderResult,
+  hideResult,
+  wheelToRange,
+} from "../../core/imgtool-ui.js";
 
-let selectedSource = null;
-let previewRequestTimer = null;
+const els = {
+  browse: byId("splashBrowseButton"),
+  thumb: byId("splashSourceThumb"),
+  label: byId("splashSourceLabel"),
+  meta: byId("splashSourceMeta"),
+  adjust: byId("splashAdjustRow"),
+  logoSlider: byId("splashLogoSlider"),
+  logoNumber: byId("splashLogoNumber"),
+  scaleSlider: byId("splashScaleSlider"),
+  scaleNumber: byId("splashScaleNumber"),
+  trim: byId("splashTrim"),
+  trimHint: byId("splashTrimHint"),
+  previewEmpty: byId("splashPreviewEmpty"),
+  previewRow: byId("splashPreviewRow"),
+  showBounds: byId("splashShowBounds"),
+  phones: [byId("splashPhoneAndroid"), byId("splashPhoneIOS")],
+  platformAndroid: byId("splashPlatformAndroid"),
+  platformIOS: byId("splashPlatformIOS"),
+  platformBoth: byId("splashPlatformBoth"),
+  generate: byId("splashGenerateButton"),
+  spinner: byId("splashLoading"),
+  currentRow: byId("splashCurrentRow"),
+  currentAndroidCard: byId("splashCurrentAndroidCard"),
+  currentAndroid: byId("splashCurrentAndroid"),
+  currentAndroidLabel: byId("splashCurrentAndroidLabel"),
+  currentIOSCard: byId("splashCurrentIOSCard"),
+  currentIOS: byId("splashCurrentIOS"),
+  currentIOSLabel: byId("splashCurrentIOSLabel"),
+  currentEmpty: byId("splashCurrentEmpty"),
+};
+const resultEls = {
+  resultEl: byId("splashResult"),
+  filesEl: byId("splashFileList"),
+  summaryEl: byId("splashFileSummary"),
+  bodyEl: byId("splashFileListBody"),
+};
+
+/** What `generateSplash` writes when no color is chosen. */
+const PLATFORM_DEFAULT_BACKGROUND = "#ffffff";
+
+let source = null;
+let image = null;
 let hasLoadedCurrentPreview = false;
 
-function selectedPlatform() {
-  if (splashPlatformAndroid?.checked) { return "android"; }
-  if (splashPlatformIOS?.checked) { return "ios"; }
-  return "both";
+function isDark(hex) {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const luminance = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return luminance < 140;
 }
 
-function currentScalePercent() {
-  const value = Number(splashScaleSlider?.value);
-  return Number.isFinite(value) ? value : 100;
+function drawPhone(canvas) {
+  const deviceW = Number(canvas.dataset.deviceW);
+  const deviceH = Number(canvas.dataset.deviceH);
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 160;
+  const cssH = canvas.clientHeight || Math.round(cssW * (deviceH / deviceW));
+  const w = Math.round(cssW * dpr);
+  const h = Math.round(cssH * dpr);
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  const ctx = canvas.getContext("2d");
+  const unit = w / deviceW;
+  const bg = background.get() || PLATFORM_DEFAULT_BACKGROUND;
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = isDark(bg) ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.65)";
+  ctx.font = `${Math.round(12 * unit)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+  ctx.textBaseline = "middle";
+  ctx.fillText("9:41", 18 * unit, 16 * unit);
+
+  const box = logo.get() * unit;
+  const ox = (w - box) / 2;
+  const oy = (h - box) / 2;
+  drawContained(ctx, image, sourceRect(image, source.preview, !!els.trim?.checked), box, scale.get(), ox, oy);
+
+  if (els.showBounds?.checked) {
+    ctx.setLineDash([4 * dpr, 3 * dpr]);
+    ctx.lineWidth = dpr;
+    ctx.strokeStyle = isDark(bg) ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)";
+    ctx.strokeRect(ox + 0.5, oy + 0.5, box - 1, box - 1);
+    ctx.setLineDash([]);
+  }
 }
 
-/** `undefined` means "use the platform's own default background" - the wire format `generateSplashPreview`/`generateSplash` expect. */
-function currentBackgroundColor() {
-  if (splashBackgroundTransparent?.checked) { return undefined; }
-  return splashBackgroundColor?.value || undefined;
+const draw = () => {
+  if (!image || !source) { return; }
+  els.phones.forEach((canvas) => { if (canvas) { drawPhone(canvas); } });
+};
+const scheduleDraw = frameScheduler(draw);
+
+function markSizePreset() {
+  document.querySelectorAll("[data-splash-size]").forEach((chip) => {
+    chip.classList.toggle("active", Number(chip.dataset.splashSize) === logo.get());
+  });
 }
+
+const logo = bindRange({
+  slider: els.logoSlider,
+  number: els.logoNumber,
+  resetValue: 200,
+  onChange: () => {
+    markSizePreset();
+    scheduleDraw();
+  },
+});
+
+const scale = bindRange({
+  slider: els.scaleSlider,
+  number: els.scaleNumber,
+  resetValue: 100,
+  onChange: scheduleDraw,
+});
+
+const background = bindBackground({
+  color: byId("splashBackgroundColor"),
+  hex: byId("splashBackgroundHex"),
+  none: byId("splashBackgroundTransparent"),
+  row: byId("splashBackgroundRow"),
+  suggest: byId("splashBackgroundSuggest"),
+  onChange: scheduleDraw,
+});
 
 function updateGenerateButton() {
-  if (splashGenerateButton) { splashGenerateButton.disabled = !selectedSource; }
-}
-
-function requestLivePreview() {
-  if (!selectedSource) { return; }
-  clearTimeout(previewRequestTimer);
-  previewRequestTimer = setTimeout(() => {
-    api.requestSplashPreview(selectedSource.path, currentScalePercent(), currentBackgroundColor());
-  }, 150);
+  if (!els.generate || els.generate.dataset.busy) { return; }
+  els.generate.disabled = !source;
 }
 
 function renderCurrentPreviews(previews) {
   const android = previews?.android;
   const ios = previews?.ios;
-  if (splashCurrentAndroidCard) { splashCurrentAndroidCard.style.display = android ? "flex" : "none"; }
+  if (els.currentAndroidCard) { els.currentAndroidCard.style.display = android ? "flex" : "none"; }
   if (android) {
-    if (splashCurrentAndroid) { splashCurrentAndroid.src = android.dataUrl; }
-    if (splashCurrentAndroidLabel) { splashCurrentAndroidLabel.textContent = `Android (${android.width}×${android.height})`; }
+    els.currentAndroid.src = android.dataUrl;
+    els.currentAndroidLabel.textContent = `Android · ${android.width}px`;
   }
-  if (splashCurrentIOSCard) { splashCurrentIOSCard.style.display = ios ? "flex" : "none"; }
+  if (els.currentIOSCard) { els.currentIOSCard.style.display = ios ? "flex" : "none"; }
   if (ios) {
-    if (splashCurrentIOS) { splashCurrentIOS.src = ios.dataUrl; }
-    if (splashCurrentIOSLabel) { splashCurrentIOSLabel.textContent = `iOS (${ios.width}×${ios.height})`; }
+    els.currentIOS.src = ios.dataUrl;
+    els.currentIOSLabel.textContent = `iOS · ${ios.width}px`;
   }
-  if (splashCurrentRow) { splashCurrentRow.style.display = "flex"; }
-  if (splashCurrentEmpty) { splashCurrentEmpty.style.display = android || ios ? "none" : "block"; }
+  if (els.currentRow) { els.currentRow.style.display = "flex"; }
+  if (els.currentEmpty) { els.currentEmpty.style.display = android || ios ? "none" : "block"; }
 }
 
 /** Enables/disables the platform radios based on which platforms this project actually has. */
 export function refreshSplashAvailability() {
-  const hasAndroid = !!state.hasAndroidManifest;
-  const hasIOS = !!state.hasIOSPlist;
-  if (splashPlatformAndroid) { splashPlatformAndroid.disabled = !hasAndroid; }
-  if (splashPlatformIOS) { splashPlatformIOS.disabled = !hasIOS; }
-  if (splashPlatformBoth) { splashPlatformBoth.disabled = !(hasAndroid && hasIOS); }
-  if (splashPlatformBoth?.checked && splashPlatformBoth.disabled) {
-    if (hasAndroid && splashPlatformAndroid) { splashPlatformAndroid.checked = true; }
-    else if (hasIOS && splashPlatformIOS) { splashPlatformIOS.checked = true; }
-  }
+  applyPlatformAvailability(els.platformAndroid, els.platformIOS, els.platformBoth, !!state.hasAndroidManifest, !!state.hasIOSPlist);
 }
 
-splashBrowseButton?.addEventListener("click", () => api.browseSplashSource(currentScalePercent(), currentBackgroundColor()));
-splashGenerateButton?.addEventListener("click", () => {
-  if (!selectedSource) { return; }
-  api.generateSplash(selectedSource.path, selectedPlatform(), currentScalePercent(), currentBackgroundColor());
+els.browse?.addEventListener("click", () => api.browseSplashSource());
+els.generate?.addEventListener("click", () => {
+  if (!source) { return; }
+  api.generateSplash({
+    sourcePath: source.path,
+    platforms: selectedPlatform(els.platformAndroid, els.platformIOS),
+    scalePercent: scale.get(),
+    backgroundColor: background.get(),
+    trimMargins: !!els.trim?.checked,
+    logoSize: logo.get(),
+  });
 });
 
-splashScaleSlider?.addEventListener("input", () => {
-  if (splashScaleValue) { splashScaleValue.textContent = `${splashScaleSlider.value}%`; }
-  requestLivePreview();
+document.querySelectorAll("[data-splash-size]").forEach((chip) => {
+  chip.addEventListener("click", () => logo.set(Number(chip.dataset.splashSize)));
 });
-splashBackgroundColor?.addEventListener("input", requestLivePreview);
-splashBackgroundTransparent?.addEventListener("change", () => {
-  if (splashBackgroundRow) { splashBackgroundRow.style.opacity = splashBackgroundTransparent.checked ? "0.5" : "1"; }
-  if (splashBackgroundColor) { splashBackgroundColor.disabled = splashBackgroundTransparent.checked; }
-  requestLivePreview();
-});
+els.trim?.addEventListener("change", scheduleDraw);
+els.showBounds?.addEventListener("change", scheduleDraw);
+wheelToRange(els.phones, logo, 4);
+markSizePreset();
 
 window.addEventListener("splash-tab-activated", () => {
+  scheduleDraw();
   if (!hasLoadedCurrentPreview) {
     hasLoadedCurrentPreview = true;
     api.requestCurrentSplashPreview();
   }
 });
 
-bus.on("splashSourceSelected", (message) => {
-  selectedSource = { path: message.path, fileName: message.fileName, kind: message.kind };
-  if (splashSourceLabel) {
-    splashSourceLabel.textContent = `${message.fileName} (${message.kind.toUpperCase()})`;
+bus.on("splashSourceSelected", async (message) => {
+  const preview = message.preview;
+  try {
+    image = await loadImage(preview.dataUrl);
+  } catch {
+    image = null;
+    return;
   }
-  if (splashResult) { splashResult.style.display = "none"; }
-  if (splashFileList) { splashFileList.style.display = "none"; splashFileList.innerHTML = ""; }
-  if (message.previewDataUrl) {
-    if (splashPreviewImage) { splashPreviewImage.src = message.previewDataUrl; }
-    if (splashPreviewRow) { splashPreviewRow.style.display = "flex"; }
-    if (splashAdjustRow) { splashAdjustRow.style.display = "flex"; }
-  } else {
-    if (splashPreviewRow) { splashPreviewRow.style.display = "none"; }
-    if (splashAdjustRow) { splashAdjustRow.style.display = "none"; }
-  }
+  source = { path: message.path, fileName: message.fileName, kind: message.kind, preview };
+
+  els.label.textContent = message.fileName;
+  els.meta.textContent = `${message.kind.toUpperCase()} · ${preview.sourceWidth}×${preview.sourceHeight}${preview.hasTransparency ? " · transparent" : ""} · click to change`;
+  els.thumb.src = preview.dataUrl;
+  els.thumb.style.display = "";
+
+  const margin = marginFraction(preview);
+  els.trimHint.textContent = margin > 0.02 ? `(${Math.round(margin * 100)}% empty)` : "";
+  els.trim.checked = margin > 0.04;
+  background.suggest(preview.suggestedBackground);
+  if (preview.suggestedBackground) { background.set(preview.suggestedBackground); }
+
+  hideResult(resultEls);
+  els.adjust.style.display = "flex";
+  els.previewEmpty.style.display = "none";
+  els.previewRow.style.display = "flex";
   updateGenerateButton();
+  scheduleDraw();
 });
 
-bus.on("splashPreviewUpdated", (message) => {
-  if (message.previewDataUrl && splashPreviewImage) { splashPreviewImage.src = message.previewDataUrl; }
-});
-
-bus.on("currentSplashPreview", (message) => {
-  renderCurrentPreviews(message.previews);
-});
+bus.on("currentSplashPreview", (message) => renderCurrentPreviews(message.previews));
 
 bus.on("splashGenerating", (message) => {
-  if (splashLoading) { splashLoading.style.display = message.generating ? "block" : "none"; }
-  if (message.generating) {
-    if (splashGenerateButton) { splashGenerateButton.disabled = true; }
-  } else {
-    updateGenerateButton();
-  }
+  setBusy(els.generate, els.spinner, !!message.generating);
+  if (!message.generating) { updateGenerateButton(); }
 });
 
 bus.on("splashGenerated", (message) => {
-  const result = message.result || {};
+  setBusy(els.generate, els.spinner, false);
   updateGenerateButton();
-  if (splashResult) {
-    splashResult.style.display = "block";
-    splashResult.style.color = result.success ? "#81c784" : "#ef9a9a";
-    splashResult.textContent = result.message || "";
-  }
-  const files = [...(result.androidFiles || []), ...(result.iosFiles || [])];
-  if (splashFileList) {
-    splashFileList.innerHTML = "";
-    if (files.length) {
-      splashFileList.style.display = "block";
-      const groups = new Map();
-      files.forEach((file) => {
-        const label = file.label || "File";
-        if (!groups.has(label)) { groups.set(label, []); }
-        groups.get(label).push(file);
-      });
-      groups.forEach((groupFiles, label) => {
-        const heading = document.createElement("div");
-        heading.style.fontWeight = "600";
-        heading.style.marginTop = "6px";
-        heading.textContent = `${label} (${groupFiles.length})`;
-        splashFileList.appendChild(heading);
-        groupFiles.forEach((file) => {
-          const row = document.createElement("div");
-          row.style.paddingLeft = "10px";
-          row.textContent = `${file.path} (${file.width}×${file.height})`;
-          splashFileList.appendChild(row);
-        });
-      });
-    } else {
-      splashFileList.style.display = "none";
-    }
-  }
+  renderResult(resultEls, message.result || {});
 });

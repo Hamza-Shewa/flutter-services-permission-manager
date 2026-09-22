@@ -27,7 +27,7 @@ import type {
   IconPlatformTarget,
   IconSourceKind,
 } from "../../features/icons/types.js";
-import type { ImageComposeOptions, ImageSourceKind } from "../shared/image-compose.js";
+import type { ImageComposeOptions, ImageSourceKind, SourcePreview } from "../shared/image-compose.js";
 import type {
   CurrentSplashPreviews,
   SplashGenerationResult,
@@ -226,8 +226,7 @@ export type WebviewMessage =
     line?: number;
     column?: number;
   }
-  | ({ type: "browseIconSource" } & IconComposeOptions)
-  | ({ type: "requestIconPreview"; sourcePath: string } & IconComposeOptions)
+  | { type: "browseIconSource" }
   | { type: "requestCurrentIconPreview" }
   | ({
     type: "generateIcons";
@@ -235,13 +234,13 @@ export type WebviewMessage =
     platforms: IconPlatformTarget;
     androidFamilies?: AndroidIconFamilySelection;
   } & IconComposeOptions)
-  | ({ type: "browseSplashSource" } & ImageComposeOptions)
-  | ({ type: "requestSplashPreview"; sourcePath: string } & ImageComposeOptions)
+  | { type: "browseSplashSource" }
   | { type: "requestCurrentSplashPreview" }
   | ({
     type: "generateSplash";
     sourcePath: string;
     platforms: SplashPlatformTarget;
+    logoSize?: number;
   } & ImageComposeOptions);
 
 /** Language info */
@@ -345,12 +344,10 @@ export type WebviewOutgoingMessage =
   | IconSourceSelectedMessage
   | IconsGeneratingMessage
   | IconsGeneratedMessage
-  | IconPreviewUpdatedMessage
   | CurrentIconPreviewMessage
   | SplashSourceSelectedMessage
   | SplashGeneratingMessage
   | SplashGeneratedMessage
-  | SplashPreviewUpdatedMessage
   | CurrentSplashPreviewMessage;
 
 export interface InteractivesResultMessage {
@@ -474,8 +471,7 @@ export interface IconSourceSelectedMessage {
   path: string;
   fileName: string;
   kind: IconSourceKind;
-  /** Square-cropped PNG data URL preview, matching what every generated icon will look like. */
-  previewDataUrl?: string;
+  preview: SourcePreview;
 }
 
 export interface IconsGeneratingMessage {
@@ -488,11 +484,6 @@ export interface IconsGeneratedMessage {
   result: IconGenerationResult;
 }
 
-export interface IconPreviewUpdatedMessage {
-  type: "iconPreviewUpdated";
-  previewDataUrl: string;
-}
-
 export interface CurrentIconPreviewMessage {
   type: "currentIconPreview";
   previews: CurrentIconPreviews;
@@ -503,7 +494,7 @@ export interface SplashSourceSelectedMessage {
   path: string;
   fileName: string;
   kind: ImageSourceKind;
-  previewDataUrl?: string;
+  preview: SourcePreview;
 }
 
 export interface SplashGeneratingMessage {
@@ -514,11 +505,6 @@ export interface SplashGeneratingMessage {
 export interface SplashGeneratedMessage {
   type: "splashGenerated";
   result: SplashGenerationResult;
-}
-
-export interface SplashPreviewUpdatedMessage {
-  type: "splashPreviewUpdated";
-  previewDataUrl: string;
 }
 
 export interface CurrentSplashPreviewMessage {

@@ -9,8 +9,9 @@ export {
     detectSplashSourceKind,
     clampSplashScalePercent,
     generateSplash,
-    generateSplashPreview,
     getCurrentSplashPreviews,
+    clampSplashLogoSize,
+    DEFAULT_SPLASH_LOGO_SIZE,
 } from './splash.service.js';
 
 export type { GenerateSplashOptions, CurrentSplashPreviewOptions } from './splash.service.js';

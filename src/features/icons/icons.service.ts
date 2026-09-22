@@ -43,8 +43,8 @@ import {
   composeWorkingImage,
   DEFAULT_WORKING_CANVAS_SIZE,
   detectImageSourceKind,
-  generateSquarePreview,
-  loadRasterSourceCached,
+  loadForeground,
+  readPngSize,
   renderSquarePng,
   type RasterImage,
 } from "../../core/shared/image-compose.js";
@@ -117,19 +117,6 @@ function hasMeaningfulTransparency(source: RasterImage): boolean {
     if (data[i] < 250) { return true; }
   }
   return false;
-}
-
-/**
- * Renders the same square crop every generated icon uses, as a small PNG data
- * URL the webview can display immediately after picking a source image -
- * before any files are written - so the user can see how it will look on
- * each platform (the way Xcode previews an AppIcon in its rounded slots).
- */
-export async function generateIconPreview(
-  sourcePath: string,
-  compose: IconComposeOptions = {},
-): Promise<IconPreview> {
-  return generateSquarePreview(sourcePath, compose);
 }
 
 function androidAppDirFromManifest(manifestUri: vscode.Uri): string {
@@ -361,8 +348,9 @@ function pickLargestExisting(candidates: { filePath: string; sizePx: number }[])
   );
 }
 
-function readAsDataUrl(filePath: string, sizePx: number): IconPreview {
-  return { dataUrl: `data:image/png;base64,${fs.readFileSync(filePath).toString("base64")}`, size: sizePx };
+function readAsDataUrl(filePath: string, fallbackSizePx: number): IconPreview {
+  const bytes = fs.readFileSync(filePath);
+  return { dataUrl: `data:image/png;base64,${bytes.toString("base64")}`, size: readPngSize(bytes)?.width ?? fallbackSizePx };
 }
 
 /**
@@ -460,7 +448,7 @@ export async function generateIcons(options: GenerateIconsOptions): Promise<Icon
   }
 
   try {
-    const source = await loadRasterSourceCached(sourcePath, kind);
+    const source = await loadForeground(sourcePath, kind, !!options.trimMargins);
     const scalePercent = clampIconScalePercent(options.scalePercent);
     const coloredWorking = composeWorkingImage(source, scalePercent, options.backgroundColor, DEFAULT_WORKING_CANVAS_SIZE);
     const android = wantsAndroid

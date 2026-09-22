@@ -3371,149 +3371,284 @@
     </style>
   </section>
 
+  <style>
+    .imgtool { display: flex; flex-direction: column; gap: 14px; max-width: 980px; }
+    .imgtool-intro { color: var(--text-secondary); font-size: 12px; margin: 0; line-height: 1.55; }
+    .imgtool-intro code { font-size: 11px; }
+    .imgtool details.imgtool-more { color: var(--text-secondary); font-size: 12px; line-height: 1.55; }
+    .imgtool details.imgtool-more summary { cursor: pointer; color: var(--text-primary); font-size: 12px; user-select: none; }
+    .imgtool details.imgtool-more p { margin: 6px 0 0; }
+    .imgtool-layout { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 14px; align-items: start; }
+    @media (max-width: 760px) { .imgtool-layout { grid-template-columns: minmax(0, 1fr); } }
+    .imgtool-controls { display: flex; flex-direction: column; gap: 12px; }
+    .imgtool-previews { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 8px; }
+    .imgtool-card { background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+    .imgtool-card-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-primary); }
+    .imgtool-card-title .imgtool-hint { font-weight: 400; }
+    .imgtool-hint { color: var(--text-muted); font-size: 11px; margin: 0; line-height: 1.45; }
+    .imgtool-warn { color: var(--warning); font-size: 11px; margin: 0; line-height: 1.45; }
+    .imgtool-drop { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px dashed var(--border-default); border-radius: var(--radius-md); cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); background: transparent; color: inherit; font: inherit; text-align: left; width: 100%; }
+    .imgtool-drop:hover, .imgtool-drop:focus-visible { border-color: var(--accent); background: var(--accent-dim); outline: none; }
+    .imgtool-drop-thumb { width: 44px; height: 44px; flex: 0 0 44px; border-radius: var(--radius-sm); object-fit: contain; }
+    .imgtool-drop-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .imgtool-drop-name { font-size: 12px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .imgtool-checker { background: repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 12px 12px; }
+    .imgtool-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .imgtool-label { font-size: 12px; color: var(--text-primary); min-width: 92px; }
+    .imgtool-range { display: grid; grid-template-columns: 1fr 64px; gap: 8px; align-items: center; }
+    .imgtool-range input[type="range"] { width: 100%; accent-color: var(--accent); cursor: ew-resize; }
+    .imgtool-num { display: flex; align-items: center; border: 1px solid var(--border-default); border-radius: var(--radius-sm); background: var(--bg-tertiary); padding: 0 6px; }
+    .imgtool-num input { width: 100%; background: transparent; border: 0; color: var(--text-primary); font-size: 12px; padding: 4px 0; outline: none; -moz-appearance: textfield; }
+    .imgtool-num input::-webkit-inner-spin-button { opacity: 0.6; }
+    .imgtool-num span { color: var(--text-muted); font-size: 11px; }
+    .imgtool-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .imgtool-chip { border: 1px solid var(--border-default); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 999px; padding: 3px 10px; font-size: 11px; cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); }
+    .imgtool-chip:hover { border-color: var(--accent); }
+    .imgtool-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--text-primary); }
+    .imgtool-chip:disabled { opacity: 0.45; cursor: default; }
+    .imgtool-swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: -2px; margin-right: 4px; border: 1px solid rgba(255,255,255,0.25); }
+    .imgtool-color { display: flex; align-items: center; gap: 6px; }
+    .imgtool-color input[type="color"] { width: 32px; height: 26px; padding: 0; border: 1px solid var(--border-default); border-radius: var(--radius-sm); background: none; cursor: pointer; }
+    .imgtool-color input[type="text"] { width: 76px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 12px; padding: 4px 6px; font-family: var(--vscode-editor-font-family, monospace); }
+    .imgtool-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+    .imgtool-muted .imgtool-color { opacity: 0.45; }
+    .imgtool-segment { display: inline-flex; border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+    .imgtool-segment label { position: relative; }
+    .imgtool-segment input { position: absolute; opacity: 0; pointer-events: none; }
+    .imgtool-segment span { display: block; padding: 5px 12px; font-size: 12px; color: var(--text-secondary); cursor: pointer; border-right: 1px solid var(--border-default); transition: background var(--transition-fast); }
+    .imgtool-segment label:last-child span { border-right: 0; }
+    .imgtool-segment input:checked + span { background: var(--accent-dim); color: var(--text-primary); }
+    .imgtool-segment input:focus-visible + span { outline: 1px solid var(--accent); outline-offset: -1px; }
+    .imgtool-segment input:disabled + span { opacity: 0.4; cursor: default; }
+    .imgtool-generate { display: flex; align-items: center; gap: 10px; }
+    .imgtool-spinner { width: 14px; height: 14px; border: 2px solid var(--border-default); border-top-color: var(--accent); border-radius: 50%; animation: imgtool-spin 0.8s linear infinite; display: none; }
+    @keyframes imgtool-spin { to { transform: rotate(360deg); } }
+    .imgtool-result { font-size: 12px; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-default); display: none; }
+    .imgtool-result.ok { border-color: rgba(129, 199, 132, 0.4); color: #81c784; }
+    .imgtool-result.err { border-color: rgba(239, 154, 154, 0.4); color: #ef9a9a; }
+    .imgtool-files { font-size: 11px; color: var(--text-secondary); display: none; }
+    .imgtool-files summary { cursor: pointer; color: var(--text-primary); }
+    .imgtool-files .imgtool-files-body { max-height: 220px; overflow: auto; line-height: 1.6; margin-top: 4px; font-family: var(--vscode-editor-font-family, monospace); }
+    .imgtool-empty { display: flex; align-items: center; justify-content: center; min-height: 160px; color: var(--text-muted); font-size: 12px; text-align: center; border: 1px dashed var(--border-default); border-radius: var(--radius-lg); padding: 16px; }
+    .imgtool-tiles { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+    .imgtool-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+    .imgtool-tile-frame { position: relative; overflow: hidden; }
+    .imgtool-tile-frame canvas, .imgtool-tile-frame img { width: 100%; height: 100%; display: block; }
+    .imgtool-safe { position: absolute; inset: 0; pointer-events: none; display: none; }
+    .imgtool-safe::after { content: ""; position: absolute; inset: 4%; border: 1px dashed rgba(255, 255, 255, 0.75); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+    .imgtool-show-safe .imgtool-safe { display: block; }
+    .imgtool-home { border-radius: var(--radius-lg); padding: 14px 12px 10px; background: linear-gradient(160deg, #3949ab, #8e24aa 55%, #f06292); display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 6px; }
+    .imgtool-home-app { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); min-width: 0; }
+    .imgtool-home-app span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .imgtool-home-icon { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; }
+    .imgtool-home-icon.placeholder { background: rgba(255, 255, 255, 0.28); }
+    .imgtool-home-icon canvas { width: 100%; height: 100%; display: block; }
+    .imgtool-play { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: var(--radius-md); background: #fff; color: #202124; }
+    .imgtool-play-icon { width: 72px; height: 72px; flex: 0 0 72px; border-radius: 20%; overflow: hidden; box-shadow: 0 1px 3px rgba(60,64,67,0.3), 0 4px 8px rgba(60,64,67,0.15); }
+    .imgtool-play-icon canvas { width: 100%; height: 100%; display: block; }
+    .imgtool-play-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+    .imgtool-play-name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .imgtool-play-dev { font-size: 11px; color: #01875f; font-weight: 500; }
+    .imgtool-play-stats { font-size: 10px; color: #5f6368; }
+    .imgtool-play-install { align-self: flex-start; margin-top: 4px; background: #01875f; color: #fff; border-radius: 8px; padding: 5px 18px; font-size: 12px; font-weight: 500; }
+    .imgtool-notif { border-radius: var(--radius-md); overflow: hidden; background: #1f1f1f; color: #e3e3e3; font-family: Roboto, "Segoe UI", sans-serif; }
+    .imgtool-statusbar { display: flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 11px; background: #000; color: #fff; }
+    .imgtool-statusbar canvas { width: 14px; height: 14px; display: block; }
+    .imgtool-statusbar .imgtool-sb-right { margin-left: auto; letter-spacing: 1px; opacity: 0.85; }
+    .imgtool-notif-card { margin: 10px; padding: 10px 12px; border-radius: 14px; background: #2d2f31; display: grid; grid-template-columns: 1fr 40px; gap: 8px; align-items: center; }
+    .imgtool-notif-head { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #c4c7c5; }
+    .imgtool-notif-head canvas { width: 16px; height: 16px; display: block; }
+    .imgtool-notif-small { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; }
+    .imgtool-notif-small canvas { width: 14px; height: 14px; }
+    .imgtool-notif-title { font-size: 13px; color: #e3e3e3; margin-top: 4px; }
+    .imgtool-notif-text { font-size: 12px; color: #c4c7c5; }
+    .imgtool-notif-large { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
+    .imgtool-notif-large canvas { width: 100%; height: 100%; display: block; }
+    .imgtool-current { display: flex; gap: 14px; flex-wrap: wrap; }
+    .imgtool-phones { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+    .imgtool-phone { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+    .imgtool-phone-frame { border: 6px solid #111; border-radius: 22px; box-shadow: 0 0 0 1px #3a3a3a, var(--shadow-md); overflow: hidden; }
+    .imgtool-phone-frame canvas { display: block; }
+  </style>
+
   <section id="iconsSection" class="section platform-details" data-tab="icons">
     <div class="section-header">
       <div class="section-header-with-button">
         <h2>🎨 App Icons</h2>
       </div>
     </div>
-    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
-      Choose a single square PNG, JPEG, or SVG source image and generate icons for Android, iOS, or both. Existing
-      icon files are resized and overwritten in place — nothing else about the project is touched.
-    </p>
-    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
-      Selecting <b>Android</b> generates the full icon family: the <code>mipmap-*dpi/ic_launcher.png</code> launcher
-      icon, a 512×512 Play Store listing icon (written next to <code>android/app/</code>, never bundled into the app),
-      and notification icons — a default <code>ic_notification</code> plus OneSignal's
-      <code>ic_stat_onesignal_default</code> (small) and <code>ic_onesignal_large_icon_default</code> (large), picked
-      up automatically by OneSignal's Android SDK with no manifest edits needed. Status-bar icons are rendered as a
-      white silhouette from your source's transparency (Android repaints them white and ignores color), so a source
-      with a transparent background works best. iOS has no separate notification icon — it always shows the app's own
-      AppIcon.
-    </p>
-    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
-      Both the App Store and Play Store reject icons that still have transparency, so picking an opaque background
-      color below (instead of leaving it transparent) also keeps the generated launcher, Play Store, and iOS icons
-      submission-ready.
-    </p>
-
-    <div style="display:flex; flex-direction:column; gap:14px; max-width:640px;">
-      <div id="iconsCurrentRow" style="display:none; flex-direction:column; gap:10px; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
-        <strong style="font-size:12px; color:var(--text-primary);">Current icons</strong>
-        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
-          What's already in the project — you may decide not to change it. This updates automatically after you generate new icons.
+    <div class="imgtool">
+      <p class="imgtool-intro">
+        Pick one PNG, JPEG, or SVG and generate every icon Android and iOS need. Existing icon files are resized and
+        overwritten in place; nothing else in the project changes. Previews update live as you adjust.
+      </p>
+      <details class="imgtool-more">
+        <summary>What gets generated</summary>
+        <p>
+          <b>Android:</b> <code>mipmap-*dpi/ic_launcher.png</code> launcher icons, a 512×512 Play Store listing icon
+          (<code>android/play_store_icon.png</code>, never bundled into the app), and notification icons: a default
+          <code>ic_notification</code> plus OneSignal's <code>ic_stat_onesignal_default</code> (small) and
+          <code>ic_onesignal_large_icon_default</code> (large), which OneSignal picks up with no manifest edits.
+          Status-bar icons are white silhouettes cut from your image's transparency, because Android repaints them white.
         </p>
-        <div style="display:flex; gap:18px; flex-wrap:wrap;">
-          <div id="iconsCurrentAndroidCard" style="display:none; flex-direction:column; align-items:center; gap:6px;">
-            <div style="width:72px; height:72px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-              <img id="iconsCurrentAndroid" style="width:100%; height:100%; object-fit:cover; display:block;" />
+        <p>
+          <b>iOS:</b> every slot in <code>AppIcon.appiconset/Contents.json</code>. iOS has no separate notification
+          icon; it always shows the app icon. Both stores reject transparent icons, so pick an opaque background for
+          submission-ready output.
+        </p>
+      </details>
+
+      <div class="imgtool-layout">
+        <div class="imgtool-controls">
+          <div class="imgtool-card">
+            <div class="imgtool-card-title">Source image</div>
+            <button id="iconsBrowseButton" type="button" class="imgtool-drop" title="Choose a PNG, JPEG, or SVG">
+              <img id="iconsSourceThumb" class="imgtool-drop-thumb imgtool-checker" alt="" style="display:none;" />
+              <span class="imgtool-drop-text">
+                <span id="iconsSourceLabel" class="imgtool-drop-name">📁 Choose source image…</span>
+                <span id="iconsSourceMeta" class="imgtool-hint">A square 1024×1024 PNG or an SVG works best.</span>
+              </span>
+            </button>
+          </div>
+
+          <div id="iconsAdjustRow" class="imgtool-card" style="display:none;">
+            <div class="imgtool-card-title">
+              <span>Size &amp; position</span>
+              <span class="imgtool-hint">Scroll over a preview to zoom · double-click the slider to reset</span>
             </div>
-            <span id="iconsCurrentAndroidLabel" style="font-size:11px; color:var(--text-secondary);">Android</span>
-          </div>
-          <div id="iconsCurrentIOSCard" style="display:none; flex-direction:column; align-items:center; gap:6px;">
-            <div style="width:72px; height:72px; border-radius:16px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-              <img id="iconsCurrentIOS" style="width:100%; height:100%; object-fit:cover; display:block;" />
+            <div class="imgtool-chips" role="group" aria-label="Size presets">
+              <button type="button" class="imgtool-chip" data-icons-preset="auto" title="Picks a size from the image: logos are fit inside the circular safe zone, full-bleed artwork fills the icon">✨ Auto</button>
+              <button type="button" class="imgtool-chip" data-icons-preset="safe" title="Keeps the whole artwork inside a circular mask">◯ Fit safe zone</button>
+              <button type="button" class="imgtool-chip" data-icons-preset="fill" title="Artwork touches the icon edges">⬛ Fill</button>
+              <button type="button" class="imgtool-chip" data-icons-preset="padded" title="80% with even padding">▢ Padded</button>
             </div>
-            <span id="iconsCurrentIOSLabel" style="font-size:11px; color:var(--text-secondary);">iOS</span>
+            <div class="imgtool-range">
+              <input id="iconsScaleSlider" type="range" min="40" max="200" step="1" value="100" aria-label="Foreground size" />
+              <label class="imgtool-num"><input id="iconsScaleNumber" type="number" min="40" max="200" step="1" value="100" aria-label="Foreground size percent" /><span>%</span></label>
+            </div>
+            <p class="imgtool-hint">Below 100% adds padding; above 100% zooms in and crops the edges.</p>
+            <label class="imgtool-check" title="Crop away empty or uniform-color margins before sizing, so the percentage refers to the artwork itself">
+              <input id="iconsTrim" type="checkbox" /> Trim empty margins <span id="iconsTrimHint" class="imgtool-hint"></span>
+            </label>
+            <div id="iconsBackgroundRow" class="imgtool-row">
+              <span class="imgtool-label">Background</span>
+              <span class="imgtool-color">
+                <input id="iconsBackgroundColor" type="color" value="#ffffff" aria-label="Background color" />
+                <input id="iconsBackgroundHex" type="text" value="#ffffff" maxlength="7" spellcheck="false" aria-label="Background hex" />
+              </span>
+              <label class="imgtool-check"><input id="iconsBackgroundTransparent" type="checkbox" /> Transparent</label>
+              <button id="iconsBackgroundSuggest" type="button" class="imgtool-chip" style="display:none;" title="Use the color detected around your image's border"></button>
+            </div>
+            <p class="imgtool-hint">Notification silhouettes always stay transparent outside their shape.</p>
+          </div>
+
+          <div class="imgtool-card">
+            <div class="imgtool-card-title">Targets</div>
+            <div class="imgtool-segment" role="radiogroup" aria-label="Platforms">
+              <label><input type="radio" name="iconsPlatform" id="iconsPlatformAndroid" value="android" /><span>Android</span></label>
+              <label><input type="radio" name="iconsPlatform" id="iconsPlatformIOS" value="ios" /><span>iOS</span></label>
+              <label><input type="radio" name="iconsPlatform" id="iconsPlatformBoth" value="both" checked /><span>Both</span></label>
+            </div>
+            <div id="iconsAndroidFamilyRow" class="imgtool-row" style="display:none;">
+              <label class="imgtool-check"><input type="checkbox" id="iconsFamilyLauncher" checked /> Launcher</label>
+              <label class="imgtool-check"><input type="checkbox" id="iconsFamilyPlayStore" checked /> Play Store</label>
+              <label class="imgtool-check"><input type="checkbox" id="iconsFamilyNotifications" checked /> Notifications</label>
+            </div>
+            <div class="imgtool-generate">
+              <button id="iconsGenerateButton" type="button" class="btn-primary" disabled>Generate icons</button>
+              <span id="iconsLoading" class="imgtool-spinner" aria-label="Rendering icons"></span>
+            </div>
+            <div id="iconsResult" class="imgtool-result"></div>
+            <details id="iconsFileList" class="imgtool-files">
+              <summary id="iconsFileSummary">Files written</summary>
+              <div id="iconsFileListBody" class="imgtool-files-body"></div>
+            </details>
+          </div>
+
+          <div id="iconsCurrentRow" class="imgtool-card" style="display:none;">
+            <div class="imgtool-card-title">Current icons <span class="imgtool-hint">what's in the project now</span></div>
+            <div class="imgtool-current">
+              <div id="iconsCurrentAndroidCard" class="imgtool-tile" style="display:none;">
+                <div class="imgtool-tile-frame imgtool-checker" style="width:56px; height:56px;"><img id="iconsCurrentAndroid" alt="Current Android icon" /></div>
+                <span id="iconsCurrentAndroidLabel">Android</span>
+              </div>
+              <div id="iconsCurrentIOSCard" class="imgtool-tile" style="display:none;">
+                <div class="imgtool-tile-frame imgtool-checker" style="width:56px; height:56px; border-radius:22.5%;"><img id="iconsCurrentIOS" alt="Current iOS icon" /></div>
+                <span id="iconsCurrentIOSLabel">iOS</span>
+              </div>
+            </div>
+            <p id="iconsCurrentEmpty" class="imgtool-hint" style="display:none;">No launcher icons found in this project yet.</p>
           </div>
         </div>
-        <p id="iconsCurrentEmpty" style="display:none; color:var(--text-secondary); font-size:11px; margin:0;">
-          No existing launcher icons were found for this project yet.
-        </p>
-      </div>
 
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <button id="iconsBrowseButton" type="button" class="btn-secondary">📁 Choose source image…</button>
-        <span id="iconsSourceLabel" style="color:var(--text-secondary); font-size:12px;">No image selected.</span>
-      </div>
+        <div class="imgtool-previews">
+          <div id="iconsPreviewEmpty" class="imgtool-empty">Choose a source image to see live previews for every platform, the Play Store, and notifications.</div>
+          <div id="iconsPreviewRow" style="display:none; flex-direction:column; gap:12px;">
+            <div id="iconsTilesCard" class="imgtool-card">
+              <div class="imgtool-card-title">
+                <span>App icon</span>
+                <label class="imgtool-check"><input id="iconsShowSafeZone" type="checkbox" /> Show safe zone</label>
+              </div>
+              <div class="imgtool-tiles" id="iconsTiles">
+                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:22.5%;"><canvas data-icons-preview="colored"></canvas></div>iOS</div>
+                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Android legacy</div>
+                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:50%;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Circle mask</div>
+                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:28%;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Squircle mask</div>
+                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:48px; height:48px; border-radius:22.5%;"><canvas data-icons-preview="colored"></canvas></div>Actual size</div>
+              </div>
+            </div>
 
-      <div id="iconsAdjustRow" style="display:none; flex-direction:column; gap:12px; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <label for="iconsScaleSlider" style="font-size:12px; color:var(--text-primary); min-width:110px;">Foreground size</label>
-          <input id="iconsScaleSlider" type="range" min="40" max="200" step="1" value="100" style="flex:1 1 180px; min-width:140px;" />
-          <span id="iconsScaleValue" style="font-size:12px; color:var(--text-secondary); min-width:38px; text-align:right;">100%</span>
-        </div>
-        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
-          Below 100%, this adds padding around your image instead of filling the icon edge-to-edge (filled with the
-          background color below). Above 100%, it zooms in and crops instead — useful if your source has its own
-          margin you want cropped away.
-        </p>
-        <div id="iconsBackgroundRow" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <label for="iconsBackgroundColor" style="font-size:12px; color:var(--text-primary); min-width:110px;">Background color</label>
-          <input id="iconsBackgroundColor" type="color" value="#ffffff" style="width:40px; height:28px; padding:0; border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px; background:none;" />
-          <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary);">
-            <input id="iconsBackgroundTransparent" type="checkbox" /> Transparent
-          </label>
-        </div>
-        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
-          Notification icons always stay transparent outside their shape (a system requirement), regardless of this
-          setting — this only affects the launcher, Play Store, iOS, and OneSignal large icons.
-        </p>
-      </div>
+            <div class="imgtool-card">
+              <div class="imgtool-card-title">Home screen</div>
+              <div class="imgtool-home">
+                <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Photos</span></div>
+                <div class="imgtool-home-app"><div class="imgtool-home-icon"><canvas data-icons-preview="colored"></canvas></div><span data-icons-appname>Your app</span></div>
+                <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Maps</span></div>
+                <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Clock</span></div>
+              </div>
+            </div>
 
-      <div id="iconsPreviewRow" style="display:none; gap:18px; flex-wrap:wrap; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
-        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-          <div style="width:88px; height:88px; border-radius:20px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-            <img id="iconsPreviewIOS" style="width:100%; height:100%; object-fit:cover; display:block;" />
+            <div class="imgtool-card">
+              <div class="imgtool-card-title">Play Store listing <span class="imgtool-hint">512×512 · Google applies the rounded mask and shadow</span></div>
+              <div class="imgtool-play">
+                <div class="imgtool-play-icon"><canvas data-icons-preview="colored"></canvas></div>
+                <div class="imgtool-play-meta">
+                  <span class="imgtool-play-name" data-icons-appname>Your app</span>
+                  <span class="imgtool-play-dev">Your developer name</span>
+                  <span class="imgtool-play-stats">4.8 ★ · 1M+ downloads · Rated for 3+</span>
+                  <span class="imgtool-play-install">Install</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="imgtool-card">
+              <div class="imgtool-card-title">Notification <span class="imgtool-hint">small icon = white silhouette</span></div>
+              <div class="imgtool-notif">
+                <div class="imgtool-statusbar">
+                  <span>9:41</span>
+                  <canvas data-icons-preview="silhouette"></canvas>
+                  <span class="imgtool-sb-right">▾ ▴ ▮</span>
+                </div>
+                <div class="imgtool-notif-card">
+                  <div>
+                    <div class="imgtool-notif-head">
+                      <span class="imgtool-notif-small"><canvas data-icons-preview="silhouette"></canvas></span>
+                      <span data-icons-appname>Your app</span><span>· now</span>
+                    </div>
+                    <div class="imgtool-notif-title">New message</div>
+                    <div class="imgtool-notif-text">This is how your notification icon looks.</div>
+                  </div>
+                  <div class="imgtool-notif-large"><canvas data-icons-preview="colored"></canvas></div>
+                </div>
+              </div>
+              <p id="iconsSilhouetteWarning" class="imgtool-warn" style="display:none;">
+                This image has no transparency, so the small notification icon renders as a solid white square. Use a
+                source with a transparent background around the shape.
+              </p>
+            </div>
           </div>
-          <span style="font-size:11px; color:var(--text-secondary);">iOS</span>
-        </div>
-        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-          <div style="width:88px; height:88px; border-radius:0; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-            <img id="iconsPreviewAndroidSquare" style="width:100%; height:100%; object-fit:cover; display:block;" />
-          </div>
-          <span style="font-size:11px; color:var(--text-secondary);">Android (legacy)</span>
-        </div>
-        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-          <div style="width:88px; height:88px; border-radius:50%; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-            <img id="iconsPreviewAndroidCircle" style="width:100%; height:100%; object-fit:cover; display:block;" />
-          </div>
-          <span style="font-size:11px; color:var(--text-secondary);">Android (adaptive · circle)</span>
-        </div>
-        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-          <div style="width:88px; height:88px; border-radius:16px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-            <img id="iconsPreviewAndroidSquircle" style="width:100%; height:100%; object-fit:cover; display:block;" />
-          </div>
-          <span style="font-size:11px; color:var(--text-secondary);">Android (adaptive · rounded)</span>
         </div>
       </div>
-
-      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-          <input type="radio" name="iconsPlatform" id="iconsPlatformAndroid" value="android" /> Android only
-        </label>
-        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-          <input type="radio" name="iconsPlatform" id="iconsPlatformIOS" value="ios" /> iOS only
-        </label>
-        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-          <input type="radio" name="iconsPlatform" id="iconsPlatformBoth" value="both" checked /> Both
-        </label>
-      </div>
-
-      <div id="iconsAndroidFamilyRow" style="display:none; flex-direction:column; gap:6px; padding:10px 14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
-        <span style="font-size:12px; color:var(--text-primary);">Android icon types to generate</span>
-        <div style="display:flex; gap:16px; flex-wrap:wrap;">
-          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-            <input type="checkbox" id="iconsFamilyLauncher" checked /> App icon (launcher)
-          </label>
-          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-            <input type="checkbox" id="iconsFamilyPlayStore" checked /> Play Store icon
-          </label>
-          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-            <input type="checkbox" id="iconsFamilyNotifications" checked /> Notification icons
-          </label>
-        </div>
-      </div>
-
-      <div>
-        <button id="iconsGenerateButton" type="button" class="btn-primary" disabled>Generate icons</button>
-      </div>
-
-      <div id="iconsLoading" style="display:none; padding:12px; text-align:center; color:var(--text-secondary);">
-        Rendering icons…
-      </div>
-      <div id="iconsResult" style="display:none; padding:10px 12px; border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm); font-size:12px;"></div>
-      <div id="iconsFileList" style="display:none; font-size:12px; color:var(--text-secondary); max-height:220px; overflow:auto; line-height:1.6;"></div>
     </div>
   </section>
 
@@ -3523,102 +3658,122 @@
         <h2>🌊 Splash Screen</h2>
       </div>
     </div>
-    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
-      Choose a source image and generate the native launch/splash screen for Android, iOS, or both — the screen shown
-      while the Flutter engine starts up, before your app's first frame draws. Existing splash files are overwritten
-      in place — nothing else about the project is touched.
-    </p>
-    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
-      Android's <code>res/drawable/launch_background.xml</code> and <code>drawable-v21/launch_background.xml</code>
-      are updated to center a <code>launch_image</code> over your chosen background color; iOS's
-      <code>Base.lproj/LaunchScreen.storyboard</code> is updated the same way, centering
-      <code>Assets.xcassets/LaunchImage.imageset</code>. Only projects that still have the standard Flutter-generated
-      splash layout are supported — a hand-customized one is left alone with a clear error instead of guessing at it.
-    </p>
-
-    <div style="display:flex; flex-direction:column; gap:14px; max-width:640px;">
-      <div id="splashCurrentRow" style="display:none; flex-direction:column; gap:10px; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
-        <strong style="font-size:12px; color:var(--text-primary);">Current splash screen</strong>
-        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
-          What's already in the project — you may decide not to change it. This updates automatically after you generate a new splash screen.
+    <div class="imgtool">
+      <p class="imgtool-intro">
+        Generate the native launch screen shown while the Flutter engine starts: your logo centered on a solid
+        background color. Existing splash files are overwritten in place; nothing else in the project changes.
+      </p>
+      <details class="imgtool-more">
+        <summary>What gets changed</summary>
+        <p>
+          <b>Android:</b> <code>drawable-*dpi/launch_image.png</code> plus <code>drawable/launch_background.xml</code>
+          and <code>drawable-v21/launch_background.xml</code>. Android 12+ draws its own system splash from the launcher
+          icon, so this layout is what Android 11 and older show.
         </p>
-        <div style="display:flex; gap:18px; flex-wrap:wrap;">
-          <div id="splashCurrentAndroidCard" style="display:none; flex-direction:column; align-items:center; gap:6px;">
-            <div style="width:64px; height:64px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-              <img id="splashCurrentAndroid" style="width:100%; height:100%; object-fit:contain; display:block;" />
+        <p>
+          <b>iOS:</b> <code>LaunchImage.imageset</code> at 1x/2x/3x and <code>Base.lproj/LaunchScreen.storyboard</code>.
+          Only the standard Flutter-generated layout is supported; a hand-customized one is left alone with a clear error.
+        </p>
+      </details>
+
+      <div class="imgtool-layout">
+        <div class="imgtool-controls">
+          <div class="imgtool-card">
+            <div class="imgtool-card-title">Logo image</div>
+            <button id="splashBrowseButton" type="button" class="imgtool-drop" title="Choose a PNG, JPEG, or SVG">
+              <img id="splashSourceThumb" class="imgtool-drop-thumb imgtool-checker" alt="" style="display:none;" />
+              <span class="imgtool-drop-text">
+                <span id="splashSourceLabel" class="imgtool-drop-name">📁 Choose logo image…</span>
+                <span id="splashSourceMeta" class="imgtool-hint">A transparent PNG or an SVG looks best.</span>
+              </span>
+            </button>
+          </div>
+
+          <div id="splashAdjustRow" class="imgtool-card" style="display:none;">
+            <div class="imgtool-card-title">
+              <span>Logo size</span>
+              <span class="imgtool-hint">dp on Android · pt on iOS</span>
             </div>
-            <span id="splashCurrentAndroidLabel" style="font-size:11px; color:var(--text-secondary);">Android</span>
-          </div>
-          <div id="splashCurrentIOSCard" style="display:none; flex-direction:column; align-items:center; gap:6px;">
-            <div style="width:64px; height:64px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-              <img id="splashCurrentIOS" style="width:100%; height:100%; object-fit:contain; display:block;" />
+            <div class="imgtool-chips" role="group" aria-label="Logo size presets">
+              <button type="button" class="imgtool-chip" data-splash-size="120">Small · 120</button>
+              <button type="button" class="imgtool-chip" data-splash-size="200">Medium · 200</button>
+              <button type="button" class="imgtool-chip" data-splash-size="288">Large · 288</button>
             </div>
-            <span id="splashCurrentIOSLabel" style="font-size:11px; color:var(--text-secondary);">iOS</span>
+            <div class="imgtool-range">
+              <input id="splashLogoSlider" type="range" min="48" max="480" step="1" value="200" aria-label="Logo size" />
+              <label class="imgtool-num"><input id="splashLogoNumber" type="number" min="48" max="480" step="1" value="200" aria-label="Logo size in dp" /><span>dp</span></label>
+            </div>
+            <p class="imgtool-hint">The logo's box on screen: 200 is about half the width of a typical phone.</p>
+
+            <div class="imgtool-card-title" style="margin-top:4px;"><span>Fit inside the box</span></div>
+            <div class="imgtool-range">
+              <input id="splashScaleSlider" type="range" min="40" max="200" step="1" value="100" aria-label="Logo fit" />
+              <label class="imgtool-num"><input id="splashScaleNumber" type="number" min="40" max="200" step="1" value="100" aria-label="Logo fit percent" /><span>%</span></label>
+            </div>
+            <label class="imgtool-check" title="Crop away empty or uniform-color margins so the logo fills its box">
+              <input id="splashTrim" type="checkbox" /> Trim empty margins <span id="splashTrimHint" class="imgtool-hint"></span>
+            </label>
+            <div id="splashBackgroundRow" class="imgtool-row">
+              <span class="imgtool-label">Background</span>
+              <span class="imgtool-color">
+                <input id="splashBackgroundColor" type="color" value="#ffffff" aria-label="Background color" />
+                <input id="splashBackgroundHex" type="text" value="#ffffff" maxlength="7" spellcheck="false" aria-label="Background hex" />
+              </span>
+              <label class="imgtool-check"><input id="splashBackgroundTransparent" type="checkbox" /> Platform default</label>
+              <button id="splashBackgroundSuggest" type="button" class="imgtool-chip" style="display:none;" title="Use the color detected around your image's border"></button>
+            </div>
+            <p class="imgtool-hint">Written as a native color, so it fills any screen shape seamlessly.</p>
+          </div>
+
+          <div class="imgtool-card">
+            <div class="imgtool-card-title">Targets</div>
+            <div class="imgtool-segment" role="radiogroup" aria-label="Platforms">
+              <label><input type="radio" name="splashPlatform" id="splashPlatformAndroid" value="android" /><span>Android</span></label>
+              <label><input type="radio" name="splashPlatform" id="splashPlatformIOS" value="ios" /><span>iOS</span></label>
+              <label><input type="radio" name="splashPlatform" id="splashPlatformBoth" value="both" checked /><span>Both</span></label>
+            </div>
+            <div class="imgtool-generate">
+              <button id="splashGenerateButton" type="button" class="btn-primary" disabled>Generate splash screen</button>
+              <span id="splashLoading" class="imgtool-spinner" aria-label="Rendering splash screen"></span>
+            </div>
+            <div id="splashResult" class="imgtool-result"></div>
+            <details id="splashFileList" class="imgtool-files">
+              <summary id="splashFileSummary">Files written</summary>
+              <div id="splashFileListBody" class="imgtool-files-body"></div>
+            </details>
+          </div>
+
+          <div id="splashCurrentRow" class="imgtool-card" style="display:none;">
+            <div class="imgtool-card-title">Current splash <span class="imgtool-hint">what's in the project now</span></div>
+            <div class="imgtool-current">
+              <div id="splashCurrentAndroidCard" class="imgtool-tile" style="display:none;">
+                <div class="imgtool-tile-frame imgtool-checker" style="width:56px; height:56px;"><img id="splashCurrentAndroid" alt="Current Android splash image" style="object-fit:contain;" /></div>
+                <span id="splashCurrentAndroidLabel">Android</span>
+              </div>
+              <div id="splashCurrentIOSCard" class="imgtool-tile" style="display:none;">
+                <div class="imgtool-tile-frame imgtool-checker" style="width:56px; height:56px;"><img id="splashCurrentIOS" alt="Current iOS splash image" style="object-fit:contain;" /></div>
+                <span id="splashCurrentIOSLabel">iOS</span>
+              </div>
+            </div>
+            <p id="splashCurrentEmpty" class="imgtool-hint" style="display:none;">No splash image found in this project yet.</p>
           </div>
         </div>
-        <p id="splashCurrentEmpty" style="display:none; color:var(--text-secondary); font-size:11px; margin:0;">
-          No existing splash image was found for this project yet.
-        </p>
-      </div>
 
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <button id="splashBrowseButton" type="button" class="btn-secondary">📁 Choose source image…</button>
-        <span id="splashSourceLabel" style="color:var(--text-secondary); font-size:12px;">No image selected.</span>
-      </div>
-
-      <div id="splashAdjustRow" style="display:none; flex-direction:column; gap:12px; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <label for="splashScaleSlider" style="font-size:12px; color:var(--text-primary); min-width:110px;">Foreground size</label>
-          <input id="splashScaleSlider" type="range" min="40" max="200" step="1" value="100" style="flex:1 1 180px; min-width:140px;" />
-          <span id="splashScaleValue" style="font-size:12px; color:var(--text-secondary); min-width:38px; text-align:right;">100%</span>
-        </div>
-        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
-          How large your logo appears on the splash screen. Below 100% shrinks it (more surrounding background);
-          above 100% zooms in and crops.
-        </p>
-        <div id="splashBackgroundRow" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <label for="splashBackgroundColor" style="font-size:12px; color:var(--text-primary); min-width:110px;">Background color</label>
-          <input id="splashBackgroundColor" type="color" value="#ffffff" style="width:40px; height:28px; padding:0; border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px; background:none;" />
-          <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary);">
-            <input id="splashBackgroundTransparent" type="checkbox" /> Use platform default
-          </label>
-        </div>
-        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
-          Unlike app icons, this is written as a native background color (not baked into the image), so it fills the
-          whole screen seamlessly regardless of device aspect ratio.
-        </p>
-      </div>
-
-      <div id="splashPreviewRow" style="display:none; justify-content:center; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
-        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-          <div style="width:120px; height:240px; border-radius:14px; overflow:hidden; border:2px solid var(--vscode-editorGroup-border,#555); background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
-            <img id="splashPreviewImage" style="width:100%; height:100%; object-fit:cover; display:block;" />
+        <div class="imgtool-previews">
+          <div id="splashPreviewEmpty" class="imgtool-empty">Choose a logo to see it on an Android phone and an iPhone at its real proportions.</div>
+          <div id="splashPreviewRow" class="imgtool-card" style="display:none;">
+            <div class="imgtool-card-title">
+              <span>Preview</span>
+              <label class="imgtool-check"><input id="splashShowBounds" type="checkbox" /> Show logo box</label>
+            </div>
+            <div class="imgtool-phones">
+              <div class="imgtool-phone"><div class="imgtool-phone-frame"><canvas id="splashPhoneAndroid" data-device-w="360" data-device-h="800" style="width:162px; height:360px;"></canvas></div>Android · 360×800 dp</div>
+              <div class="imgtool-phone"><div class="imgtool-phone-frame" style="border-radius:28px;"><canvas id="splashPhoneIOS" data-device-w="390" data-device-h="844" style="width:166px; height:360px;"></canvas></div>iPhone · 390×844 pt</div>
+            </div>
+            <p class="imgtool-hint">Scroll over a phone to resize the logo.</p>
           </div>
-          <span style="font-size:11px; color:var(--text-secondary);">Android &amp; iOS look the same — both just center the image on the background color.</span>
         </div>
       </div>
-
-      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-          <input type="radio" name="splashPlatform" id="splashPlatformAndroid" value="android" /> Android only
-        </label>
-        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-          <input type="radio" name="splashPlatform" id="splashPlatformIOS" value="ios" /> iOS only
-        </label>
-        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
-          <input type="radio" name="splashPlatform" id="splashPlatformBoth" value="both" checked /> Both
-        </label>
-      </div>
-
-      <div>
-        <button id="splashGenerateButton" type="button" class="btn-primary" disabled>Generate splash screen</button>
-      </div>
-
-      <div id="splashLoading" style="display:none; padding:12px; text-align:center; color:var(--text-secondary);">
-        Rendering splash screen…
-      </div>
-      <div id="splashResult" style="display:none; padding:10px 12px; border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm); font-size:12px;"></div>
-      <div id="splashFileList" style="display:none; font-size:12px; color:var(--text-secondary); max-height:220px; overflow:auto; line-height:1.6;"></div>
     </div>
   </section>
 

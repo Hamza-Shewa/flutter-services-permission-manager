@@ -16,36 +16,15 @@ import type { TranslationFileData } from '../../out/core/types/index.js';
 import {
   autoAddMissingKeys,
   findReferenceFile,
+  isTranslationCandidate,
   normalizeTranslationDir,
+  TRANSLATION_IGNORED_DIRS,
   parseTranslationContent,
   serializeTranslationContent,
   translateLocale,
 } from '../../out/features/localization/arb-core.js';
 
-/** Directories whose JSON files are treated as translation files. */
-const LOCALIZATION_JSON_DIRS = [
-  'l10n',
-  'translations',
-  'locales',
-  'locale',
-  'lang',
-  'i18n',
-  'assets/locales',
-  'assets/translations',
-  'lib/l10n',
-  'lib/l10n/arb',
-];
-
-/** Directories never searched for translation files. */
-const IGNORED_DIRS = new Set([
-  'build',
-  '.dart_tool',
-  'node_modules',
-  '.git',
-  'out',
-  'dist',
-  'coverage',
-]);
+const IGNORED_DIRS = new Set(TRANSLATION_IGNORED_DIRS);
 
 /** Simple recursive file walk returning POSIX-relative paths. */
 function walk(root: string): string[] {
@@ -76,11 +55,6 @@ function walk(root: string): string[] {
   return out;
 }
 
-/** True when the relative path sits inside one of the localization dirs. */
-function inLocalizationDir(rel: string): boolean {
-  return LOCALIZATION_JSON_DIRS.some((d) => rel === d || rel.startsWith(`${d}/`));
-}
-
 /** Discover translation file relative paths (POSIX), honoring an optional dir. */
 export function discoverTranslationFiles(root: string, dir?: string): string[] {
   const scanDir = normalizeTranslationDir(dir);
@@ -92,7 +66,7 @@ export function discoverTranslationFiles(root: string, dir?: string): string[] {
         /\.(arb|json)$/i.test(rel)
       );
     }
-    return /\.arb$/i.test(rel) || (/\.json$/i.test(rel) && inLocalizationDir(rel));
+    return isTranslationCandidate(rel);
   });
 }
 

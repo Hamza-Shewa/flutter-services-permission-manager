@@ -23,6 +23,10 @@ import {
   translateLocale,
   translateAllLocales,
   translateValue,
+  MAX_TRANSLATION_FILE_CHARS,
+  LOCALIZATION_DIR_NAMES,
+  TRANSLATION_IGNORED_DIRS,
+  isTranslationCandidate,
 } from './arb-core.js';
 
 export {
@@ -38,16 +42,6 @@ export {
   translateValue,
 };
 export type { TranslateResult } from './arb-core.js';
-
-/** Directories whose JSON files are treated as translation files. */
-const LOCALIZATION_JSON_DIRS = ['l10n', 'translations', 'locales', 'locale', 'lang', 'i18n', 'assets/locales', 'assets/translations', 'lib/l10n', 'lib/l10n/arb'];
-
-/** Glob of ARB files to discover (excluding build output). */
-const ARB_GLOB = '**/*.arb';
-
-// Includes tool-created worktree/history directories (e.g. `.kilo/worktrees/<name>/`) that can
-// otherwise contain a duplicate copy of the project and get scanned instead of the real one.
-const IGNORED_DIRS = ['build', '.dart_tool', 'node_modules', '.git', 'out', 'dist', 'coverage', '.kilo', '.history', '.idea', '.vscode-test'];
 
 /** Result of a single save operation. */
 export interface SaveTranslationsResult {
@@ -66,27 +60,25 @@ export async function discoverTranslationUris(
   dir?: string,
 ): Promise<{ arbUris: vscode.Uri[]; jsonUris: vscode.Uri[] }> {
   const scanDir = normalizeTranslationDir(dir);
-  const ignore = `{${IGNORED_DIRS.map((d) => `**/${d}/**`).join(',')}}`;
+  const ignore = `{${TRANSLATION_IGNORED_DIRS.map((d) => `**/${d}/**`).join(',')}}`;
   const maxResults = 500;
 
-  const arbGlob = scanDir ? `${scanDir}/**/*.arb` : ARB_GLOB;
-  const arbUris = await vscode.workspace.findFiles(arbGlob, ignore, maxResults);
+  const arbGlob = scanDir ? `${scanDir}/**/*.arb` : '**/*.arb';
+  const jsonGlob = scanDir
+    ? `${scanDir}/**/*.json`
+    : `**/{${LOCALIZATION_DIR_NAMES.join(',')}}/**/*.json`;
 
-  const jsonUris: vscode.Uri[] = [];
-  const jsonGlobs = scanDir
-    ? [`${scanDir}/**/*.json`]
-    : LOCALIZATION_JSON_DIRS.map((d) => `${d}/**/*.json`);
+  const [arbFound, jsonFound] = await Promise.all([
+    vscode.workspace.findFiles(arbGlob, ignore, maxResults),
+    vscode.workspace.findFiles(jsonGlob, ignore, maxResults),
+  ]);
 
-  for (const glob of jsonGlobs) {
-    const found = await vscode.workspace.findFiles(glob, ignore, maxResults);
-    for (const uri of found) {
-      if (!jsonUris.some((u) => u.fsPath === uri.fsPath)) {
-        jsonUris.push(uri);
-      }
-    }
+  if (scanDir) {
+    return { arbUris: arbFound, jsonUris: jsonFound };
   }
-
-  return { arbUris, jsonUris };
+  const isCandidate = (uri: vscode.Uri): boolean =>
+    isTranslationCandidate(path.relative(workspaceRoot.fsPath, uri.fsPath).split(path.sep).join('/'));
+  return { arbUris: arbFound.filter(isCandidate), jsonUris: jsonFound.filter(isCandidate) };
 }
 
 /**
@@ -105,12 +97,17 @@ export async function loadTranslationFiles(
 
   for (const uri of uris) {
     try {
-      const doc = await vscode.workspace.openTextDocument(uri);
+      const stat = await vscode.workspace.fs.stat(uri);
+      if (stat.size > MAX_TRANSLATION_FILE_CHARS) {
+        continue;
+      }
+      const bytes = await vscode.workspace.fs.readFile(uri);
       const relative = path
         .relative(workspaceRoot.fsPath, uri.fsPath)
         .split(path.sep)
         .join('/');
-      const data = parseTranslationContent(doc.getText(), relative);
+      const text = Buffer.from(bytes).toString('utf8').replace(/^﻿/, '');
+      const data = parseTranslationContent(text, relative);
       if (data) {
         result.push(data);
       }
