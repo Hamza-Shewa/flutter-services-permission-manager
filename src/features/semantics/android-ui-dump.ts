@@ -7,11 +7,23 @@ import { XMLParser } from "fast-xml-parser";
 const REMOTE_DUMP_PATH = "/sdcard/flutter-config-manager-window.xml";
 const GENERIC_LABELS = new Set([
   "button",
+  "check box",
+  "checkbox",
+  "combo box",
+  "dropdown",
+  "edit box",
   "floating action button",
   "gesture detector",
+  "image button",
   "mobile button",
   "mobile text field",
+  "radio button",
+  "seek bar",
+  "slider",
+  "spinner",
+  "switch",
   "text button",
+  "toggle button",
 ]);
 
 export interface AndroidDevice {
@@ -364,8 +376,9 @@ export function normalizeUiAutomatorDump(xml: string, metadata: AndroidUiMetadat
   const inputs = hierarchy.nodes.filter((node) => isInput(node) && !!node.bounds);
   const candidates = hierarchy.nodes.filter((node) => isActionable(node) && !!node.bounds && !hasActionableDescendant(node));
   const embeddedNodes = candidates.filter((node) => !isInput(node) && inputs.some((input) => contains(input.bounds!, node.bounds!)));
+  const embeddedNodeSet = new Set(embeddedNodes);
   const primaryNodes = candidates.filter((node) => {
-    if (embeddedNodes.includes(node)) { return false; }
+    if (embeddedNodeSet.has(node)) { return false; }
     if (node.raw.class === "android.view.View" && !identifier(node.raw["resource-id"]) && !clean(node.raw["content-desc"]) && !clean(node.raw.text) && !clean(node.raw.hint)) {
       return false;
     }
@@ -386,7 +399,7 @@ export function normalizeUiAutomatorDump(xml: string, metadata: AndroidUiMetadat
     control.note = `Embedded action for ${identifier(owner?.raw["resource-id"]) ?? "an input field"}; purpose is statically uncertain.`;
     return control;
   });
-  const identifiers = controls.map((control) => control.identifier).filter((value): value is string => !!value);
+  const identifiers = [...controls, ...embeddedActions].map((control) => control.identifier).filter((value): value is string => !!value);
   const counts = new Map<string, number>();
   identifiers.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
   return {
@@ -449,6 +462,9 @@ function yamlLines(value: unknown, indent = 0): string[] {
         return [...first, ...rest.flatMap(([key, entry]) => entry !== null && typeof entry === "object"
           ? [`${" ".repeat(indent + 2)}${key}:`, ...yamlLines(entry, indent + 4)]
           : [`${" ".repeat(indent + 2)}${key}: ${yamlScalar(entry)}`])];
+      }
+      if (Array.isArray(item)) {
+        return item.length ? [`${prefix}-`, ...yamlLines(item, indent + 2)] : [`${prefix}- []`];
       }
       return [`${prefix}- ${yamlScalar(item)}`];
     });

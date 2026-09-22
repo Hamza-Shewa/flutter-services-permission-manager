@@ -19,6 +19,20 @@ import type {
   McpClientId,
   McpClientStatus,
 } from "../../features/semantics/codex-mcp-installer.js";
+import type {
+  AndroidIconFamilySelection,
+  CurrentIconPreviews,
+  IconComposeOptions,
+  IconGenerationResult,
+  IconPlatformTarget,
+  IconSourceKind,
+} from "../../features/icons/types.js";
+import type { ImageComposeOptions, ImageSourceKind } from "../shared/image-compose.js";
+import type {
+  CurrentSplashPreviews,
+  SplashGenerationResult,
+  SplashPlatformTarget,
+} from "../../features/splash/types.js";
 
 /** Platform build metadata item */
 export interface PlatformDetailItem {
@@ -211,7 +225,24 @@ export type WebviewMessage =
     path: string;
     line?: number;
     column?: number;
-  };
+  }
+  | ({ type: "browseIconSource" } & IconComposeOptions)
+  | ({ type: "requestIconPreview"; sourcePath: string } & IconComposeOptions)
+  | { type: "requestCurrentIconPreview" }
+  | ({
+    type: "generateIcons";
+    sourcePath: string;
+    platforms: IconPlatformTarget;
+    androidFamilies?: AndroidIconFamilySelection;
+  } & IconComposeOptions)
+  | ({ type: "browseSplashSource" } & ImageComposeOptions)
+  | ({ type: "requestSplashPreview"; sourcePath: string } & ImageComposeOptions)
+  | { type: "requestCurrentSplashPreview" }
+  | ({
+    type: "generateSplash";
+    sourcePath: string;
+    platforms: SplashPlatformTarget;
+  } & ImageComposeOptions);
 
 /** Language info */
 export interface LanguageInfo {
@@ -310,7 +341,17 @@ export type WebviewOutgoingMessage =
   | SemanticsPromptCopiedMessage
   | McpClientsStatusMessage
   | McpClientInstallingMessage
-  | McpConfigCopiedMessage;
+  | McpConfigCopiedMessage
+  | IconSourceSelectedMessage
+  | IconsGeneratingMessage
+  | IconsGeneratedMessage
+  | IconPreviewUpdatedMessage
+  | CurrentIconPreviewMessage
+  | SplashSourceSelectedMessage
+  | SplashGeneratingMessage
+  | SplashGeneratedMessage
+  | SplashPreviewUpdatedMessage
+  | CurrentSplashPreviewMessage;
 
 export interface InteractivesResultMessage {
   type: "interactivesResult";
@@ -426,4 +467,61 @@ export interface DependencyValidationResultMessage {
   type: "dependencyValidationResult";
   issues: DependencyValidationIssue[];
   error?: string;
+}
+
+export interface IconSourceSelectedMessage {
+  type: "iconSourceSelected";
+  path: string;
+  fileName: string;
+  kind: IconSourceKind;
+  /** Square-cropped PNG data URL preview, matching what every generated icon will look like. */
+  previewDataUrl?: string;
+}
+
+export interface IconsGeneratingMessage {
+  type: "iconsGenerating";
+  generating: boolean;
+}
+
+export interface IconsGeneratedMessage {
+  type: "iconsGenerated";
+  result: IconGenerationResult;
+}
+
+export interface IconPreviewUpdatedMessage {
+  type: "iconPreviewUpdated";
+  previewDataUrl: string;
+}
+
+export interface CurrentIconPreviewMessage {
+  type: "currentIconPreview";
+  previews: CurrentIconPreviews;
+}
+
+export interface SplashSourceSelectedMessage {
+  type: "splashSourceSelected";
+  path: string;
+  fileName: string;
+  kind: ImageSourceKind;
+  previewDataUrl?: string;
+}
+
+export interface SplashGeneratingMessage {
+  type: "splashGenerating";
+  generating: boolean;
+}
+
+export interface SplashGeneratedMessage {
+  type: "splashGenerated";
+  result: SplashGenerationResult;
+}
+
+export interface SplashPreviewUpdatedMessage {
+  type: "splashPreviewUpdated";
+  previewDataUrl: string;
+}
+
+export interface CurrentSplashPreviewMessage {
+  type: "currentSplashPreview";
+  previews: CurrentSplashPreviews;
 }

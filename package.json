@@ -2,7 +2,7 @@
   "name": "flutter-config-manager",
   "displayName": "Flutter Config Manager",
   "description": "Manage Flutter Android/iOS/macOS permissions, services, and app name localizations. Update manifests, plists, Podfile, and AppDelegate from one VS Code UI.",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "publisher": "hamza-shewa",
   "author": {
     "name": "Hamza Shewa",
@@ -152,25 +152,33 @@
         },
         "flutter-config-manager.interactives.excludedGlobs": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "Project-relative globs to exclude from the Semantics scanner. Generated Dart files are excluded automatically."
         },
         "flutter-config-manager.interactives.customWidgets": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "Custom Flutter widget class names that should always be inventoried as interactive."
         },
         "flutter-config-manager.interactives.callbackNames": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "Additional named callback arguments that identify custom interactive widgets."
         },
         "flutter-config-manager.interactives.ignoredWidgets": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "Widget class names to suppress when the Semantics scanner reports a false positive."
         },
@@ -230,7 +238,9 @@
   },
   "dependencies": {
     "@lumis-sh/wasm-dart": "0.26.3",
+    "@resvg/resvg-wasm": "^2.6.2",
     "fast-xml-parser": "^5.10.1",
+    "jimp": "^1.6.1",
     "web-tree-sitter": "0.26.13"
   }
 }

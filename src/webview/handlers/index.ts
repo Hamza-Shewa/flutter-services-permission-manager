@@ -422,3 +422,15 @@ export {
   handleInstallMcpClient,
   handleCopyMcpConfig,
 } from './mcp.js';
+export {
+  handleBrowseIconSource,
+  handleRequestIconPreview,
+  handleRequestCurrentIconPreview,
+  handleGenerateIcons,
+} from './icons.js';
+export {
+  handleBrowseSplashSource,
+  handleRequestSplashPreview,
+  handleRequestCurrentSplashPreview,
+  handleGenerateSplash,
+} from './splash.js';

@@ -15,6 +15,8 @@ export * from './packages/index.js';
 export * from './semantics/index.js';
 export * from './assets/index.js';
 export * from './localization/index.js';
+export * from './icons/index.js';
+export * from './splash/index.js';
 
 // Shared platform write services + save orchestrator
 export * from '../core/platform/android/index.js';

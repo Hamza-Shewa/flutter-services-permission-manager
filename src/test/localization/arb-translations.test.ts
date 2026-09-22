@@ -7,7 +7,9 @@ import {
     autoAddMissingKeys,
     findMissingKeys,
     translateLocale,
+    translateAllLocales,
 } from '../../features/localization/arb-translations.service.js';
+import { resetTranslatorCircuitBreakers } from '../../features/localization/machine-translator.js';
 import type { TranslationFileData } from '../../core/types/index.js';
 
 suite('ARB / JSON Translations Service Test Suite', () => {
@@ -348,6 +350,10 @@ suite('ARB / JSON Translations Service Test Suite', () => {
             }) as typeof fetch;
         }
 
+        setup(() => {
+            resetTranslatorCircuitBreakers();
+        });
+
         teardown(() => {
             globalThis.fetch = originalFetch;
         });
@@ -384,6 +390,48 @@ suite('ARB / JSON Translations Service Test Suite', () => {
             const updated = result.translations.find((t) => t.locale === 'es')!;
             assert.strictEqual(updated.keys['tabs.home'], 'Inicio');
             assert.strictEqual(updated.keys['quran.title'], 'ES:The Holy Quran');
+        });
+
+        test('translateAllLocales translates every target locale independently and merges the results', async () => {
+            // Each locale gets its own translated prefix, proving the parallel
+            // per-locale calls (translateLocale run via Promise.all) don't cross
+            //-contaminate each other's results when merged back together.
+            const calls: Record<string, number> = {};
+            globalThis.fetch = (async (input: string) => {
+                const url = new URL(String(input));
+                if (url.hostname === 'translate.googleapis.com') {
+                    const target = url.searchParams.get('tl') ?? '??';
+                    calls[target] = (calls[target] ?? 0) + 1;
+                    const lines = (url.searchParams.get('q') ?? '').split('\n');
+                    const segments = lines.map((line, i) => [
+                        i < lines.length - 1 ? `${target.toUpperCase()}:${line}\n` : `${target.toUpperCase()}:${line}`,
+                        line,
+                    ]);
+                    return { ok: true, status: 200, json: async () => [segments, null, target] } as unknown as Response;
+                }
+                return { ok: true, status: 200, json: async () => ({ responseData: { translatedText: '' } }) } as unknown as Response;
+            }) as typeof fetch;
+
+            const fr: TranslationFileData = {
+                locale: 'fr', fileName: 'fr.json', isArb: false,
+                keys: { app_name: '', 'tabs.home': '', 'tabs.settings': '', 'quran.title': '' },
+                nestedPaths: ['tabs.home', 'tabs.settings', 'quran.title'],
+                metadata: {},
+            };
+
+            const result = await translateAllLocales([en, es, fr], 'en', false);
+
+            const updatedEs = result.translations.find((t) => t.locale === 'es')!;
+            const updatedFr = result.translations.find((t) => t.locale === 'fr')!;
+            assert.strictEqual(updatedEs.keys['tabs.home'], 'ES:Home');
+            assert.strictEqual(updatedFr.keys['tabs.home'], 'FR:Home');
+            // The reference locale itself is untouched.
+            assert.strictEqual(result.translations.find((t) => t.locale === 'en'), en);
+            // Each locale got its own batched request.
+            assert.strictEqual(calls.es, 1);
+            assert.strictEqual(calls.fr, 1);
+            // All 4 keys were empty in both es and fr, so all 4 translate per locale (4 + 4 = 8).
+            assert.strictEqual(result.translatedCount, 8);
         });
     });
 });

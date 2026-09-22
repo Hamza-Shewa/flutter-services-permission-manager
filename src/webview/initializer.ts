@@ -79,6 +79,14 @@ import {
   handleCheckMcpClients,
   handleInstallMcpClient,
   handleCopyMcpConfig,
+  handleBrowseIconSource,
+  handleRequestIconPreview,
+  handleRequestCurrentIconPreview,
+  handleGenerateIcons,
+  handleBrowseSplashSource,
+  handleRequestSplashPreview,
+  handleRequestCurrentSplashPreview,
+  handleGenerateSplash,
   type WebviewRef,
 } from "./handlers/index.js";
 
@@ -299,6 +307,14 @@ function setupMessageHandler(
     .register("previewSemanticsFixes", async (msg) => await handlePreviewSemanticsFixes(ref, msg.requests ?? []))
     .register("applySemanticsFixes", async (msg) => { if (msg.previewId) { await handleApplySemanticsFixes(ref, msg.previewId); } })
     .register("revealSourceReference", async (msg) => { if (msg.path) { await handleRevealSourceReference(ref, msg); } })
+    .register("browseIconSource", async (msg) => await handleBrowseIconSource(ref, { scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor }))
+    .register("requestIconPreview", async (msg) => { if (msg.sourcePath) { await handleRequestIconPreview(ref, { sourcePath: msg.sourcePath, scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor }); } })
+    .register("requestCurrentIconPreview", async () => await handleRequestCurrentIconPreview(ref, files))
+    .register("generateIcons", async (msg) => { if (msg.sourcePath) { await handleGenerateIcons(ref, { sourcePath: msg.sourcePath, platforms: msg.platforms, scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor, androidFamilies: msg.androidFamilies }, files); } })
+    .register("browseSplashSource", async (msg) => await handleBrowseSplashSource(ref, { scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor }))
+    .register("requestSplashPreview", async (msg) => { if (msg.sourcePath) { await handleRequestSplashPreview(ref, { sourcePath: msg.sourcePath, scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor }); } })
+    .register("requestCurrentSplashPreview", async () => await handleRequestCurrentSplashPreview(ref, files))
+    .register("generateSplash", async (msg) => { if (msg.sourcePath) { await handleGenerateSplash(ref, { sourcePath: msg.sourcePath, platforms: msg.platforms, scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor }, files); } })
     .register("webview_error", (msg) => { console.error("[WEBVIEW ERROR]:", JSON.stringify(msg, null, 2)); })
     .register("webview_log", (msg) => { console.log("[WEBVIEW LOG]:", msg.message); });
 }

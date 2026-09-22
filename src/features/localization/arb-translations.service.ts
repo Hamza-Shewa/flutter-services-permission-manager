@@ -45,7 +45,9 @@ const LOCALIZATION_JSON_DIRS = ['l10n', 'translations', 'locales', 'locale', 'la
 /** Glob of ARB files to discover (excluding build output). */
 const ARB_GLOB = '**/*.arb';
 
-const IGNORED_DIRS = ['build', '.dart_tool', 'node_modules', '.git', 'out', 'dist', 'coverage'];
+// Includes tool-created worktree/history directories (e.g. `.kilo/worktrees/<name>/`) that can
+// otherwise contain a duplicate copy of the project and get scanned instead of the real one.
+const IGNORED_DIRS = ['build', '.dart_tool', 'node_modules', '.git', 'out', 'dist', 'coverage', '.kilo', '.history', '.idea', '.vscode-test'];
 
 /** Result of a single save operation. */
 export interface SaveTranslationsResult {

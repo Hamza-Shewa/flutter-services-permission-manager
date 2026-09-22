@@ -70,6 +70,33 @@ suite("Android UI semantics dump", () => {
     assert.ok(yaml.endsWith("\n"));
   });
 
+  test("counts duplicate identifiers shared by embedded actions, not just controls", () => {
+    const duplicateXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<hierarchy rotation="0">
+  <node index="0" class="android.view.View" package="example.app" resource-id="" content-desc="" clickable="false" enabled="true" bounds="[0,0][1000,600]">
+    <node index="0" class="android.view.View" package="example.app" resource-id="" content-desc="" clickable="false" enabled="true" bounds="[0,0][1000,300]">
+      <node index="0" class="android.widget.EditText" package="example.app" resource-id="" content-desc="" hint="mobile text field&#10;Search" clickable="true" enabled="true" focusable="true" bounds="[0,0][1000,300]" />
+      <node index="1" class="android.widget.ImageView" package="example.app" resource-id="search.action.icon" content-desc="Clear" clickable="true" enabled="true" focusable="true" bounds="[850,50][950,250]" />
+    </node>
+    <node index="1" class="android.view.View" package="example.app" resource-id="" content-desc="" clickable="false" enabled="true" bounds="[0,300][1000,600]">
+      <node index="0" class="android.widget.EditText" package="example.app" resource-id="" content-desc="" hint="mobile text field&#10;Search again" clickable="true" enabled="true" focusable="true" bounds="[0,300][1000,600]" />
+      <node index="1" class="android.widget.ImageView" package="example.app" resource-id="search.action.icon" content-desc="Mic" clickable="true" enabled="true" focusable="true" bounds="[850,350][950,550]" />
+    </node>
+  </node>
+</hierarchy>`;
+    const result = normalizeUiAutomatorDump(duplicateXml, {
+      deviceId: "emulator-5554",
+      width: 1000,
+      height: 600,
+      capturedAt: "2026-09-14T00:00:00.000Z",
+    });
+    assert.strictEqual(result.embedded_actions.length, 2);
+    assert.strictEqual(result.embedded_actions[0].identifier, "search.action.icon");
+    assert.strictEqual(result.embedded_actions[1].identifier, "search.action.icon");
+    assert.strictEqual(result.controls.some((control) => control.identifier === "search.action.icon"), false);
+    assert.strictEqual(result.summary.duplicate_identifiers, 1);
+  });
+
   test("discovers adb in standard Windows, macOS, and Linux locations", () => {
     const windows = buildAdbCandidates(undefined, "win32", {
       LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",

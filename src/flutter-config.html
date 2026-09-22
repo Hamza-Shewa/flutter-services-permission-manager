@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; img-src {{cspSource}} https:; style-src {{cspSource}} 'unsafe-inline'; script-src {{cspSource}};" />
+    content="default-src 'none'; img-src {{cspSource}} https: data:; style-src {{cspSource}} 'unsafe-inline'; script-src {{cspSource}};" />
   <title>Flutter Config Manager</title>
   <style>
     :root {
@@ -2296,6 +2296,8 @@
       <button type="button" class="tab" data-tab="packages" role="tab" aria-selected="false">📦 Packages</button>
       <button type="button" class="tab" data-tab="assets" role="tab" aria-selected="false">🖼️ Assets</button>
       <button type="button" class="tab" data-tab="semantics" role="tab" aria-selected="false">♿ Semantics</button>
+      <button type="button" class="tab" data-tab="icons" role="tab" aria-selected="false">🎨 Icons</button>
+      <button type="button" class="tab" data-tab="splash" role="tab" aria-selected="false">🌊 Splash</button>
     </div>
     <div class="tabs-mcp-control">
       <span id="mcpClientsSummary" class="mcp-install-status" data-state="checking" role="status" aria-live="polite"
@@ -3367,6 +3369,257 @@
         border-top: 1px solid var(--vscode-editorGroup-border, #333);
       }
     </style>
+  </section>
+
+  <section id="iconsSection" class="section platform-details" data-tab="icons">
+    <div class="section-header">
+      <div class="section-header-with-button">
+        <h2>🎨 App Icons</h2>
+      </div>
+    </div>
+    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
+      Choose a single square PNG, JPEG, or SVG source image and generate icons for Android, iOS, or both. Existing
+      icon files are resized and overwritten in place — nothing else about the project is touched.
+    </p>
+    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
+      Selecting <b>Android</b> generates the full icon family: the <code>mipmap-*dpi/ic_launcher.png</code> launcher
+      icon, a 512×512 Play Store listing icon (written next to <code>android/app/</code>, never bundled into the app),
+      and notification icons — a default <code>ic_notification</code> plus OneSignal's
+      <code>ic_stat_onesignal_default</code> (small) and <code>ic_onesignal_large_icon_default</code> (large), picked
+      up automatically by OneSignal's Android SDK with no manifest edits needed. Status-bar icons are rendered as a
+      white silhouette from your source's transparency (Android repaints them white and ignores color), so a source
+      with a transparent background works best. iOS has no separate notification icon — it always shows the app's own
+      AppIcon.
+    </p>
+    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
+      Both the App Store and Play Store reject icons that still have transparency, so picking an opaque background
+      color below (instead of leaving it transparent) also keeps the generated launcher, Play Store, and iOS icons
+      submission-ready.
+    </p>
+
+    <div style="display:flex; flex-direction:column; gap:14px; max-width:640px;">
+      <div id="iconsCurrentRow" style="display:none; flex-direction:column; gap:10px; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
+        <strong style="font-size:12px; color:var(--text-primary);">Current icons</strong>
+        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
+          What's already in the project — you may decide not to change it. This updates automatically after you generate new icons.
+        </p>
+        <div style="display:flex; gap:18px; flex-wrap:wrap;">
+          <div id="iconsCurrentAndroidCard" style="display:none; flex-direction:column; align-items:center; gap:6px;">
+            <div style="width:72px; height:72px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+              <img id="iconsCurrentAndroid" style="width:100%; height:100%; object-fit:cover; display:block;" />
+            </div>
+            <span id="iconsCurrentAndroidLabel" style="font-size:11px; color:var(--text-secondary);">Android</span>
+          </div>
+          <div id="iconsCurrentIOSCard" style="display:none; flex-direction:column; align-items:center; gap:6px;">
+            <div style="width:72px; height:72px; border-radius:16px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+              <img id="iconsCurrentIOS" style="width:100%; height:100%; object-fit:cover; display:block;" />
+            </div>
+            <span id="iconsCurrentIOSLabel" style="font-size:11px; color:var(--text-secondary);">iOS</span>
+          </div>
+        </div>
+        <p id="iconsCurrentEmpty" style="display:none; color:var(--text-secondary); font-size:11px; margin:0;">
+          No existing launcher icons were found for this project yet.
+        </p>
+      </div>
+
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button id="iconsBrowseButton" type="button" class="btn-secondary">📁 Choose source image…</button>
+        <span id="iconsSourceLabel" style="color:var(--text-secondary); font-size:12px;">No image selected.</span>
+      </div>
+
+      <div id="iconsAdjustRow" style="display:none; flex-direction:column; gap:12px; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <label for="iconsScaleSlider" style="font-size:12px; color:var(--text-primary); min-width:110px;">Foreground size</label>
+          <input id="iconsScaleSlider" type="range" min="40" max="200" step="1" value="100" style="flex:1 1 180px; min-width:140px;" />
+          <span id="iconsScaleValue" style="font-size:12px; color:var(--text-secondary); min-width:38px; text-align:right;">100%</span>
+        </div>
+        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
+          Below 100%, this adds padding around your image instead of filling the icon edge-to-edge (filled with the
+          background color below). Above 100%, it zooms in and crops instead — useful if your source has its own
+          margin you want cropped away.
+        </p>
+        <div id="iconsBackgroundRow" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <label for="iconsBackgroundColor" style="font-size:12px; color:var(--text-primary); min-width:110px;">Background color</label>
+          <input id="iconsBackgroundColor" type="color" value="#ffffff" style="width:40px; height:28px; padding:0; border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px; background:none;" />
+          <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary);">
+            <input id="iconsBackgroundTransparent" type="checkbox" /> Transparent
+          </label>
+        </div>
+        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
+          Notification icons always stay transparent outside their shape (a system requirement), regardless of this
+          setting — this only affects the launcher, Play Store, iOS, and OneSignal large icons.
+        </p>
+      </div>
+
+      <div id="iconsPreviewRow" style="display:none; gap:18px; flex-wrap:wrap; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <div style="width:88px; height:88px; border-radius:20px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+            <img id="iconsPreviewIOS" style="width:100%; height:100%; object-fit:cover; display:block;" />
+          </div>
+          <span style="font-size:11px; color:var(--text-secondary);">iOS</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <div style="width:88px; height:88px; border-radius:0; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+            <img id="iconsPreviewAndroidSquare" style="width:100%; height:100%; object-fit:cover; display:block;" />
+          </div>
+          <span style="font-size:11px; color:var(--text-secondary);">Android (legacy)</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <div style="width:88px; height:88px; border-radius:50%; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+            <img id="iconsPreviewAndroidCircle" style="width:100%; height:100%; object-fit:cover; display:block;" />
+          </div>
+          <span style="font-size:11px; color:var(--text-secondary);">Android (adaptive · circle)</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <div style="width:88px; height:88px; border-radius:16px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+            <img id="iconsPreviewAndroidSquircle" style="width:100%; height:100%; object-fit:cover; display:block;" />
+          </div>
+          <span style="font-size:11px; color:var(--text-secondary);">Android (adaptive · rounded)</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+          <input type="radio" name="iconsPlatform" id="iconsPlatformAndroid" value="android" /> Android only
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+          <input type="radio" name="iconsPlatform" id="iconsPlatformIOS" value="ios" /> iOS only
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+          <input type="radio" name="iconsPlatform" id="iconsPlatformBoth" value="both" checked /> Both
+        </label>
+      </div>
+
+      <div id="iconsAndroidFamilyRow" style="display:none; flex-direction:column; gap:6px; padding:10px 14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
+        <span style="font-size:12px; color:var(--text-primary);">Android icon types to generate</span>
+        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+            <input type="checkbox" id="iconsFamilyLauncher" checked /> App icon (launcher)
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+            <input type="checkbox" id="iconsFamilyPlayStore" checked /> Play Store icon
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+            <input type="checkbox" id="iconsFamilyNotifications" checked /> Notification icons
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <button id="iconsGenerateButton" type="button" class="btn-primary" disabled>Generate icons</button>
+      </div>
+
+      <div id="iconsLoading" style="display:none; padding:12px; text-align:center; color:var(--text-secondary);">
+        Rendering icons…
+      </div>
+      <div id="iconsResult" style="display:none; padding:10px 12px; border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm); font-size:12px;"></div>
+      <div id="iconsFileList" style="display:none; font-size:12px; color:var(--text-secondary); max-height:220px; overflow:auto; line-height:1.6;"></div>
+    </div>
+  </section>
+
+  <section id="splashSection" class="section platform-details" data-tab="splash">
+    <div class="section-header">
+      <div class="section-header-with-button">
+        <h2>🌊 Splash Screen</h2>
+      </div>
+    </div>
+    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
+      Choose a source image and generate the native launch/splash screen for Android, iOS, or both — the screen shown
+      while the Flutter engine starts up, before your app's first frame draws. Existing splash files are overwritten
+      in place — nothing else about the project is touched.
+    </p>
+    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">
+      Android's <code>res/drawable/launch_background.xml</code> and <code>drawable-v21/launch_background.xml</code>
+      are updated to center a <code>launch_image</code> over your chosen background color; iOS's
+      <code>Base.lproj/LaunchScreen.storyboard</code> is updated the same way, centering
+      <code>Assets.xcassets/LaunchImage.imageset</code>. Only projects that still have the standard Flutter-generated
+      splash layout are supported — a hand-customized one is left alone with a clear error instead of guessing at it.
+    </p>
+
+    <div style="display:flex; flex-direction:column; gap:14px; max-width:640px;">
+      <div id="splashCurrentRow" style="display:none; flex-direction:column; gap:10px; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
+        <strong style="font-size:12px; color:var(--text-primary);">Current splash screen</strong>
+        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
+          What's already in the project — you may decide not to change it. This updates automatically after you generate a new splash screen.
+        </p>
+        <div style="display:flex; gap:18px; flex-wrap:wrap;">
+          <div id="splashCurrentAndroidCard" style="display:none; flex-direction:column; align-items:center; gap:6px;">
+            <div style="width:64px; height:64px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+              <img id="splashCurrentAndroid" style="width:100%; height:100%; object-fit:contain; display:block;" />
+            </div>
+            <span id="splashCurrentAndroidLabel" style="font-size:11px; color:var(--text-secondary);">Android</span>
+          </div>
+          <div id="splashCurrentIOSCard" style="display:none; flex-direction:column; align-items:center; gap:6px;">
+            <div style="width:64px; height:64px; overflow:hidden; background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+              <img id="splashCurrentIOS" style="width:100%; height:100%; object-fit:contain; display:block;" />
+            </div>
+            <span id="splashCurrentIOSLabel" style="font-size:11px; color:var(--text-secondary);">iOS</span>
+          </div>
+        </div>
+        <p id="splashCurrentEmpty" style="display:none; color:var(--text-secondary); font-size:11px; margin:0;">
+          No existing splash image was found for this project yet.
+        </p>
+      </div>
+
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button id="splashBrowseButton" type="button" class="btn-secondary">📁 Choose source image…</button>
+        <span id="splashSourceLabel" style="color:var(--text-secondary); font-size:12px;">No image selected.</span>
+      </div>
+
+      <div id="splashAdjustRow" style="display:none; flex-direction:column; gap:12px; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <label for="splashScaleSlider" style="font-size:12px; color:var(--text-primary); min-width:110px;">Foreground size</label>
+          <input id="splashScaleSlider" type="range" min="40" max="200" step="1" value="100" style="flex:1 1 180px; min-width:140px;" />
+          <span id="splashScaleValue" style="font-size:12px; color:var(--text-secondary); min-width:38px; text-align:right;">100%</span>
+        </div>
+        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
+          How large your logo appears on the splash screen. Below 100% shrinks it (more surrounding background);
+          above 100% zooms in and crops.
+        </p>
+        <div id="splashBackgroundRow" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <label for="splashBackgroundColor" style="font-size:12px; color:var(--text-primary); min-width:110px;">Background color</label>
+          <input id="splashBackgroundColor" type="color" value="#ffffff" style="width:40px; height:28px; padding:0; border:1px solid var(--vscode-editorGroup-border,#555); border-radius:4px; background:none;" />
+          <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary);">
+            <input id="splashBackgroundTransparent" type="checkbox" /> Use platform default
+          </label>
+        </div>
+        <p style="color:var(--text-secondary); font-size:11px; margin:0;">
+          Unlike app icons, this is written as a native background color (not baked into the image), so it fills the
+          whole screen seamlessly regardless of device aspect ratio.
+        </p>
+      </div>
+
+      <div id="splashPreviewRow" style="display:none; justify-content:center; padding:14px; background:var(--bg-secondary,#252526); border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm);">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <div style="width:120px; height:240px; border-radius:14px; overflow:hidden; border:2px solid var(--vscode-editorGroup-border,#555); background:repeating-conic-gradient(#3a3a3a 0% 25%, #2c2c2c 0% 50%) 50% / 14px 14px;">
+            <img id="splashPreviewImage" style="width:100%; height:100%; object-fit:cover; display:block;" />
+          </div>
+          <span style="font-size:11px; color:var(--text-secondary);">Android &amp; iOS look the same — both just center the image on the background color.</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+          <input type="radio" name="splashPlatform" id="splashPlatformAndroid" value="android" /> Android only
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+          <input type="radio" name="splashPlatform" id="splashPlatformIOS" value="ios" /> iOS only
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-primary);">
+          <input type="radio" name="splashPlatform" id="splashPlatformBoth" value="both" checked /> Both
+        </label>
+      </div>
+
+      <div>
+        <button id="splashGenerateButton" type="button" class="btn-primary" disabled>Generate splash screen</button>
+      </div>
+
+      <div id="splashLoading" style="display:none; padding:12px; text-align:center; color:var(--text-secondary);">
+        Rendering splash screen…
+      </div>
+      <div id="splashResult" style="display:none; padding:10px 12px; border:1px solid var(--vscode-editorGroup-border,#333); border-radius:var(--radius-sm); font-size:12px;"></div>
+      <div id="splashFileList" style="display:none; font-size:12px; color:var(--text-secondary); max-height:220px; overflow:auto; line-height:1.6;"></div>
+    </div>
   </section>
 
   <div class="modal-backdrop" id="assetsDeleteModalBackdrop" style="display: none">

@@ -40,5 +40,13 @@ export function copyMcpConfig() { vscode.postMessage({ type: "copyMcpConfig" });
 export function previewSemanticsFixes(requests) { vscode.postMessage({ type: "previewSemanticsFixes", requests }); }
 export function applySemanticsFixes(previewId) { vscode.postMessage({ type: "applySemanticsFixes", previewId }); }
 export function revealSourceReference(path, line, column) { vscode.postMessage({ type: "revealSourceReference", path, line, column }); }
+export function browseIconSource(scalePercent, backgroundColor) { vscode.postMessage({ type: "browseIconSource", scalePercent, backgroundColor }); }
+export function requestIconPreview(sourcePath, scalePercent, backgroundColor) { vscode.postMessage({ type: "requestIconPreview", sourcePath, scalePercent, backgroundColor }); }
+export function requestCurrentIconPreview() { vscode.postMessage({ type: "requestCurrentIconPreview" }); }
+export function generateIcons(sourcePath, platforms, scalePercent, backgroundColor, androidFamilies) { vscode.postMessage({ type: "generateIcons", sourcePath, platforms, scalePercent, backgroundColor, androidFamilies }); }
+export function browseSplashSource(scalePercent, backgroundColor) { vscode.postMessage({ type: "browseSplashSource", scalePercent, backgroundColor }); }
+export function requestSplashPreview(sourcePath, scalePercent, backgroundColor) { vscode.postMessage({ type: "requestSplashPreview", sourcePath, scalePercent, backgroundColor }); }
+export function requestCurrentSplashPreview() { vscode.postMessage({ type: "requestCurrentSplashPreview" }); }
+export function generateSplash(sourcePath, platforms, scalePercent, backgroundColor) { vscode.postMessage({ type: "generateSplash", sourcePath, platforms, scalePercent, backgroundColor }); }
 export function postMessage(msg) { vscode.postMessage(msg); }
 export function sendReady() { vscode.postMessage({ type: "ready" }); }

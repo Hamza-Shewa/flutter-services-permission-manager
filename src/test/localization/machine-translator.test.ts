@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { translateBatch, translateMany, translateText } from '../../features/localization/machine-translator.js';
+import { translateBatch, translateMany, translateText, resetTranslatorCircuitBreakers } from '../../features/localization/machine-translator.js';
 
 suite('Machine Translator Test Suite', () => {
     const originalFetch = globalThis.fetch;
@@ -11,6 +11,13 @@ suite('Machine Translator Test Suite', () => {
     function failingResponse(): Response {
         return { ok: false, status: 500, json: async () => ({}) } as unknown as Response;
     }
+
+    // The provider circuit breaker is module-level state shared across every
+    // call, so a test that intentionally induces failures could otherwise
+    // leave a provider's breaker open for later, unrelated tests.
+    setup(() => {
+        resetTranslatorCircuitBreakers();
+    });
 
     teardown(() => {
         globalThis.fetch = originalFetch;
@@ -161,6 +168,58 @@ suite('Machine Translator Test Suite', () => {
 
             const result = await translateMany({ a: '', b: '   ' }, 'es', 'en');
             assert.deepStrictEqual(result, {});
+        });
+    });
+
+    suite('circuit breaker', () => {
+        test('stops calling a provider after repeated failures, and resumes after a success', async () => {
+            let mymemoryCalls = 0;
+            globalThis.fetch = (async (input: string) => {
+                const url = new URL(String(input));
+                if (url.hostname === 'api.mymemory.translated.net') {
+                    mymemoryCalls += 1;
+                    return failingResponse();
+                }
+                // google/libretranslate also fail, so each translateText call
+                // exercises (and can fail) every provider in the chain.
+                return failingResponse();
+            }) as typeof fetch;
+
+            // Three separate calls, each failing mymemory once - trips the breaker.
+            await translateText('one', 'es', 'en');
+            await translateText('two', 'es', 'en');
+            await translateText('three', 'es', 'en');
+            assert.strictEqual(mymemoryCalls, 3);
+
+            // Fourth call: the breaker is open, so mymemory is skipped entirely (no new fetch).
+            await translateText('four', 'es', 'en');
+            assert.strictEqual(mymemoryCalls, 3, 'mymemory should have been skipped once its breaker opened');
+        });
+
+        test('a successful response resets the failure count', async () => {
+            let mymemoryCalls = 0;
+            let succeed = false;
+            globalThis.fetch = (async (input: string) => {
+                const url = new URL(String(input));
+                if (url.hostname === 'api.mymemory.translated.net') {
+                    mymemoryCalls += 1;
+                    return succeed
+                        ? jsonResponse({ responseData: { translatedText: 'ok' } })
+                        : failingResponse();
+                }
+                return failingResponse();
+            }) as typeof fetch;
+
+            await translateText('one', 'es', 'en');
+            await translateText('two', 'es', 'en');
+            succeed = true;
+            await translateText('three', 'es', 'en');
+            succeed = false;
+
+            // Two more failures - still below the threshold, since the success above reset the counter.
+            await translateText('four', 'es', 'en');
+            await translateText('five', 'es', 'en');
+            assert.strictEqual(mymemoryCalls, 5, 'a prior success should have cleared the failure count');
         });
     });
 

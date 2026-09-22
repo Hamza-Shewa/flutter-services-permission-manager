@@ -4,7 +4,7 @@
  */
 
 import * as vscode from "vscode";
-import { FILE_PATTERNS, MAX_SEARCH_RESULTS } from "./constants/index.js";
+import { FILE_PATTERNS, MAX_SEARCH_RESULTS, WORKSPACE_SEARCH_EXCLUDE } from "./constants/index.js";
 import type { PlatformDetailItem, PlatformDetails } from "./types/index.js";
 
 /** Discovered project files */
@@ -57,77 +57,77 @@ export async function discoverProjectFiles(): Promise<ProjectFiles> {
   ] = await Promise.all([
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_MANIFEST,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_MAIN_ACTIVITY,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_APP_BUILD_GRADLE,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_APP_BUILD_GRADLE_KTS,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_BUILD_GRADLE,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_BUILD_GRADLE_KTS,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_SETTINGS_GRADLE,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_SETTINGS_GRADLE_KTS,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.ANDROID_GRADLE_WRAPPER,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.IOS_PLIST,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.IOS_ENTITLEMENTS,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.IOS_PBXPROJ,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.IOS_PODFILE,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.IOS_APPDELEGATE,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
     vscode.workspace.findFiles(
       FILE_PATTERNS.MACOS_PLIST,
-      undefined,
+      WORKSPACE_SEARCH_EXCLUDE,
       MAX_SEARCH_RESULTS,
     ),
   ]);

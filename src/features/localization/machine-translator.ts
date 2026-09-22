@@ -17,7 +17,59 @@ type Provider = (typeof PROVIDERS)[number];
 /** Default source/fallback locale used when none is provided. */
 export const DEFAULT_FALLBACK_LOCALE = 'en';
 
-const TIMEOUT_MS = 15000;
+const TIMEOUT_MS = 10000;
+
+/**
+ * Per-provider circuit breaker. Without this, a provider outage (rate limit,
+ * block, downtime - the free providers hit all three often) means every
+ * single remaining key retries the full timeout for every provider before
+ * falling through, which for a multi-locale "Translate all" can add up to
+ * tens of minutes of blocking wait - indistinguishable from the whole
+ * extension freezing. After a few consecutive failures, a provider is
+ * skipped instantly (no network call) for a cooldown window instead of
+ * being retried per item; a later success clears it immediately.
+ */
+const BREAKER_FAILURE_THRESHOLD = 3;
+const BREAKER_COOLDOWN_MS = 60_000;
+
+/** `gtx` covers both `translateBatch` and `translateWithGoogle`, which share the same endpoint - there's no separate `google` key. */
+type BreakerKey = Exclude<Provider, 'google'> | 'gtx';
+
+const breakerState: Record<BreakerKey, { consecutiveFailures: number; openUntil: number }> = {
+  mymemory: { consecutiveFailures: 0, openUntil: 0 },
+  libretranslate: { consecutiveFailures: 0, openUntil: 0 },
+  gtx: { consecutiveFailures: 0, openUntil: 0 },
+};
+
+function isBreakerOpen(key: BreakerKey): boolean {
+  return breakerState[key].openUntil > Date.now();
+}
+
+function recordBreakerSuccess(key: BreakerKey): void {
+  breakerState[key].consecutiveFailures = 0;
+  breakerState[key].openUntil = 0;
+}
+
+function recordBreakerFailure(key: BreakerKey): void {
+  const state = breakerState[key];
+  state.consecutiveFailures += 1;
+  if (state.consecutiveFailures >= BREAKER_FAILURE_THRESHOLD) {
+    state.openUntil = Date.now() + BREAKER_COOLDOWN_MS;
+  }
+}
+
+/**
+ * Test-only: clears all circuit breaker state. The breaker state is
+ * module-level (shared across every call in the process), so tests that
+ * intentionally induce provider failures must reset it - otherwise a later,
+ * unrelated test can find a provider's breaker already open from an earlier
+ * test and get a silent `null` instead of hitting its own fetch mock.
+ */
+export function resetTranslatorCircuitBreakers(): void {
+  for (const key of Object.keys(breakerState) as BreakerKey[]) {
+    breakerState[key] = { consecutiveFailures: 0, openUntil: 0 };
+  }
+}
 
 /**
  * Max characters per batched Google request. Strings are joined with a newline
@@ -48,6 +100,9 @@ async function fetchGtxSegments(
   source: string,
   target: string,
 ): Promise<Array<Array<unknown>> | null> {
+  if (isBreakerOpen('gtx')) {
+    return null;
+  }
   for (const client of GTX_CLIENTS) {
     const url = new URL('https://translate.googleapis.com/translate_a/single');
     url.searchParams.set('client', client);
@@ -66,12 +121,14 @@ async function fetchGtxSegments(
       const json = (await response.json()) as Array<unknown> | null;
       const segments = json?.[0];
       if (Array.isArray(segments)) {
+        recordBreakerSuccess('gtx');
         return segments as Array<Array<unknown>>;
       }
     } catch {
       // Try the next client.
     }
   }
+  recordBreakerFailure('gtx');
   return null;
 }
 
@@ -239,17 +296,28 @@ async function translateWith(
   source: string,
   target: string,
 ): Promise<string | null> {
-  try {
-    switch (provider) {
-      case 'mymemory':
-        return await translateWithMyMemory(text, source, target);
-      case 'google':
-        return await translateWithGoogle(text, source, target);
-      case 'libretranslate':
-        return await translateWithLibreTranslate(text, source, target);
-      default:
-        return null;
+  // `google` delegates to `fetchGtxSegments`, which applies its own `gtx` breaker internally.
+  if (provider === 'mymemory' || provider === 'libretranslate') {
+    if (isBreakerOpen(provider)) {
+      return null;
     }
+    try {
+      const result = provider === 'mymemory'
+        ? await translateWithMyMemory(text, source, target)
+        : await translateWithLibreTranslate(text, source, target);
+      if (result !== null) {
+        recordBreakerSuccess(provider);
+      } else {
+        recordBreakerFailure(provider);
+      }
+      return result;
+    } catch {
+      recordBreakerFailure(provider);
+      return null;
+    }
+  }
+  try {
+    return await translateWithGoogle(text, source, target);
   } catch {
     return null;
   }

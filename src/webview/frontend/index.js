@@ -11,10 +11,17 @@ import * as translations from './features/localization/translations.js';
 import * as buildDetails from './features/build/build-details.js';
 import * as semantics from './features/semantics/semantics.js';
 import * as mcp from './features/mcp/mcp.js';
+import * as icons from './features/icons/icons.js';
+import * as splash from './features/splash/splash.js';
 import * as utils from './core/utils.js';
 import * as router from './core/router.js';
+import * as elements from './core/elements.js';
 
 // Map module functions to globalThis so the top level code can access them.
+// `elements` first: several later blocks (e.g. the Translation Files event
+// listeners) reference elements.js exports as bare globals rather than via
+// the named import on line 3, relying on this same globalization pattern.
+Object.assign(window, elements);
 Object.assign(window, permissions);
 Object.assign(window, services);
 Object.assign(window, packages);
@@ -892,6 +899,8 @@ bus.on("permissions", (message) => {
   state.hasAndroidManifest = message.hasAndroidManifest;
   state.hasIOSPlist = message.hasIOSPlist;
   state.hasMacOSPlist = message.hasMacOSPlist;
+  icons.refreshIconsAvailability();
+  splash.refreshSplashAvailability();
 
   if (message.hasAndroidManifest && !message.hasIOSPlist && !message.hasMacOSPlist) {
     state.modalMode = "android";

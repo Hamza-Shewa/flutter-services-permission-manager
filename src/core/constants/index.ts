@@ -69,6 +69,18 @@ export const PRESERVED_IOS_KEYS = [
 /** Max file read limit */
 export const MAX_SEARCH_RESULTS = 1;
 
+/**
+ * Directories excluded from workspace-wide file discovery. Left un-excluded,
+ * `vscode.workspace.findFiles` can match a duplicate copy of the project
+ * structure that some other extension keeps for its own purposes - e.g. a
+ * git-worktree clone under `.kilo/worktrees/<name>/android/...` - and since
+ * `findFiles` doesn't guarantee match order, that duplicate can win over the
+ * real `android/`/`ios/` directory, silently redirecting every read and
+ * write (permissions, icons, splash screens, ...) into the wrong copy.
+ */
+export const WORKSPACE_SEARCH_EXCLUDE =
+  "**/{node_modules,.git,.dart_tool,build,.kilo,.history,.idea,.vscode-test}/**";
+
 /** Indentation for generated code */
 export const INDENT = {
   SINGLE: "    ",

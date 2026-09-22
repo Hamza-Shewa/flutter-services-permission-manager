@@ -371,14 +371,28 @@ export async function translateAllLocales(
   }
 
   const targets = translations.filter((t) => t.locale !== reference.locale);
-  let count = 0;
-  let current = translations;
 
-  for (const target of targets) {
-    const result = await translateLocale(current, target.locale, reference.locale, missingOnly);
-    current = result.translations;
+  // Each locale is translated independently against the same starting
+  // snapshot, then merged back in - this runs every locale in parallel
+  // instead of one after another, so the total wait is bounded by the
+  // slowest single locale rather than the sum of all of them. The free
+  // translation providers are often slow or rate-limited, and that
+  // sequential sum was what made "Translate all" feel like it could freeze
+  // the extension on a project with several locales.
+  const results = await Promise.all(
+    targets.map((target) => translateLocale(translations, target.locale, reference.locale, missingOnly)),
+  );
+
+  let current = translations;
+  let count = 0;
+  results.forEach((result, i) => {
+    const locale = targets[i].locale;
+    const updatedTarget = result.translations.find((t) => t.locale === locale);
+    if (updatedTarget) {
+      current = current.map((t) => (t.locale === locale ? updatedTarget : t));
+    }
     count += result.translatedCount;
-  }
+  });
 
   return { translations: current, translatedCount: count };
 }
