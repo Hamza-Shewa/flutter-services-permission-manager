@@ -27,6 +27,9 @@ export interface ImageComposeOptions {
   backgroundColor?: string;
   /** Crop the source to its visible content first, so the scale is relative to the artwork rather than its padding. */
   trimMargins?: boolean;
+  /** Pan of the foreground within the canvas, as a percentage of the canvas size (-100..100); 0 keeps it centered. */
+  offsetX?: number;
+  offsetY?: number;
 }
 
 /** Visible-content rectangle in source pixels. */
@@ -83,6 +86,14 @@ const MAX_SCALE_PERCENT = 200;
 export function clampScalePercent(value: number | undefined): number {
   if (value === undefined || !Number.isFinite(value)) { return DEFAULT_SCALE_PERCENT; }
   return Math.min(MAX_SCALE_PERCENT, Math.max(MIN_SCALE_PERCENT, Math.round(value)));
+}
+
+const MAX_OFFSET_PERCENT = 100;
+
+/** Clamps a pan offset to [-100, 100] percent of the canvas; anything non-numeric means "centered". */
+export function clampOffsetPercent(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) { return 0; }
+  return Math.min(MAX_OFFSET_PERCENT, Math.max(-MAX_OFFSET_PERCENT, Math.round(value * 10) / 10));
 }
 
 export function detectImageSourceKind(filePath: string): ImageSourceKind | undefined {
@@ -299,17 +310,27 @@ export async function renderSquarePng(source: RasterImage, sizePx: number): Prom
  * a zoom, not a resize. The result is already square, so every per-target
  * render after this is a plain downsize, not a crop - a source at 100% with
  * no background that's already square (the common case) renders identically
- * to the source itself.
+ * to the source itself. `offset` pans the foreground by a percentage of the
+ * canvas (positive = right/down), so dragging in the preview maps 1:1 to the
+ * generated files.
  */
-export function composeWorkingImage(source: RasterImage, scalePercent: number, backgroundColor: string | undefined, canvasSize: number): RasterImage {
+export function composeWorkingImage(
+  source: RasterImage,
+  scalePercent: number,
+  backgroundColor: string | undefined,
+  canvasSize: number,
+  offset?: { x?: number; y?: number },
+): RasterImage {
   const boxSize = Math.max(1, Math.round(canvasSize * (scalePercent / 100)));
   const foreground = source.clone();
   foreground.background = 0x00000000;
   foreground.contain({ w: boxSize, h: boxSize });
 
   const canvas = createColorCanvas(canvasSize, canvasSize, backgroundColor);
-  const offset = Math.round((canvasSize - boxSize) / 2);
-  canvas.composite(foreground, offset, offset);
+  const centered = Math.round((canvasSize - boxSize) / 2);
+  const dx = Math.round(canvasSize * (clampOffsetPercent(offset?.x) / 100));
+  const dy = Math.round(canvasSize * (clampOffsetPercent(offset?.y) / 100));
+  canvas.composite(foreground, centered + dx, centered + dy);
   return canvas;
 }
 

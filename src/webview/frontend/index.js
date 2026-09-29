@@ -1007,14 +1007,10 @@ bus.on("saveResult", (message) => {
     if (validatorLoadingIndicator) { validatorLoadingIndicator.style.display = "none"; }
     if (assets.hideAssetsLoading) { assets.hideAssetsLoading(); }
   }
-  if (message.success && message.message &&
-    (message.message.includes("migrated to declarative plugins") ||
-      message.message.includes("16 KB page size support enabled"))) {
-    // Save only the migration-related files. The backend already wrote just the
-    // Android files it changed (settings.gradle, build.gradle, app/build.gradle,
-    // gradle-wrapper.properties, AndroidManifest.xml), so here we only re-read
-    // them into the UI. Never call handleSaveAll() — it would rewrite unrelated
-    // files (permissions, services, app name, iOS/macOS details).
+  if (message.success && message.refresh) {
+    // A migration rewrote Android build files. The backend already wrote only the
+    // files it changed, so just re-read them into the UI. Never call handleSaveAll():
+    // it would rewrite unrelated files (permissions, services, app name, iOS/macOS).
     scheduleRefresh();
   }
 });

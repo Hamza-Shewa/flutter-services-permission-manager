@@ -28,6 +28,8 @@ export function getInteractiveScannerOptions(): InteractiveScannerOptions {
     customWidgets: clean("customWidgets"),
     callbackNames: clean("callbackNames"),
     ignoredWidgets: clean("ignoredWidgets"),
+    sharedWidgetMinCallSites: config.get<number>("sharedWidgetMinCallSites", 2),
+    sharedWidgetDirs: clean("sharedWidgetDirs"),
   };
 }
 

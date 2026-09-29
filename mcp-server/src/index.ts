@@ -9,7 +9,10 @@
  * Project resolution (first match wins):
  *   1. CLI flag:    node out/index.js --project /path/to/project
  *   2. Env var:     FCM_MCP_PROJECT=/path/to/project
- *   3. cwd:         run the server from inside the Flutter project
+ *   3. cwd:         the directory the client starts the server in; a subfolder of the
+ *                   project (lib/, android/...) resolves to the folder with pubspec.yaml
+ *
+ * A user-level registration passes none of these, so one server entry serves every project.
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -206,7 +209,7 @@ export function createServer(root: string): McpServer {
     {
       title: 'Scan interactive Flutter widgets',
       description:
-        'Statically inventories interactive widgets under lib/, grouped by source file, with exact references, confidence, accessibility readiness, automation identifier readiness, and opaque-surface warnings. This is a confidence-based audit, not a runtime completeness guarantee.',
+        'Statically inventories interactive widgets under lib/, grouped by source file, with exact references, confidence, accessibility readiness, automation identifier readiness, and opaque-surface warnings. Also resolves project-owned widgets through imports: `widgets` lists shared controls in fix order (base widgets before the widgets that wrap them) with their semantics contract, call-site counts and the parameters to add, `composites` lists reused widgets with several controls (they need a required identifier prefix), and each finding carries its role, owning component, resolved definition and a `remediation` (shared-widget, pass-contract, composite-prefix, reuse-wrapper, builtin-label, wrap, manual). This is a confidence-based audit, not a runtime completeness guarantee.',
       inputSchema: scanInteractivesSchema,
       annotations: { readOnlyHint: true, destructiveHint: false },
     },

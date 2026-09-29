@@ -5,10 +5,11 @@ import {
   loadImage,
   sourceRect,
   drawContained,
-  frameScheduler,
+  paintEditor,
   marginFraction,
   bindRange,
 } from "../../core/image-preview.js";
+import { createCropper } from "../../core/cropper.js";
 import {
   byId,
   bindBackground,
@@ -17,7 +18,6 @@ import {
   setBusy,
   renderResult,
   hideResult,
-  wheelToRange,
 } from "../../core/imgtool-ui.js";
 
 const els = {
@@ -35,6 +35,10 @@ const els = {
   previewEmpty: byId("splashPreviewEmpty"),
   previewRow: byId("splashPreviewRow"),
   showBounds: byId("splashShowBounds"),
+  editor: byId("splashEditor"),
+  zoomBadge: byId("splashZoomBadge"),
+  center: byId("splashCenterButton"),
+  reset: byId("splashResetButton"),
   phones: [byId("splashPhoneAndroid"), byId("splashPhoneIOS")],
   platformAndroid: byId("splashPlatformAndroid"),
   platformIOS: byId("splashPlatformIOS"),
@@ -70,7 +74,7 @@ function isDark(hex) {
   return luminance < 140;
 }
 
-function drawPhone(canvas) {
+function drawPhone(canvas, view) {
   const deviceW = Number(canvas.dataset.deviceW);
   const deviceH = Number(canvas.dataset.deviceH);
   const dpr = window.devicePixelRatio || 1;
@@ -94,7 +98,7 @@ function drawPhone(canvas) {
   const box = logo.get() * unit;
   const ox = (w - box) / 2;
   const oy = (h - box) / 2;
-  drawContained(ctx, image, sourceRect(image, source.preview, !!els.trim?.checked), box, scale.get(), ox, oy);
+  drawContained(ctx, image, sourceRect(image, source.preview, !!els.trim?.checked), box, view.s, ox, oy, { x: view.x, y: view.y });
 
   if (els.showBounds?.checked) {
     ctx.setLineDash([4 * dpr, 3 * dpr]);
@@ -105,11 +109,22 @@ function drawPhone(canvas) {
   }
 }
 
-const draw = () => {
+function draw(view, interaction) {
+  scale.set(Math.round(view.s), false);
+  if (els.zoomBadge) { els.zoomBadge.textContent = `${Math.round(view.s)}%`; }
   if (!image || !source) { return; }
-  els.phones.forEach((canvas) => { if (canvas) { drawPhone(canvas); } });
-};
-const scheduleDraw = frameScheduler(draw);
+  const bg = background.get() || PLATFORM_DEFAULT_BACKGROUND;
+  // The editor shows the logo box on the launch color, so what overflows it reads as "cropped".
+  paintEditor(els.editor, image, sourceRect(image, source.preview, !!els.trim?.checked), {
+    scalePercent: view.s,
+    pan: { x: view.x, y: view.y },
+    fill: bg,
+    surround: bg,
+    ...interaction,
+  });
+  els.phones.forEach((canvas) => { if (canvas) { drawPhone(canvas, view); } });
+}
+const scheduleDraw = () => cropper.refresh();
 
 function markSizePreset() {
   document.querySelectorAll("[data-splash-size]").forEach((chip) => {
@@ -131,7 +146,16 @@ const scale = bindRange({
   slider: els.scaleSlider,
   number: els.scaleNumber,
   resetValue: 100,
-  onChange: scheduleDraw,
+  onChange: (value) => cropper.set({ s: value }, { animate: false }),
+});
+
+const cropper = createCropper({
+  canvas: els.editor,
+  minScale: 40,
+  maxScale: 200,
+  initial: { s: 100, x: 0, y: 0 },
+  onFrame: draw,
+  onReset: () => cropper.set({ s: 100, x: 0, y: 0 }),
 });
 
 const background = bindBackground({
@@ -176,7 +200,7 @@ els.generate?.addEventListener("click", () => {
   api.generateSplash({
     sourcePath: source.path,
     platforms: selectedPlatform(els.platformAndroid, els.platformIOS),
-    scalePercent: scale.get(),
+    ...cropper.result(),
     backgroundColor: background.get(),
     trimMargins: !!els.trim?.checked,
     logoSize: logo.get(),
@@ -188,7 +212,8 @@ document.querySelectorAll("[data-splash-size]").forEach((chip) => {
 });
 els.trim?.addEventListener("change", scheduleDraw);
 els.showBounds?.addEventListener("change", scheduleDraw);
-wheelToRange(els.phones, logo, 4);
+els.center?.addEventListener("click", () => cropper.userSet({ x: 0, y: 0 }));
+els.reset?.addEventListener("click", () => cropper.set({ s: 100, x: 0, y: 0 }));
 markSizePreset();
 
 window.addEventListener("splash-tab-activated", () => {
@@ -225,7 +250,7 @@ bus.on("splashSourceSelected", async (message) => {
   els.previewEmpty.style.display = "none";
   els.previewRow.style.display = "flex";
   updateGenerateButton();
-  scheduleDraw();
+  cropper.set({ s: 100, x: 0, y: 0 });
 });
 
 bus.on("currentSplashPreview", (message) => renderCurrentPreviews(message.previews));

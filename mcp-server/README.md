@@ -38,7 +38,9 @@ The server targets one Flutter project, resolved in this order:
 
 1. CLI flag: `--project /path/to/project`
 2. Env var: `FCM_MCP_PROJECT=/path/to/project`
-3. Current working directory
+3. The directory the client starts the server in. A subfolder of the project (`lib/`, `android/`, ...) resolves to the folder that holds `pubspec.yaml`.
+
+A user-level registration (what **Connect MCP** writes) passes none of these, so one entry serves every project: start the client in the project you want to work on. A `--project` value that still contains an unexpanded `${...}` variable is ignored.
 
 ## Running it
 

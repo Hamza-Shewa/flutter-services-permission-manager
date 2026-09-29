@@ -80,6 +80,8 @@ export async function handleGenerateIcons(
             scalePercent: payload.scalePercent,
             backgroundColor: payload.backgroundColor,
             trimMargins: payload.trimMargins,
+            offsetX: payload.offsetX,
+            offsetY: payload.offsetY,
             androidFamilies: payload.androidFamilies,
         });
         ref.webview.postMessage({ type: 'iconsGenerated', result });

@@ -76,6 +76,8 @@ export async function handleGenerateSplash(
             scalePercent: payload.scalePercent,
             backgroundColor: payload.backgroundColor,
             trimMargins: payload.trimMargins,
+            offsetX: payload.offsetX,
+            offsetY: payload.offsetY,
             logoSize: payload.logoSize,
         });
         ref.webview.postMessage({ type: 'splashGenerated', result });

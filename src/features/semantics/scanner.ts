@@ -1,7 +1,26 @@
-import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { Language, Node as SyntaxNode, Parser } from "web-tree-sitter";
+import {
+  collectDartFiles,
+  invocationFromArguments,
+  loadDartLanguage,
+  normalizePath,
+  reference,
+  sha256,
+  stringValue,
+  type Invocation,
+} from "./dart-source.js";
+import {
+  analyzeSharedWidgets,
+  buildWidgetIndex,
+  interactiveWidgetKeys,
+  DEFAULT_PREFIX_ARGS,
+  DEFAULT_HINT_ARGS,
+  DEFAULT_IDENTIFIER_ARGS,
+  DEFAULT_LABEL_ARGS,
+  type ProjectWidgetIndex,
+} from "./widget-index.js";
 import type {
   AccessibilityState,
   AutomationState,
@@ -10,12 +29,12 @@ import type {
   InteractiveScannerOptions,
   InteractiveScanResult,
   InteractionKind,
+  ResolvedWidget,
+  SemanticsContract,
   SemanticsEvidence,
-  SourceReference,
 } from "./types.js";
 
-export const DART_GRAMMAR_VERSION = "@lumis-sh/wasm-dart@0.26.3";
-export const DART_GRAMMAR_SHA256 = "f743e6ecda0447cf330d012e9c8dc4f784d2a8874dbdec4b929b0dde87faec79";
+export { DART_GRAMMAR_SHA256, DART_GRAMMAR_VERSION, sha256 } from "./dart-source.js";
 
 const DEFAULT_CALLBACKS = new Set([
   "onPressed", "onTap", "onLongPress", "onChanged", "onSelected", "onSubmitted",
@@ -51,197 +70,6 @@ const OPAQUE_WIDGETS: Readonly<Record<string, string>> = {
   CustomPaint: "Custom-painted hit regions cannot be inferred statically.",
 };
 
-interface ValueSpan {
-  text: string;
-  startOffset: number;
-  endOffset: number;
-}
-
-interface Invocation {
-  widgetType: string;
-  callee: string;
-  startOffset: number;
-  endOffset: number;
-  argumentsStart: number;
-  argumentsEnd: number;
-  named: Map<string, ValueSpan>;
-  positional: ValueSpan[];
-  node: SyntaxNode;
-}
-
-let parserInitialization: Promise<Language> | undefined;
-
-export function sha256(value: string | Buffer): string {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
-async function loadDartLanguage(): Promise<Language> {
-  if (!parserInitialization) {
-    parserInitialization = (async () => {
-      const runtimePath = require.resolve("web-tree-sitter/web-tree-sitter.wasm");
-      const grammarPath = require.resolve("@lumis-sh/wasm-dart/tree-sitter-dart.wasm");
-      const actualHash = sha256(fs.readFileSync(grammarPath));
-      if (actualHash !== DART_GRAMMAR_SHA256) {
-        throw new Error(`Dart parser checksum mismatch: expected ${DART_GRAMMAR_SHA256}, got ${actualHash}`);
-      }
-      await Parser.init({ locateFile: () => runtimePath });
-      return Language.load(grammarPath);
-    })();
-  }
-  return parserInitialization;
-}
-
-function normalizePath(value: string): string {
-  return value.split(path.sep).join("/");
-}
-
-function globToRegExp(glob: string): RegExp {
-  let pattern = "^";
-  for (let index = 0; index < glob.length; index++) {
-    const char = glob[index];
-    if (char === "*" && glob[index + 1] === "*") {
-      pattern += ".*";
-      index++;
-    } else if (char === "*") {
-      pattern += "[^/]*";
-    } else if (char === "?") {
-      pattern += "[^/]";
-    } else {
-      pattern += char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-  }
-  return new RegExp(`${pattern}$`);
-}
-
-function isGenerated(relativePath: string): boolean {
-  return /(?:\.g|\.freezed|\.gr|\.config|\.mocks)\.dart$/i.test(relativePath) ||
-    relativePath.includes("/generated/") || relativePath.includes("/gen/");
-}
-
-function collectDartFiles(root: string, excludedGlobs: string[]): { files: string[]; excluded: string[] } {
-  const libRoot = path.join(root, "lib");
-  const files: string[] = [];
-  const excluded: string[] = [];
-  const excludes = excludedGlobs.map(globToRegExp);
-  if (!fs.existsSync(libRoot)) {
-    return { files, excluded };
-  }
-  const stack = [libRoot];
-  while (stack.length > 0) {
-    const directory = stack.pop()!;
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      if (entry.isSymbolicLink()) {
-        continue;
-      }
-      const absolute = path.join(directory, entry.name);
-      const relative = normalizePath(path.relative(root, absolute));
-      if (entry.isDirectory()) {
-        if (["build", ".dart_tool", "node_modules"].includes(entry.name)) {
-          excluded.push(relative);
-        } else {
-          stack.push(absolute);
-        }
-        continue;
-      }
-      if (!entry.isFile() || !entry.name.endsWith(".dart")) {
-        continue;
-      }
-      if (isGenerated(relative) || excludes.some((regex) => regex.test(relative))) {
-        excluded.push(relative);
-      } else {
-        files.push(absolute);
-      }
-    }
-  }
-  return { files: files.sort(), excluded: excluded.sort() };
-}
-
-function getWidgetType(callee: string): string | undefined {
-  const segments = callee.split(".").filter(Boolean);
-  return segments.find((segment) => /^[A-Z]/.test(segment));
-}
-
-function invocationFromArguments(node: SyntaxNode, source: string): Invocation | undefined {
-  const prefixStart = Math.max(0, node.startIndex - 500);
-  const prefix = source.slice(prefixStart, node.startIndex);
-  const match = /(?:const\s+|new\s+)?([A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*)\s*(?:<[^<>\n]*>)?\s*$/.exec(prefix);
-  if (!match) {
-    return undefined;
-  }
-  const callee = match[1].replace(/\s+/g, "");
-  const widgetType = getWidgetType(callee);
-  if (!widgetType) {
-    return undefined;
-  }
-  const leading = match[0].search(/\S/);
-  const startOffset = prefixStart + match.index + Math.max(0, leading);
-  const named = new Map<string, ValueSpan>();
-  const positional: ValueSpan[] = [];
-  for (const child of node.namedChildren) {
-    if (child.type === "named_argument") {
-      const label = child.namedChildren.find((candidate) => candidate.type === "label");
-      const name = label?.namedChildren.find((candidate) => candidate.type === "identifier")?.text;
-      const valueNodes = child.namedChildren.filter((candidate) => candidate !== label);
-      const firstValue = valueNodes[0];
-      const lastValue = valueNodes[valueNodes.length - 1];
-      if (name && firstValue && lastValue) {
-        named.set(name, {
-          text: source.slice(firstValue.startIndex, lastValue.endIndex).trim(),
-          startOffset: firstValue.startIndex,
-          endOffset: lastValue.endIndex,
-        });
-      }
-    } else if (child.type === "argument") {
-      positional.push({ text: child.text.trim(), startOffset: child.startIndex, endOffset: child.endIndex });
-    }
-  }
-  return {
-    widgetType,
-    callee,
-    startOffset,
-    endOffset: node.endIndex,
-    argumentsStart: node.startIndex,
-    argumentsEnd: node.endIndex,
-    named,
-    positional,
-    node,
-  };
-}
-
-function offsetPosition(source: string, offset: number): { line: number; column: number } {
-  let line = 1;
-  let lastBreak = -1;
-  for (let index = 0; index < offset; index++) {
-    if (source.charCodeAt(index) === 10) {
-      line++;
-      lastBreak = index;
-    }
-  }
-  return { line, column: offset - lastBreak };
-}
-
-function reference(relativePath: string, source: string, hash: string, startOffset: number, endOffset: number): SourceReference {
-  const start = offsetPosition(source, startOffset);
-  const end = offsetPosition(source, endOffset);
-  return {
-    path: relativePath,
-    line: start.line,
-    column: start.column,
-    endLine: end.line,
-    endColumn: end.column,
-    startOffset,
-    endOffset,
-    sourceHash: hash,
-  };
-}
-
-function stringValue(expression: string | undefined): string | undefined {
-  if (!expression) {
-    return undefined;
-  }
-  const match = /^(?:r)?(['"])([\s\S]*)\1$/.exec(expression.trim());
-  return match && !match[2].includes("$") ? match[2] : undefined;
-}
 
 function expressionState(expression: string | undefined): AutomationState {
   if (!expression) {
@@ -277,26 +105,56 @@ function isInConstContext(node: SyntaxNode, startOffset: number): boolean {
 
 function cleanIdentifierPart(value: string): string {
   return value
-    .replace(/(?:Screen|Page|View|Widget|State)$/i, "")
+    .replace(/(?<=[a-z0-9])(?:Screen|Page|View|Widget|State)$/, "")
+    .replace(/_(?:screen|page|view|widget|state)$/i, "")
     .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .replace(/[^A-Za-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .toLowerCase() || "app";
 }
 
-function suggestedIdentifier(invocation: Invocation, nested: Invocation[]): string {
-  const scope = cleanIdentifierPart(enclosingClassName(invocation.node) ?? "app");
+/** Directory names that carry no feature meaning in an identifier. */
+const GENERIC_PATH_SEGMENTS = new Set([
+  "lib", "app", "src", "views", "view", "screens", "screen", "pages", "page", "components", "component",
+  "widgets", "widget", "shared", "common", "features", "feature", "presentation", "ui", "core",
+]);
+
+/** `lib/features/auth/login_screen.dart` -> `auth.login`; falls back to the enclosing class name. */
+function identifierScope(relativePath: string, className: string | undefined): string {
+  const segments = relativePath.replace(/\.dart$/, "").split("/");
+  const file = cleanIdentifierPart(segments[segments.length - 1] ?? "");
+  const directories = segments.slice(0, -1)
+    .filter((segment) => !GENERIC_PATH_SEGMENTS.has(segment.toLowerCase()))
+    .map(cleanIdentifierPart)
+    .slice(-2);
+  const parts = [...directories];
+  if (file && file !== "app" && !["main", "index"].includes(file) && file !== directories[directories.length - 1]) {
+    parts.push(file);
+  }
+  return parts.length ? parts.join(".") : cleanIdentifierPart(className ?? "app");
+}
+
+function suggestedIdentifier(invocation: Invocation, nested: Invocation[], relativePath: string): string {
+  const scope = identifierScope(relativePath, enclosingClassName(invocation.node));
   const textCall = nested.find((candidate) => candidate.widgetType === "Text" && candidate.positional.length > 0);
   const visibleText = stringValue(textCall?.positional[0]?.text);
   const expressionIntent = textCall?.positional[0]?.text
     ?.replace(/\([^)]*\)/g, "")
     .split(".").pop()
     ?.replace(/Label$/i, "");
+  // Project widgets usually take their caption as an argument (text:, title:, label:) instead of a Text child.
+  const captionExpression = TEXT_ARGUMENTS.map((name) => invocation.named.get(name)?.text).find((value) => !!value);
+  const captionLiteral = stringValue(captionExpression);
+  const captionIntent = captionExpression && /^[A-Za-z_$][\w$.!?]*$/.test(captionExpression)
+    ? captionExpression.split(".").pop()?.replace(/[!?]/g, "").replace(/Label$/i, "")
+    : undefined;
   let action = visibleText
     ? cleanIdentifierPart(visibleText)
-    : expressionIntent ? cleanIdentifierPart(expressionIntent) : cleanIdentifierPart(invocation.widgetType);
+    : expressionIntent ? cleanIdentifierPart(expressionIntent)
+      : captionLiteral ? cleanIdentifierPart(captionLiteral)
+        : captionIntent ? cleanIdentifierPart(captionIntent) : cleanIdentifierPart(invocation.widgetType);
   const callback = [...invocation.named.keys()].find((name) => DEFAULT_CALLBACKS.has(name));
-  if (!visibleText && !expressionIntent && callback) {
+  if (!visibleText && !expressionIntent && !captionLiteral && !captionIntent && callback) {
     action = cleanIdentifierPart(callback.replace(/^on/, ""));
   }
   return `${scope}.${action}`;
@@ -314,6 +172,32 @@ function firstExpression(invocations: Invocation[], names: string[]): string | u
   return undefined;
 }
 
+type ValueSpanLike = { text: string; startOffset: number; endOffset: number };
+
+function namedArgument(invocation: Invocation, names: string[]): ValueSpanLike | undefined {
+  for (const name of names) {
+    const value = invocation.named.get(name);
+    if (value && value.text !== "null") {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+/** Where a new named argument goes in an invocation, so it can be appended without touching positional arguments. */
+function argumentInsertion(invocation: Invocation, source: string): NonNullable<SemanticsEvidence["argumentInsert"]> {
+  const args = invocation.node.namedChildren.filter((child) => child.type === "named_argument" || child.type === "argument");
+  const last = args[args.length - 1];
+  if (!last) {
+    return { offset: invocation.argumentsStart + 1, leadingComma: false, empty: true };
+  }
+  const tail = source.slice(last.endIndex, invocation.argumentsEnd - 1);
+  const comma = tail.indexOf(",");
+  return comma >= 0
+    ? { offset: last.endIndex + comma + 1, leadingComma: false, empty: false }
+    : { offset: last.endIndex, leadingComma: true, empty: false };
+}
+
 function buildSemanticsEvidence(
   findingInvocation: Invocation,
   allInvocations: Invocation[],
@@ -321,6 +205,7 @@ function buildSemanticsEvidence(
   relativePath: string,
   source: string,
   hash: string,
+  contract: SemanticsContract | undefined,
 ): SemanticsEvidence {
   const nested = allInvocations.filter((candidate) =>
     candidate.startOffset >= findingInvocation.startOffset && candidate.endOffset <= findingInvocation.endOffset,
@@ -330,11 +215,19 @@ function buildSemanticsEvidence(
     ? allInvocations.find((candidate) => candidate.widgetType === "SemanticsProperties" && candidate.startOffset > owner.startOffset && candidate.endOffset < owner.endOffset)
     : undefined;
   const argumentOwner = properties ?? owner;
-  const identifier = argumentOwner?.named.get("identifier");
+  // The widget's own parameters (resolved contract, else the conventional names) count as much as a wrapper.
+  const identifierNames = contract?.identifier ? [contract.identifier.name]
+    : contract?.prefix ? [contract.prefix.name]
+      : [...DEFAULT_IDENTIFIER_ARGS, ...DEFAULT_PREFIX_ARGS];
+  const contractIdentifier = namedArgument(findingInvocation, identifierNames);
+  const contractLabel = namedArgument(findingInvocation, contract?.label ? [contract.label.name, ...DEFAULT_LABEL_ARGS] : DEFAULT_LABEL_ARGS);
+  const contractHint = namedArgument(findingInvocation, contract?.hint ? [contract.hint.name, ...DEFAULT_HINT_ARGS] : DEFAULT_HINT_ARGS);
+  const wrapperIdentifier = argumentOwner?.named.get("identifier");
+  const identifier = wrapperIdentifier ?? contractIdentifier;
   const label = owner?.named.get("label")?.text ?? properties?.named.get("label")?.text ??
-    firstExpression(nested, ["semanticLabel", "labelText"]);
+    contractLabel?.text ?? firstExpression(nested, ["semanticLabel", "labelText"]);
   const hint = owner?.named.get("hint")?.text ?? properties?.named.get("hint")?.text ??
-    firstExpression(nested, ["hintText"]);
+    contractHint?.text ?? firstExpression(nested, ["hintText"]);
   const tooltip = firstExpression(nested, ["tooltip"]);
   const localizedCandidates = [label, hint, tooltip]
     .filter((value): value is string => !!value && value !== "null" && stringValue(value) === undefined);
@@ -349,9 +242,13 @@ function buildSemanticsEvidence(
     identifierValue: identifier ? reference(relativePath, source, hash, identifier.startOffset, identifier.endOffset) : undefined,
     identifierInsertOffset: argumentOwner ? argumentOwner.argumentsStart + 1 : undefined,
     usesPropertiesConstructor: !!properties,
+    argumentInsert: argumentInsertion(findingInvocation, source),
+    viaWidgetContract: !wrapperIdentifier && !!contractIdentifier,
     localizedCandidates: [...new Set(localizedCandidates)],
   };
 }
+
+const TEXT_ARGUMENTS = ["text", "title", "label", "caption", "name", "content", "hint", "placeholder"];
 
 function accessibilityState(kind: InteractionKind, invocation: Invocation, nested: Invocation[], evidence: SemanticsEvidence): AccessibilityState {
   if (evidence.labelExpression || evidence.hintExpression || evidence.tooltipExpression) {
@@ -373,11 +270,52 @@ function accessibilityState(kind: InteractionKind, invocation: Invocation, neste
   return "uncertain";
 }
 
+function resolveInvocation(
+  index: ProjectWidgetIndex,
+  relativePath: string,
+  invocation: Invocation,
+  explicitKind: InteractionKind | undefined,
+  opaqueReason: string | undefined,
+): { resolved?: ResolvedWidget; ambiguousWith?: string[] } {
+  if (opaqueReason) {
+    return {};
+  }
+  const resolution = index.resolve(relativePath, invocation.widgetType);
+  const { definition } = resolution;
+  if (!definition) {
+    return resolution.ambiguous.length
+      ? { ambiguousWith: resolution.ambiguous.map((candidate) => candidate.path) }
+      : {};
+  }
+  // A project class that shares a name with an SDK widget only wins when it is really imported.
+  if (explicitKind && resolution.resolution !== "imports") {
+    return {};
+  }
+  const segments = invocation.callee.split(".");
+  const constructorName = segments[segments.indexOf(invocation.widgetType) + 1] ?? "";
+  return {
+    resolved: {
+      className: definition.className,
+      path: definition.path,
+      line: definition.line,
+      shared: false,
+      composite: false,
+      layer: 0,
+      contract: definition.contracts.get(constructorName) ?? definition.contract,
+      hasVisibleText: definition.hasVisibleText,
+      passesText: TEXT_ARGUMENTS.some((name) => invocation.named.has(name)),
+      resolution: resolution.resolution ?? "imports",
+    },
+  };
+}
+
 async function scanFile(
   root: string,
   absolutePath: string,
   language: Language,
   options: InteractiveScannerOptions,
+  index: ProjectWidgetIndex,
+  interactiveControls: Set<string>,
 ): Promise<{ findings: InteractiveFinding[]; parseError: boolean }> {
   const source = fs.readFileSync(absolutePath, "utf8");
   const relativePath = normalizePath(path.relative(root, absolutePath));
@@ -401,6 +339,11 @@ async function scanFile(
       return false;
     }
     if (KNOWN_WIDGETS[invocation.widgetType] || OPAQUE_WIDGETS[invocation.widgetType] || customWidgets.has(invocation.widgetType)) {
+      return true;
+    }
+    // An invocation of a project control that contains an interactive root is interactive, whatever its callbacks are called.
+    const definition = index.resolve(relativePath, invocation.widgetType).definition;
+    if (definition && interactiveControls.has(`${definition.path}#${definition.className}`)) {
       return true;
     }
     return [...invocation.named.entries()].some(([name, value]) => callbacks.has(name) && value.text !== "null");
@@ -430,21 +373,28 @@ async function scanFile(
       ? "unknown"
       : callbackEntries.every(([, value]) => value.text === "null") ? "disabled" : "enabled";
     const nested = invocations.filter((candidate) => candidate.startOffset >= invocation.startOffset && candidate.endOffset <= invocation.endOffset);
-    const semantics = buildSemanticsEvidence(invocation, invocations, semanticsOwners, relativePath, source, hash);
+    const { resolved, ambiguousWith } = resolveInvocation(index, relativePath, invocation, explicitKind, opaqueReason);
+    const semantics = buildSemanticsEvidence(invocation, invocations, semanticsOwners, relativePath, source, hash, resolved?.contract);
+    const owner = index.ownerAt(relativePath, invocation.startOffset);
     return {
       occurrenceId: sha256(`${relativePath}:${invocation.startOffset}:${invocation.endOffset}:${invocation.widgetType}:${hash}`).slice(0, 24),
       widgetType: invocation.widgetType,
       kind,
       callbacks: callbackNames,
-      confidence: explicitKind || opaqueReason || customWidgets.has(invocation.widgetType) ? "high" : "medium",
+      confidence: explicitKind || opaqueReason || customWidgets.has(invocation.widgetType) || resolved ? "high" : "medium",
       enabled,
       source: reference(relativePath, source, hash, invocation.startOffset, invocation.endOffset),
       semantics,
       accessibility: accessibilityState(kind, invocation, nested, semantics),
       automation: expressionState(semantics.identifierExpression),
-      suggestedIdentifier: suggestedIdentifier(invocation, nested),
+      suggestedIdentifier: suggestedIdentifier(invocation, nested, relativePath),
       opaqueReason,
       inConstContext: isInConstContext(invocation.node, invocation.startOffset),
+      role: resolved ? "local-call-site" : "sdk",
+      remediation: "wrap",
+      owner: owner ? { className: owner.className, path: owner.path } : undefined,
+      resolved,
+      ambiguousWith,
     };
   });
 
@@ -472,26 +422,43 @@ export async function scanInteractives(rootPath: string, options: InteractiveSca
   const language = await loadDartLanguage();
   const { files, excluded } = collectDartFiles(root, options.excludedGlobs ?? []);
   const diagnostics: InteractiveScanResult["diagnostics"] = [];
-  const allFindings: InteractiveFinding[] = [];
-  for (const file of files) {
-    try {
-      const result = await scanFile(root, file, language, options);
-      allFindings.push(...result.findings);
-      if (result.parseError) {
+  const index = await buildWidgetIndex(root, files, language);
+
+  // Which project widgets are interactive controls depends on the findings inside them, and their call
+  // sites are findings too, so scan until that set is stable (a wrapper of a wrapper needs a second pass).
+  let interactiveControls = new Set<string>();
+  let allFindings: InteractiveFinding[] = [];
+  for (let round = 0; round < 4; round++) {
+    diagnostics.length = 0;
+    allFindings = [];
+    for (const file of files) {
+      try {
+        const result = await scanFile(root, file, language, options, index, interactiveControls);
+        allFindings.push(...result.findings);
+        if (result.parseError) {
+          diagnostics.push({
+            path: normalizePath(path.relative(root, file)),
+            severity: "warning",
+            message: "The Dart parser reported syntax errors; findings from this file may be incomplete.",
+          });
+        }
+      } catch (error) {
         diagnostics.push({
           path: normalizePath(path.relative(root, file)),
-          severity: "warning",
-          message: "The Dart parser reported syntax errors; findings from this file may be incomplete.",
+          severity: "error",
+          message: error instanceof Error ? error.message : String(error),
         });
       }
-    } catch (error) {
-      diagnostics.push({
-        path: normalizePath(path.relative(root, file)),
-        severity: "error",
-        message: error instanceof Error ? error.message : String(error),
-      });
+    }
+    const next = interactiveWidgetKeys(allFindings, index, options);
+    const stable = next.size === interactiveControls.size && [...next].every((key) => interactiveControls.has(key));
+    interactiveControls = next;
+    if (stable) {
+      break;
     }
   }
+
+  const { widgets, composites } = analyzeSharedWidgets(index, allFindings, options);
 
   const globalLiteralCounts = new Map<string, number>();
   for (const finding of allFindings) {
@@ -536,10 +503,17 @@ export async function scanInteractives(rootPath: string, options: InteractiveSca
       accessibilityMissing: allFindings.filter((finding) => finding.accessibility === "missing").length,
       accessibilityUncertain: allFindings.filter((finding) => finding.accessibility === "uncertain").length,
       opaque: allFindings.filter((finding) => finding.kind === "opaque").length,
+      sharedWidgets: widgets.length,
+      sharedWidgetsMissingContract: widgets.filter((widget) => widget.requiredParamsToAdd.length > 0 || widget.contract.status !== "complete").length,
+      callSitesMissingContract: allFindings.filter((finding) => finding.role === "shared-call-site" && finding.automation !== "present").length,
+      composites: composites.length,
+      compositeCallSitesMissing: composites.reduce((total, composite) => total + composite.callSitesMissing, 0),
     },
     excludedPaths: excluded,
     diagnostics,
     groups,
+    widgets,
+    composites,
   };
 }
 

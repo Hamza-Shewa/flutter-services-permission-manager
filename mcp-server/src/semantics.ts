@@ -17,6 +17,8 @@ const scannerOptionsShape = {
   customWidgets: z.array(z.string()).optional(),
   callbackNames: z.array(z.string()).optional(),
   ignoredWidgets: z.array(z.string()).optional(),
+  sharedWidgetMinCallSites: z.number().int().min(1).optional(),
+  sharedWidgetDirs: z.array(z.string()).optional(),
 };
 
 export const scanInteractivesSchema = z.object(scannerOptionsShape);
@@ -51,6 +53,8 @@ function optionsFrom(args: Record<string, unknown>): InteractiveScannerOptions {
     customWidgets: (args.customWidgets as string[] | undefined) ?? defaults.customWidgets,
     callbackNames: (args.callbackNames as string[] | undefined) ?? defaults.callbackNames,
     ignoredWidgets: (args.ignoredWidgets as string[] | undefined) ?? defaults.ignoredWidgets,
+    sharedWidgetMinCallSites: (args.sharedWidgetMinCallSites as number | undefined) ?? defaults.sharedWidgetMinCallSites,
+    sharedWidgetDirs: (args.sharedWidgetDirs as string[] | undefined) ?? defaults.sharedWidgetDirs,
   };
 }
 

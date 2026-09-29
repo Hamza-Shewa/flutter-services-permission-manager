@@ -1,14 +1,15 @@
 import * as vscode from 'vscode';
 import { execWithEnv, getFlutterCommand } from '../../core/utils/exec.js';
-import { migrateAndroidSetup, migrateAndroid16kbSetup } from '../../features/migration/migration.service.js';
+import { migrateAndroidSetup, migrateAndroid16kbSetup, type MigrationReport } from '../../features/migration/migration.service.js';
 import { logger, toError, toErrorMessage } from '../../core/shared/index.js';
 import type { WebviewRef } from './index.js';
 
-function formatReport(message: string, details: string[]): string {
-    if (details.length === 0) {
-        return message;
-    }
-    return `${message}\n${details.map((d) => `• ${d}`).join('\n')}`;
+function formatReport(report: MigrationReport): string {
+    return [
+        report.message,
+        ...report.details.map((d) => `• ${d}`),
+        ...report.warnings.map((w) => `⚠ ${w}`)
+    ].join('\n');
 }
 
 export async function handleMigrateAndroid(ref: WebviewRef): Promise<void> {
@@ -17,7 +18,8 @@ export async function handleMigrateAndroid(ref: WebviewRef): Promise<void> {
         ref.webview.postMessage({
             type: 'saveResult',
             success: true,
-            message: formatReport(report.message, report.details)
+            message: formatReport(report),
+            refresh: report.changed
         });
     } catch (error) {
         logger.error('Android migration error:', toError(error));
@@ -35,7 +37,8 @@ export async function handleMigrateAndroid16kb(ref: WebviewRef): Promise<void> {
         ref.webview.postMessage({
             type: 'saveResult',
             success: true,
-            message: formatReport(report.message, report.details)
+            message: formatReport(report),
+            refresh: report.changed
         });
     } catch (error) {
         logger.error('16 KB page-size migration error:', toError(error));

@@ -316,6 +316,8 @@ export interface SaveResultMessage {
   type: "saveResult";
   success: boolean;
   message: string;
+  /** Ask the webview to re-read the project files (set after a migration rewrote them). */
+  refresh?: boolean;
 }
 
 /** All outgoing webview message types */

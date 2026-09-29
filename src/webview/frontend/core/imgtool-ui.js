@@ -116,13 +116,12 @@ export function renderResult({ resultEl, filesEl, summaryEl, bodyEl }, result) {
   }
   for (const [label, groupFiles] of groups) {
     const heading = document.createElement("div");
-    heading.style.fontWeight = "600";
-    heading.style.marginTop = "6px";
+    heading.className = "imgtool-files-group";
     heading.textContent = `${label} (${groupFiles.length})`;
     bodyEl.appendChild(heading);
     for (const file of groupFiles) {
       const row = document.createElement("div");
-      row.style.paddingLeft = "10px";
+      row.className = "imgtool-files-row";
       row.textContent = `${file.path} · ${file.width}×${file.height}`;
       bodyEl.appendChild(row);
     }
@@ -132,14 +131,4 @@ export function renderResult({ resultEl, filesEl, summaryEl, bodyEl }, result) {
 export function hideResult({ resultEl, filesEl }) {
   if (resultEl) { resultEl.style.display = "none"; }
   if (filesEl) { filesEl.style.display = "none"; }
-}
-
-/** Mouse-wheel over `targets` nudges a bound range by ±`step` without scrolling the page. */
-export function wheelToRange(targets, range, step = 2) {
-  for (const target of targets) {
-    target?.addEventListener("wheel", (event) => {
-      event.preventDefault();
-      range.nudge(event.deltaY < 0 ? step : -step);
-    }, { passive: false });
-  }
 }

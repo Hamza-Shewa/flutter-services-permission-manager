@@ -3,14 +3,16 @@ import { bus } from "../../core/bus.js";
 import * as api from "../../core/api.js";
 import {
   loadImage,
+  sourceRect,
   renderComposed,
   renderSilhouette,
+  paintEditor,
   blit,
-  frameScheduler,
   circleSafeScale,
   marginFraction,
   bindRange,
 } from "../../core/image-preview.js";
+import { createCropper } from "../../core/cropper.js";
 import {
   byId,
   bindBackground,
@@ -19,7 +21,6 @@ import {
   setBusy,
   renderResult,
   hideResult,
-  wheelToRange,
 } from "../../core/imgtool-ui.js";
 
 const els = {
@@ -34,6 +35,10 @@ const els = {
   trimHint: byId("iconsTrimHint"),
   previewEmpty: byId("iconsPreviewEmpty"),
   previewRow: byId("iconsPreviewRow"),
+  editor: byId("iconsEditor"),
+  zoomBadge: byId("iconsZoomBadge"),
+  center: byId("iconsCenterButton"),
+  reset: byId("iconsResetButton"),
   tilesCard: byId("iconsTilesCard"),
   showSafe: byId("iconsShowSafeZone"),
   silhouetteWarning: byId("iconsSilhouetteWarning"),
@@ -72,16 +77,30 @@ let image = null;
 let hasLoadedCurrentPreview = false;
 let activePreset = null;
 
-const draw = () => {
+/** Canvases in a hidden preview panel have no size to draw at; they redraw when their panel is shown. */
+const isVisible = (canvas) => canvas.offsetParent !== null;
+
+function draw(view, interaction) {
+  scale.set(Math.round(view.s), false);
+  if (els.zoomBadge) { els.zoomBadge.textContent = `${Math.round(view.s)}%`; }
   if (!image || !source) { return; }
   const trim = !!els.trim?.checked;
-  const scalePercent = scale.get();
-  renderComposed(colored, image, source.preview, { scalePercent, background: background.get(), trim }, COLORED_SIZE);
-  renderSilhouette(silhouette, image, source.preview, { scalePercent, trim }, SILHOUETTE_SIZE);
-  document.querySelectorAll('[data-icons-preview="colored"]').forEach((c) => blit(c, colored));
-  document.querySelectorAll('[data-icons-preview="silhouette"]').forEach((c) => blit(c, silhouette));
-};
-const scheduleDraw = frameScheduler(draw);
+  const pan = { x: view.x, y: view.y };
+  const bg = background.get();
+
+  paintEditor(els.editor, image, sourceRect(image, source.preview, trim), {
+    scalePercent: view.s,
+    pan,
+    fill: bg,
+    safeZone: !!els.showSafe?.checked,
+    ...interaction,
+  });
+  renderComposed(colored, image, source.preview, { scalePercent: view.s, background: bg, trim, pan }, COLORED_SIZE);
+  renderSilhouette(silhouette, image, source.preview, { scalePercent: view.s, trim, pan }, SILHOUETTE_SIZE);
+  document.querySelectorAll('[data-icons-preview="colored"]').forEach((c) => { if (isVisible(c)) { blit(c, colored); } });
+  document.querySelectorAll('[data-icons-preview="silhouette"]').forEach((c) => { if (isVisible(c)) { blit(c, silhouette); } });
+}
+const scheduleDraw = () => cropper.refresh();
 
 function markPreset(name) {
   activePreset = name;
@@ -94,10 +113,20 @@ const scale = bindRange({
   slider: els.slider,
   number: els.number,
   resetValue: 100,
-  onChange: () => {
+  onChange: (value) => {
     markPreset(null);
-    scheduleDraw();
+    cropper.set({ s: value }, { animate: false });
   },
+});
+
+const cropper = createCropper({
+  canvas: els.editor,
+  minScale: 40,
+  maxScale: 200,
+  initial: { s: 100, x: 0, y: 0 },
+  onFrame: draw,
+  onUserInput: () => markPreset(null),
+  onReset: () => applyPreset("auto"),
 });
 
 const background = bindBackground({
@@ -113,28 +142,28 @@ function applyPreset(name) {
   const preview = source?.preview;
   if (!preview) { return; }
   const hasMargins = marginFraction(preview) > 0.02;
+  let percent = 100;
   if (name === "auto") {
     if (preview.hasTransparency) {
       els.trim.checked = hasMargins;
-      scale.set(circleSafeScale(preview, els.trim.checked));
+      percent = circleSafeScale(preview, els.trim.checked);
     } else if (preview.suggestedBackground && marginFraction(preview) > 0.05) {
       els.trim.checked = true;
       background.set(preview.suggestedBackground);
-      scale.set(circleSafeScale(preview, true));
+      percent = circleSafeScale(preview, true);
     } else {
       els.trim.checked = false;
-      scale.set(100);
     }
   } else if (name === "safe") {
-    scale.set(circleSafeScale(preview, !!els.trim.checked));
+    percent = circleSafeScale(preview, !!els.trim.checked);
   } else if (name === "fill") {
     els.trim.checked = hasMargins;
-    scale.set(100);
   } else if (name === "padded") {
-    scale.set(80);
+    percent = 80;
   }
+  // Presets re-center too: a size preset that leaves the artwork off to one side would be surprising.
+  cropper.set({ s: percent, x: 0, y: 0 });
   markPreset(name);
-  scheduleDraw();
 }
 
 function currentAndroidFamilies() {
@@ -196,7 +225,7 @@ els.generate?.addEventListener("click", () => {
   api.generateIcons({
     sourcePath: source.path,
     platforms: selectedPlatform(els.platformAndroid, els.platformIOS),
-    scalePercent: scale.get(),
+    ...cropper.result(),
     backgroundColor: background.get(),
     trimMargins: !!els.trim?.checked,
     androidFamilies: currentAndroidFamilies(),
@@ -209,15 +238,28 @@ document.querySelectorAll("[data-icons-preset]").forEach((chip) => {
 els.trim?.addEventListener("change", () => {
   // Keep a size preset meaningful when the reference box changes.
   if (activePreset === "safe" || activePreset === "auto") {
-    scale.set(circleSafeScale(source?.preview, !!els.trim.checked));
-    markPreset(activePreset);
+    const keep = activePreset;
+    cropper.set({ s: circleSafeScale(source?.preview, !!els.trim.checked) });
+    markPreset(keep);
   }
   scheduleDraw();
 });
 els.showSafe?.addEventListener("change", () => {
   els.tilesCard?.classList.toggle("imgtool-show-safe", els.showSafe.checked);
+  scheduleDraw();
 });
-wheelToRange([els.previewRow], scale);
+els.tilesCard?.classList.toggle("imgtool-show-safe", !!els.showSafe?.checked);
+els.center?.addEventListener("click", () => cropper.userSet({ x: 0, y: 0 }));
+els.reset?.addEventListener("click", () => applyPreset("auto"));
+
+document.querySelectorAll('input[name="iconsPreviewTab"]').forEach((radio) => {
+  radio.addEventListener("change", () => {
+    document.querySelectorAll("[data-icons-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.iconsPanel !== radio.value;
+    });
+    scheduleDraw();
+  });
+});
 
 [els.platformAndroid, els.platformIOS, els.platformBoth].forEach((radio) => {
   radio?.addEventListener("change", () => {

@@ -261,7 +261,7 @@ export async function generateSplash(options: GenerateSplashOptions): Promise<Sp
     const scalePercent = clampSplashScalePercent(options.scalePercent);
     const logoSize = clampSplashLogoSize(options.logoSize);
     // The background is written as a native color, not baked into the image - the foreground is always composed transparent.
-    const foreground = composeWorkingImage(source, scalePercent, undefined, DEFAULT_WORKING_CANVAS_SIZE);
+    const foreground = composeWorkingImage(source, scalePercent, undefined, DEFAULT_WORKING_CANVAS_SIZE, { x: options.offsetX, y: options.offsetY });
 
     const androidFiles = wantsAndroid
       ? await generateAndroidSplash({ androidManifestUri: options.androidManifestUri!, foreground, backgroundColor, logoSize })

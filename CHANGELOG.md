@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Connect MCP is now genuinely user-level.** Each client got one registration per project (`flutter-config-manager-<project>-<hash>` with `--project <path>` baked in). It now registers a single `flutter-config-manager` server without a project: the client starts it in the folder you work in, and the server resolves the Flutter project from there (including from a subfolder such as `lib/`). Cursor, which has no such guarantee for its global config, passes `${workspaceFolder}`. Per-project entries from earlier versions are detected as "Update available" and replaced. The Connect MCP dialog no longer needs an open workspace.
+- **Gemini CLI install problems.** Failures showed PowerShell's `#< CLIXML ... Preparing modules for first use` (or the whole encoded command) instead of Gemini's message; the wrapper now uses plain-text output and the real error is shown, with colour codes stripped. `~/.gemini/settings.json` with comments or trailing commas (which Gemini allows) no longer breaks the status check. The 40-character per-project server name pushed fully qualified tool names past Gemini's 63-character limit; the short name avoids that. Because Gemini silently disables user-level MCP servers in folders it does not trust, the dialog now says so when the open workspace is not trusted.
+
+- **Connect MCP on macOS and Linux.** An editor started from the macOS Dock or a Linux launcher has a minimal `PATH`, so a Gemini/Codex/Claude CLI installed through nvm, fnm, volta, asdf, mise, pnpm, bun or Homebrew was either not found or could not start (`env: node: No such file or directory`). Discovery now searches those locations (newest Node version first), the CLI runs with its own directory and the version-manager directories in front of `PATH`, and that Node error gets a clear explanation. Commands may take 60s instead of 20s (a cold `gemini mcp add` is slow), and a timeout says so. Gemini's `~/.gemini` is read from `GEMINI_CLI_HOME` when that variable is set, which previously made a successful registration look unverifiable. The Gemini command now puts `-e ELECTRON_RUN_AS_NODE=1` last, so a Gemini whose array option keeps consuming words cannot swallow the server name and command.
+
+### Added
+
+- **Semantics: shared-widget-first workflow.** The scanner now builds a project widget index (definitions, constructor parameters, imports and `export` barrels) and reports `widgets`: shared interactive controls in fix order (base widgets before the widgets that wrap them) with call-site counts, whether they show their own text, their semantics contract (`complete`, `declaredNotForwarded`, `missing`) and the parameters to add. Findings gain `role`, `owner` and the resolved definition; screens and multi-control composites are never treated as shared controls, and ambiguous names are listed instead of guessed. New settings: `interactives.sharedWidgetMinCallSites`, `interactives.sharedWidgetDirs`.
+- **Copy AI prompt v2**: four ordered phases (shared widgets, their call sites, everything else, verify) with the shared-widget table embedded. Shared widgets get `required semanticsIdentifier`, plus `required semanticsLabel` only when they have no visible text, so an un-updated call site is a compile error; each rule is stated once, and the phases are skipped when a project has no shared widgets.
+- **Semantics Phase 3 (everything outside shared controls).** Every finding now has a `remediation` - `shared-widget`, `pass-contract`, `composite-prefix`, `reuse-wrapper`, `builtin-label`, `wrap` or `manual` - and reused widgets with several controls are reported as `composites`. A composite takes a required `semanticsIdentifierPrefix` and derives each inner identifier from it (`'$semanticsIdentifierPrefix.undo'`), so call sites are checked by the compiler like shared controls. Screens (`...Screen`, `...Page`, and `...View` under views/screens/pages) are never composites, and one-off widgets keep literal identifiers. The prompt's Phase 3 lists the composites, the remediation counts and the items that need a person. The fixer passes the prefix through the widget's own parameter, names icon-only `IconButton`/`FloatingActionButton`/`PopupMenuButton` through `tooltip` before adding one `Semantics`, and refuses to hardcode an identifier inside a composite.
+- The prompt no longer allows optional semantics parameters for widgets in a published package: parameters stay required everywhere.
+- Semantics tab: a **Shared widgets** panel, role/contract notes on findings, and two new summary counters.
+
+### Changed
+
+- Rescans recognise the pattern the prompt asks for: `semanticsIdentifier:` (or the widget's own parameter) at a call site counts as an identifier, and a shared widget's own root that forwards its parameter counts as delegated. Previously only a wrapping `Semantics` was recognised, so progress never showed.
+- `preview_semantics_fixes` accepts a `labelExpression` that already exists anywhere in the project's Dart code (generated localization accessors included), not only inside the widget being fixed.
+- `preview_semantics_fixes` passes the identifier through a widget's own parameter (appending a named argument) instead of adding a second `Semantics` wrapper, and refuses to hardcode one inside a shared widget's definition.
+- Suggested identifiers follow the file path (`lib/features/auth/login_screen.dart` -> `auth.login.<action>`) and use caption arguments such as `text:`.
+
+### Fixed
+
+- **Full Migration produced projects that did not build** (checked with real Gradle builds of Kotlin DSL and Groovy apps):
+  - `build.gradle.kts` was replaced by a Groovy-derived template that does not compile (`extra { }`, an unsafe `namespace` smart cast); the project script is now edited in place and the subproject defaults are valid in both DSLs.
+  - `android:extractNativeLibs="true"` was added to the manifest, which AGP 9 rejects (`Avoid setting android:extractNativeLibs="true" explicitly`). It is no longer written, and an existing one is removed and carried over to `useLegacyPackaging`.
+  - The Flutter plugin loader was written with `apply false`, an existing newer AGP (for example 9.4 pre-releases) or Gradle wrapper was downgraded, and `flutter.compileSdkVersion` was replaced by fixed numbers. Versions are now raise-only and Flutter-managed values get a floor (`maxOf(flutter.compileSdkVersion, 37)`), which plugins built for AGP 9 need.
+  - `minSdk` was rewritten to a fixed number (raising or lowering it); it is now left alone.
+  - Firebase plugins declared with `apply plugin:` were dropped when the app script was converted; they now move into the `plugins {}` block. `$kotlin_version` dependencies left behind by the removed `buildscript` block are removed.
+  - `gradle.properties` received the reference project's machine-specific flags (`org.gradle.daemon=false`, `kotlin.incremental=false`, notes about JDK 25 and the `C:`/`E:` drives); only the AGP 9 flags are written now.
+  - The Kotlin DSL `useLibrary` line used Groovy syntax.
+- **16 KB button did nothing for standard projects**: it only edited quoted `ndkVersion` literals, so `ndkVersion = flutter.ndkVersion` (the Flutter default) was never touched while the message still claimed success. It now reads the Flutter SDK's NDK and pins r28+ when needed, reports honestly when nothing needed changing, and warns about AGP older than 8.5.1 and prebuilt libraries.
+- The webview never refreshed after either migration (it matched on message text that no longer existed); results now carry an explicit `refresh` flag and list warnings.
+
+### Changed
+
+- **Icons & Splash crop editor**: both tabs now have a real crop editor instead of a centered zoom slider. Drag the artwork to reposition it, scroll or pinch to zoom toward the cursor (with easing), nudge with the arrow keys, and snap to center with visual guides (hold Shift to disable snapping). Artwork that overflows the crop square is shown dimmed so the crop is obvious, and the chosen position is applied to every generated file (`offsetX` / `offsetY`, percent of the canvas).
+- App Icons previews are grouped behind a Shapes / Home screen / Play Store / Notification switcher, so the preview column no longer outgrows the window. Wheel-scrolling over previews no longer hijacks page scroll; only the editor zooms.
+
 ## [1.2.0] - 2026-09-22
 
 - Added a universal **Connect MCP** dialog to the global top navigation. It detects and installs user-level registrations for Codex, Claude Code, Gemini CLI, and Cursor, provides portable JSON for other clients, handles Windows/macOS/Linux launchers, and prevents duplicate workspace registrations.

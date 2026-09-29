@@ -10,13 +10,12 @@ import { toErrorMessage } from "../../core/shared/index.js";
 import type { WebviewRef } from "./index.js";
 
 function installerOptions(extensionRoot: string): CodexMcpInstallerOptions {
+  // The registration is user-level and follows whatever project the AI client is started in, so no
+  // workspace is required to connect; the open one is only used to explain client-side folder trust.
   const folder = vscode.workspace.workspaceFolders?.[0];
-  if (!folder) {
-    throw new Error("Open a Flutter workspace before connecting its MCP server.");
-  }
   const configuration = vscode.workspace.getConfiguration("flutter-config-manager.mcp");
   return {
-    projectRoot: folder.uri.fsPath,
+    projectRoot: folder?.uri.fsPath,
     extensionRoot,
     configuredCodexExecutable: configuration.get<string>("codexExecutable"),
     configuredClaudeExecutable: configuration.get<string>("claudeExecutable"),
@@ -61,7 +60,7 @@ export async function handleInstallMcpClient(
     const status = await checkMcpClients(options);
     ref.webview.postMessage({ type: "mcpClientsStatus", ...status });
     void vscode.window.showInformationMessage(
-      `${result.label} MCP connected at user scope. Restart or open a new task in that client to load the tools.`,
+      `${result.label} MCP connected at user level. It serves whichever Flutter project you start ${result.label} in. Restart or open a new task in that client to load the tools.`,
     );
   } catch (error) {
     const message = toErrorMessage(error);

@@ -9,25 +9,41 @@ export {
     migrateAndroid16kbSetup
 } from './migration.service.js';
 
-export type { MigrationReport } from './migration.service.js';
+export {
+    runFullMigration,
+    run16kbMigration,
+    detectGradleLayout,
+    readFlutterNdk
+} from './migration-core.js';
+
+export type { MigrationReport, AndroidLayout, GradleFile } from './migration-core.js';
 
 export {
     parseVersion,
     compareVersions,
     maxVersion,
+    isPrerelease,
     ensurePluginManagement,
+    isLegacySettings,
+    buildDeclarativeSettings,
     updateSettingsPlugins,
     migrateProjectBuildGradle,
     ensureProjectRepositories,
     ensureDependencyResolutionManagement,
     migrateAppBuildGradle,
+    normalizeNdk,
+    ndkSupports16Kb,
+    readLiteralMinSdk,
     updateGradleWrapper,
     bumpGradleWrapperMinimum,
+    ensureAgpGradleProperties,
     bumpAgpVersion,
     bumpSdkVersions,
     bumpNdkVersion,
     getAgpVersion,
     ensureUseLegacyPackaging,
-    ensureExtractNativeLibs,
+    removeExtractNativeLibs,
     detectFirebaseUsage
 } from './migration-transforms.js';
+
+export type { MigrationVersions, FirebaseUsage, AppBuildOptions } from './migration-transforms.js';

@@ -4,7 +4,8 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-const COMMAND_TIMEOUT_MS = 20_000;
+/** `gemini mcp add` starts Node, reads settings and can touch the network on a cold start; 20s was too tight. */
+const COMMAND_TIMEOUT_MS = 60_000;
 const MAX_OUTPUT_BYTES = 1024 * 1024;
 
 export type CodexMcpInstallState = "installed" | "not-installed" | "outdated" | "unavailable" | "error";
@@ -18,7 +19,8 @@ export interface CodexMcpInstallStatus {
 }
 
 export interface CodexMcpInstallerOptions {
-  projectRoot: string;
+  /** The open workspace, used only to explain client-side folder trust; registrations are not tied to it. */
+  projectRoot?: string;
   extensionRoot: string;
   configuredCodexExecutable?: string;
   configuredClaudeExecutable?: string;
@@ -74,6 +76,8 @@ class CommandError extends Error {
     message: string,
     readonly stdout: string,
     readonly stderr: string,
+    readonly exitCode?: number | string | null,
+    readonly timedOut = false,
   ) {
     super(message);
   }
@@ -90,7 +94,20 @@ function sameArguments(actual: string[] | undefined, expected: string[]): boolea
     && actual.every((value, index) => normalizeForComparison(value) === normalizeForComparison(expected[index]));
 }
 
-/** A stable, collision-resistant MCP name allows several Flutter workspaces to coexist. */
+/**
+ * The single, user-level registration name. It is short on purpose: clients prefix tool names with
+ * the server name and Gemini truncates fully qualified names above 63 characters.
+ */
+export const MCP_SERVER_NAME = "flutter-config-manager";
+
+const LEGACY_SERVER_NAME = /^flutter-config-manager-.+-[a-f0-9]{8}$/;
+
+/** Registrations made by earlier versions, one per project (`flutter-config-manager-<project>-<hash>`). */
+export function isLegacyServerName(name: string | undefined): boolean {
+  return !!name && LEGACY_SERVER_NAME.test(name);
+}
+
+/** The per-project name earlier versions registered; kept to recognize and replace those entries. */
 export function codexMcpServerName(projectRoot: string): string {
   const slug = path.basename(path.resolve(projectRoot))
     .toLowerCase()
@@ -104,41 +121,111 @@ export function codexMcpServerName(projectRoot: string): string {
   return `flutter-config-manager-${slug}-${hash}`;
 }
 
-function executableCandidates(name: string, configured: string | undefined, env: NodeJS.ProcessEnv): string[] {
+export interface DiscoveryOptions {
+  platform?: NodeJS.Platform;
+  home?: string;
+}
+
+/** Sub-directories of `root`, newest version first (v22.1.0 before v20.11.0). */
+function versionedDirectories(root: string): string[] {
+  try {
+    return fs.readdirSync(root, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort((left, right) => right.localeCompare(left, undefined, { numeric: true }))
+      .map((name) => path.join(root, name));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Where Node-based CLIs (gemini, codex, claude) and the `node` they need usually live. An editor started
+ * from the macOS Dock or a Linux launcher inherits a minimal PATH that contains none of the version-manager
+ * directories, even though the same tools work in a terminal.
+ */
+export function toolDirectories(
+  env: NodeJS.ProcessEnv = process.env,
+  options: DiscoveryOptions = {},
+): string[] {
+  const platform = options.platform ?? process.platform;
+  const home = options.home ?? os.homedir();
+  const directories: string[] = [];
+  const add = (directory: string | undefined) => { if (directory) { directories.push(directory); } };
+
+  add(env.NVM_BIN);
+  add(env.PNPM_HOME);
+  add(env.VOLTA_HOME && path.join(env.VOLTA_HOME, "bin"));
+  add(env.BUN_INSTALL && path.join(env.BUN_INSTALL, "bin"));
+  add(env.NPM_CONFIG_PREFIX && path.join(env.NPM_CONFIG_PREFIX, platform === "win32" ? "" : "bin"));
+
+  if (platform === "win32") {
+    add(env.NVM_SYMLINK);
+    add(env.APPDATA && path.join(env.APPDATA, "npm"));
+    add(env.LOCALAPPDATA && path.join(env.LOCALAPPDATA, "Volta", "bin"));
+    add(env.LOCALAPPDATA && path.join(env.LOCALAPPDATA, "pnpm"));
+    return [...new Set(directories)];
+  }
+
+  versionedDirectories(path.join(home, ".nvm", "versions", "node")).forEach((version) => add(path.join(version, "bin")));
+  for (const fnmRoot of [
+    path.join(home, ".fnm", "node-versions"),
+    path.join(home, ".local", "share", "fnm", "node-versions"),
+    path.join(home, "Library", "Application Support", "fnm", "node-versions"),
+  ]) {
+    versionedDirectories(fnmRoot).forEach((version) => add(path.join(version, "installation", "bin")));
+  }
+  add(path.join(home, ".volta", "bin"));
+  add(path.join(home, ".asdf", "shims"));
+  add(path.join(home, ".local", "share", "mise", "shims"));
+  add(path.join(home, ".local", "share", "pnpm"));
+  add(path.join(home, "Library", "pnpm"));
+  add(path.join(home, ".bun", "bin"));
+  add(path.join(home, ".yarn", "bin"));
+  add(path.join(home, ".npm-global", "bin"));
+  add(path.join(home, ".local", "bin"));
+  add("/opt/homebrew/bin");
+  add("/usr/local/bin");
+  add("/opt/local/bin");
+  add("/usr/bin");
+  return [...new Set(directories)];
+}
+
+function executableCandidates(
+  name: string,
+  configured: string | undefined,
+  env: NodeJS.ProcessEnv,
+  options: DiscoveryOptions = {},
+): string[] {
+  const platform = options.platform ?? process.platform;
+  const home = options.home ?? os.homedir();
   const candidates: string[] = [];
   if (configured?.trim()) {
     candidates.push(configured.trim());
   }
 
-  const extensions = process.platform === "win32"
+  const extensions = platform === "win32"
     ? (env.PATHEXT || ".EXE;.CMD;.BAT").split(";").map((extension) => extension.toLowerCase())
     : [""];
-  for (const directory of (env.PATH || "").split(path.delimiter).filter(Boolean)) {
-    if (process.platform === "win32" && path.extname(name)) {
+  const directories = [
+    ...(env.PATH || "").split(path.delimiter).filter(Boolean),
+    ...toolDirectories(env, { platform, home }),
+  ];
+  for (const directory of directories) {
+    if (platform === "win32" && path.extname(name)) {
       candidates.push(path.join(directory, name));
     } else {
       extensions.forEach((extension) => candidates.push(path.join(directory, `${name}${extension}`)));
     }
   }
 
-  const home = os.homedir();
-  if (process.platform === "win32") {
-    if (env.APPDATA) { candidates.push(path.join(env.APPDATA, "npm", `${name}.cmd`)); }
-    if (env.LOCALAPPDATA) { candidates.push(path.join(env.LOCALAPPDATA, "Programs", name, `${name}.exe`)); }
+  if (platform === "win32") {
     if (name === "cursor" && env.LOCALAPPDATA) {
       candidates.push(path.join(env.LOCALAPPDATA, "Programs", "cursor", "resources", "app", "bin", "cursor.cmd"));
     }
-  } else {
-    candidates.push(
-      `/opt/homebrew/bin/${name}`,
-      `/usr/local/bin/${name}`,
-      `/usr/bin/${name}`,
-      path.join(home, ".local", "bin", name),
-      path.join(home, ".npm-global", "bin", name),
-    );
-    if (process.platform === "darwin" && name === "cursor") {
-      candidates.push("/Applications/Cursor.app/Contents/Resources/app/bin/cursor");
-    }
+    if (env.LOCALAPPDATA) { candidates.push(path.join(env.LOCALAPPDATA, "Programs", name, `${name}.exe`)); }
+  } else if (platform === "darwin" && name === "cursor") {
+    candidates.push("/Applications/Cursor.app/Contents/Resources/app/bin/cursor");
   }
   return [...new Set(candidates)];
 }
@@ -147,12 +234,14 @@ export function resolveExecutable(
   name: string,
   configured?: string,
   env: NodeJS.ProcessEnv = process.env,
+  options: DiscoveryOptions = {},
 ): string | undefined {
-  for (const candidate of executableCandidates(name, configured, env)) {
+  const platform = options.platform ?? process.platform;
+  for (const candidate of executableCandidates(name, configured, env, options)) {
     try {
       const stat = fs.statSync(candidate);
       if (!stat.isFile()) { continue; }
-      if (process.platform !== "win32") {
+      if (platform !== "win32") {
         fs.accessSync(candidate, fs.constants.X_OK);
       }
       return path.resolve(candidate);
@@ -161,6 +250,34 @@ export function resolveExecutable(
     }
   }
   return undefined;
+}
+
+/**
+ * The environment to run a discovered CLI in. A Node CLI is a `#!/usr/bin/env node` script, so `node`
+ * must be findable: the CLI's own directory (npm, nvm, Homebrew and volta keep `node` beside it) and the
+ * usual version-manager directories go in front of whatever PATH the editor was started with.
+ * Windows resolves `.cmd` shims itself and is left alone.
+ */
+export function childEnvironment(
+  executable: string,
+  env: NodeJS.ProcessEnv = process.env,
+  options: DiscoveryOptions = {},
+): NodeJS.ProcessEnv {
+  const platform = options.platform ?? process.platform;
+  if (platform === "win32") {
+    return env;
+  }
+  const directories = [path.dirname(executable)];
+  try {
+    directories.push(path.dirname(fs.realpathSync(executable)));
+  } catch {
+    // A missing target is reported by the command itself.
+  }
+  directories.push(...toolDirectories(env, options).filter((directory) => {
+    try { return fs.statSync(directory).isDirectory(); } catch { return false; }
+  }));
+  const existing = (env.PATH || "").split(path.delimiter).filter(Boolean);
+  return { ...env, PATH: [...new Set([...directories, ...existing])].join(path.delimiter) };
 }
 
 /**
@@ -179,6 +296,8 @@ export function buildProcessInvocation(
 
   const payload = Buffer.from(JSON.stringify({ executable, args }), "utf8").toString("base64");
   const script = [
+    // Without this, -NonInteractive PowerShell prints "Preparing modules for first use" as CLIXML on stderr.
+    `$ProgressPreference = 'SilentlyContinue'`,
     `$payload = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${payload}')) | ConvertFrom-Json`,
     `& $payload.executable @($payload.args)`,
     `if ($null -eq $LASTEXITCODE) { exit 0 } else { exit $LASTEXITCODE }`,
@@ -187,8 +306,35 @@ export function buildProcessInvocation(
   const windowsRoot = env.SystemRoot || env.WINDIR || "C:\\Windows";
   return {
     file: path.win32.join(windowsRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
-    args: ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
+    // -OutputFormat Text keeps the child's stderr readable; the default for redirected -EncodedCommand is CLIXML.
+    args: ["-NoLogo", "-NoProfile", "-NonInteractive", "-InputFormat", "None", "-OutputFormat", "Text", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
   };
+}
+
+/** Terminal colour codes and the encoded PowerShell wrapper make raw process errors unreadable in a dialog. */
+export function describeCommandFailure(error: unknown): string {
+  // PowerShell wraps stderr in CLIXML records; terminals add colour codes. Neither belongs in a dialog.
+  const clean = (text: string) => text
+    .replace(/#< CLIXML[\s\S]*?<\/Objs>/g, "")
+    .replace(/\u001b\[[0-9;]*m/g, "")
+    .replace(/\[(?:\d{1,2};?)+m/g, "")
+    .trim();
+  if (error instanceof CommandError) {
+    if (error.timedOut) {
+      return `the command did not finish within ${COMMAND_TIMEOUT_MS / 1000}s. Run it once in a terminal (for example "gemini mcp list") to see what it is waiting for.`;
+    }
+    const detail = clean(error.stderr) || clean(error.stdout);
+    if (detail) {
+      const summary = detail.split(/\r?\n/).filter((line) => line.trim()).slice(0, 6).join(" ");
+      // A `#!/usr/bin/env node` CLI cannot start when the editor was launched without Node on its PATH (macOS Dock, Linux launchers).
+      return /env: ['"]?node['"]?: No such file|node: command not found|node: not found/i.test(detail)
+        ? `${summary} Node.js is not on the PATH this editor was started with. Start VS Code from a terminal ("code .") or set the client's executable path in the Flutter Config Manager settings.`
+        : summary;
+    }
+    const first = error.message.split(/\r?\n/)[0].replace(/-EncodedCommand\s+\S+/, "-EncodedCommand …").slice(0, 300);
+    return error.exitCode !== undefined && error.exitCode !== null ? `${first} (exit ${error.exitCode})` : first;
+  }
+  return error instanceof Error ? error.message : String(error);
 }
 
 function runExecutable(executable: string, args: string[]): Promise<CommandResult> {
@@ -197,11 +343,11 @@ function runExecutable(executable: string, args: string[]): Promise<CommandResul
     execFile(
       invocation.file,
       invocation.args,
-      { encoding: "utf8", timeout: COMMAND_TIMEOUT_MS, maxBuffer: MAX_OUTPUT_BYTES, windowsHide: true },
+      { encoding: "utf8", timeout: COMMAND_TIMEOUT_MS, maxBuffer: MAX_OUTPUT_BYTES, windowsHide: true, env: childEnvironment(executable) },
       (error, stdout, stderr) => {
         const result = { stdout: stdout || "", stderr: stderr || "" };
         if (error) {
-          reject(new CommandError(error.message, result.stdout, result.stderr));
+          reject(new CommandError(error.message, result.stdout, result.stderr, (error as NodeJS.ErrnoException).code, (error as { killed?: boolean }).killed === true));
           return;
         }
         resolve(result);
@@ -221,15 +367,15 @@ function resolveInstaller(options: CodexMcpInstallerOptions): ResolvedInstaller 
   if (!codexExecutable) {
     throw new Error("Codex CLI was not found. Install Codex or set flutter-config-manager.mcp.codexExecutable to its full path.");
   }
-  const projectRoot = path.resolve(options.projectRoot);
   return {
     codexExecutable,
     // VS Code's extension-host executable is Electron on desktop and Node on
     // remote hosts. ELECTRON_RUN_AS_NODE makes either form a stable MCP runtime.
     runtimeExecutable: process.execPath,
     serverEntry,
-    serverName: codexMcpServerName(projectRoot),
-    expectedArgs: [serverEntry, "--project", projectRoot],
+    serverName: MCP_SERVER_NAME,
+    // No --project: the server resolves the project from the directory the client starts it in.
+    expectedArgs: [serverEntry],
   };
 }
 
@@ -252,28 +398,6 @@ function matchesExpectedRegistration(definition: CodexServerDefinition, installe
     && definition.transport.env?.ELECTRON_RUN_AS_NODE === "1";
 }
 
-function targetsCurrentWorkspace(definition: CodexServerDefinition, installer: ResolvedInstaller): boolean {
-  if (definition.transport?.type !== "stdio" || !Array.isArray(definition.transport.args)) {
-    return false;
-  }
-  const args = definition.transport.args;
-  const projectFlag = args.indexOf("--project");
-  if (projectFlag < 1 || projectFlag + 1 >= args.length) {
-    return false;
-  }
-  const configuredProject = normalizeForComparison(args[projectFlag + 1]);
-  const expectedProject = normalizeForComparison(installer.expectedArgs[2]);
-  if (configuredProject !== expectedProject) {
-    return false;
-  }
-
-  const entry = normalizeForComparison(args[0]);
-  const launcher = normalizeForComparison(
-    path.resolve(path.dirname(installer.serverEntry), "../../scripts/run-mcp-server.mjs"),
-  );
-  return entry === normalizeForComparison(installer.serverEntry) || entry === launcher;
-}
-
 async function readDefinitions(installer: ResolvedInstaller): Promise<CodexServerDefinition[]> {
   const result = await runExecutable(installer.codexExecutable, ["mcp", "list", "--json"]);
   const parsed = JSON.parse(result.stdout) as unknown;
@@ -286,7 +410,6 @@ async function readDefinitions(installer: ResolvedInstaller): Promise<CodexServe
 export async function checkCodexMcpInstallation(
   options: CodexMcpInstallerOptions,
 ): Promise<CodexMcpInstallStatus> {
-  const serverName = codexMcpServerName(options.projectRoot);
   let installer: ResolvedInstaller;
   try {
     installer = resolveInstaller(options);
@@ -294,60 +417,59 @@ export async function checkCodexMcpInstallation(
   } catch (error) {
     return {
       state: "unavailable",
-      serverName,
-      message: error instanceof Error ? error.message : String(error),
+      serverName: MCP_SERVER_NAME,
+      message: describeCommandFailure(error),
       canInstall: false,
     };
   }
 
   try {
     const definitions = await readDefinitions(installer);
-    const workspaceDefinition = definitions.find((definition) => targetsCurrentWorkspace(definition, installer));
-    if (workspaceDefinition && workspaceDefinition.enabled !== false) {
-      return {
-        state: "installed",
-        serverName: workspaceDefinition.name || serverName,
-        message: "User-level Codex MCP is installed for this workspace.",
-        canInstall: true,
-      };
-    }
-    if (workspaceDefinition?.enabled === false) {
+    const legacy = definitions.filter((definition) => isLegacyServerName(definition.name));
+    const current = definitions.find((definition) => definition.name === installer.serverName);
+    if (current && current.enabled === false) {
       return {
         state: "outdated",
-        serverName: workspaceDefinition.name || serverName,
-        message: "The workspace MCP is installed but disabled in the user-level Codex configuration.",
+        serverName: installer.serverName,
+        message: "The MCP server is registered but disabled in the user-level Codex configuration.",
         canInstall: true,
       };
     }
-
-    const definition = definitions.find((candidate) => candidate.name === serverName);
-    if (!definition) {
+    if (current && !matchesExpectedRegistration(current, installer)) {
+      return {
+        state: "outdated",
+        serverName: installer.serverName,
+        message: "The user-level registration points to an older or different extension build.",
+        canInstall: true,
+      };
+    }
+    if (legacy.length > 0) {
+      return {
+        state: "outdated",
+        serverName: installer.serverName,
+        message: `${legacy.length} older per-project registration${legacy.length === 1 ? "" : "s"} found. Update to replace ${legacy.length === 1 ? "it" : "them"} with one user-level server that follows whichever project you open.`,
+        canInstall: true,
+      };
+    }
+    if (!current) {
       return {
         state: "not-installed",
-        serverName,
-        message: "Codex MCP is not installed for this Flutter workspace.",
-        canInstall: true,
-      };
-    }
-    if (!matchesExpectedRegistration(definition, installer)) {
-      return {
-        state: "outdated",
-        serverName,
-        message: "The workspace MCP registration points to an older or different extension build.",
+        serverName: installer.serverName,
+        message: "Codex MCP is not installed at user level.",
         canInstall: true,
       };
     }
     return {
       state: "installed",
-      serverName,
-      message: "User-level Codex MCP is installed for this workspace.",
+      serverName: installer.serverName,
+      message: "User-level Codex MCP is installed; it serves the project Codex is started in.",
       canInstall: true,
     };
   } catch (error) {
     return {
       state: "error",
-      serverName,
-      message: error instanceof Error ? error.message : String(error),
+      serverName: MCP_SERVER_NAME,
+      message: describeCommandFailure(error),
       canInstall: true,
     };
   }
@@ -359,24 +481,25 @@ export async function installCodexMcp(
   const installer = resolveInstaller(options);
   await runExecutable(installer.codexExecutable, ["--version"]);
   const definitions = await readDefinitions(installer);
-  const workspaceDefinition = definitions.find((definition) => targetsCurrentWorkspace(definition, installer));
+  const legacy = definitions.filter((definition) => isLegacyServerName(definition.name));
+  const current = definitions.find((definition) => definition.name === installer.serverName);
 
-  if (workspaceDefinition && workspaceDefinition.enabled !== false) {
+  if (current && matchesExpectedRegistration(current, installer) && legacy.length === 0) {
     return {
       state: "installed",
-      serverName: workspaceDefinition.name || installer.serverName,
+      serverName: installer.serverName,
       message: "User-level Codex MCP is already installed.",
       canInstall: true,
     };
   }
 
-  const existing = workspaceDefinition
-    || definitions.find((definition) => definition.name === installer.serverName);
-  if (existing?.name) {
-    await runExecutable(installer.codexExecutable, ["mcp", "remove", existing.name]);
-  }
-
   try {
+    for (const definition of legacy) {
+      await runExecutable(installer.codexExecutable, ["mcp", "remove", definition.name!]);
+    }
+    if (current) {
+      await runExecutable(installer.codexExecutable, ["mcp", "remove", installer.serverName]);
+    }
     await runExecutable(installer.codexExecutable, [
       "mcp",
       "add",
@@ -388,10 +511,7 @@ export async function installCodexMcp(
       ...installer.expectedArgs,
     ]);
   } catch (error) {
-    const detail = error instanceof CommandError
-      ? (error.stderr || error.stdout || error.message).trim()
-      : error instanceof Error ? error.message : String(error);
-    throw new Error(`Codex MCP installation failed: ${detail}`);
+    throw new Error(`Codex MCP installation failed: ${describeCommandFailure(error)}`);
   }
 
   const installed = await readDefinition(installer);
@@ -423,8 +543,6 @@ interface JsonMcpConfig {
 interface PortableRegistration {
   serverName: string;
   serverEntry: string;
-  launcherEntry: string;
-  projectRoot: string;
   runtimeExecutable: string;
   args: string[];
   env: Record<string, string>;
@@ -437,36 +555,22 @@ const CLIENT_LABELS: Record<McpClientId, string> = {
   cursor: "Cursor",
 };
 
-function portableRegistration(options: CodexMcpInstallerOptions): PortableRegistration {
+/**
+ * One registration for every project. CLI clients start the server in the folder you run them in, so no
+ * project is baked in; Cursor's global config has no such guarantee, so it passes its own workspace variable.
+ */
+function portableRegistration(options: CodexMcpInstallerOptions, client?: McpClientId): PortableRegistration {
   const serverEntry = path.join(options.extensionRoot, "mcp-server", "out", "index.js");
   if (!fs.existsSync(serverEntry)) {
     throw new Error("The packaged MCP server is missing. Reinstall or rebuild Flutter Config Manager.");
   }
-  const projectRoot = path.resolve(options.projectRoot);
   return {
-    serverName: codexMcpServerName(projectRoot),
+    serverName: MCP_SERVER_NAME,
     serverEntry,
-    launcherEntry: path.join(options.extensionRoot, "scripts", "run-mcp-server.mjs"),
-    projectRoot,
     runtimeExecutable: process.execPath,
-    args: [serverEntry, "--project", projectRoot],
+    args: client === "cursor" ? [serverEntry, "--project", "${workspaceFolder}"] : [serverEntry],
     env: { ELECTRON_RUN_AS_NODE: "1" },
   };
-}
-
-function portableDefinitionTargetsWorkspace(
-  definition: PortableServerDefinition | undefined,
-  registration: PortableRegistration,
-): boolean {
-  if (!definition || !Array.isArray(definition.args)) { return false; }
-  const projectFlag = definition.args.indexOf("--project");
-  if (projectFlag < 1 || projectFlag + 1 >= definition.args.length) { return false; }
-  if (normalizeForComparison(definition.args[projectFlag + 1]) !== normalizeForComparison(registration.projectRoot)) {
-    return false;
-  }
-  const entry = normalizeForComparison(definition.args[0]);
-  return entry === normalizeForComparison(registration.serverEntry)
-    || entry === normalizeForComparison(registration.launcherEntry);
 }
 
 function portableDefinitionIsCurrent(
@@ -481,9 +585,49 @@ function portableDefinitionIsCurrent(
     && definition.env?.ELECTRON_RUN_AS_NODE === "1";
 }
 
+/**
+ * Client settings files (Gemini's in particular) may contain comments and trailing commas.
+ * Strings are respected, so URLs and paths containing `//` survive.
+ */
+export function parseJsonc(text: string): unknown {
+  let output = "";
+  let inString = false;
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (inString) {
+      output += char;
+      if (char === "\\") {
+        output += next ?? "";
+        index++;
+      } else if (char === "\"") {
+        inString = false;
+      }
+    } else if (char === "\"") {
+      inString = true;
+      output += char;
+    } else if (char === "/" && next === "/") {
+      while (index < text.length && text[index] !== "\n") { index++; }
+      output += "\n";
+    } else if (char === "/" && next === "*") {
+      index += 2;
+      while (index < text.length && !(text[index] === "*" && text[index + 1] === "/")) { index++; }
+      index++;
+    } else {
+      output += char;
+    }
+  }
+  return JSON.parse(output.replace(/^﻿/, "").replace(/,(\s*[}\]])/g, "$1"));
+}
+
 function readJsonMcpConfig(configPath: string): JsonMcpConfig {
   if (!fs.existsSync(configPath)) { return {}; }
-  const parsed = JSON.parse(fs.readFileSync(configPath, "utf8")) as unknown;
+  let parsed: unknown;
+  try {
+    parsed = parseJsonc(fs.readFileSync(configPath, "utf8"));
+  } catch (error) {
+    throw new Error(`${configPath} is not valid JSON (${error instanceof Error ? error.message : String(error)}). Fix or remove it, then check again.`);
+  }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error(`${configPath} must contain a JSON object.`);
   }
@@ -510,12 +654,13 @@ function writeJsonMcpConfig(configPath: string, config: JsonMcpConfig): void {
   }
 }
 
-function findPortableRegistration(
-  config: JsonMcpConfig,
-  registration: PortableRegistration,
-): [string, PortableServerDefinition] | undefined {
-  return Object.entries(config.mcpServers || {})
-    .find(([, definition]) => portableDefinitionTargetsWorkspace(definition, registration));
+function legacyEntries(config: JsonMcpConfig): string[] {
+  return Object.keys(config.mcpServers || {}).filter(isLegacyServerName);
+}
+
+/** Gemini CLI relocates its ~/.gemini directory when GEMINI_CLI_HOME is set. */
+function geminiHome(options?: CodexMcpInstallerOptions): string {
+  return options?.userHome || process.env.GEMINI_CLI_HOME || os.homedir();
 }
 
 function userConfigPath(
@@ -528,9 +673,43 @@ function userConfigPath(
     return path.join(root, ".claude.json");
   }
   if (client === "gemini") {
-    return path.join(home, ".gemini", "settings.json");
+    return path.join(geminiHome(options), ".gemini", "settings.json");
   }
   return path.join(home, ".cursor", "mcp.json");
+}
+
+/**
+ * Gemini CLI switches off user-level MCP servers in folders it does not trust, and says so only in
+ * its own output. Returns a hint when the open workspace is not covered by ~/.gemini/trustedFolders.json.
+ */
+export function geminiFolderTrustNote(projectRoot: string | undefined, userHome: string): string | undefined {
+  if (!projectRoot) { return undefined; }
+  try {
+    const settingsPath = path.join(userHome, ".gemini", "settings.json");
+    if (fs.existsSync(settingsPath)) {
+      const settings = parseJsonc(fs.readFileSync(settingsPath, "utf8")) as { security?: { folderTrust?: { enabled?: boolean } } };
+      if (settings?.security?.folderTrust?.enabled === false) { return undefined; }
+    }
+    const trustPath = path.join(userHome, ".gemini", "trustedFolders.json");
+    const rules = fs.existsSync(trustPath)
+      ? parseJsonc(fs.readFileSync(trustPath, "utf8")) as Record<string, string>
+      : {};
+    const target = normalizeForComparison(path.resolve(projectRoot));
+    const within = (parent: string) => target === parent || target.startsWith(parent.endsWith(path.sep) ? parent : parent + path.sep);
+    let trusted = false;
+    for (const [rulePath, level] of Object.entries(rules)) {
+      const normalized = normalizeForComparison(path.resolve(rulePath));
+      if (level === "TRUST_FOLDER" && within(normalized)) { trusted = true; }
+      if (level === "TRUST_PARENT" && within(normalizeForComparison(path.dirname(path.resolve(rulePath))))) { trusted = true; }
+    }
+    for (const [rulePath, level] of Object.entries(rules)) {
+      if (level === "DO_NOT_TRUST" && within(normalizeForComparison(path.resolve(rulePath)))) { trusted = false; }
+    }
+    return trusted ? undefined
+      : `Gemini disables user-level MCP servers in folders it does not trust. Run gemini in ${projectRoot} and trust the folder (or add it to ~/.gemini/trustedFolders.json), otherwise the tools will not appear there.`;
+  } catch {
+    return undefined;
+  }
 }
 
 function portableStatus(
@@ -538,66 +717,67 @@ function portableStatus(
   config: JsonMcpConfig,
   registration: PortableRegistration,
   executable: string | undefined,
+  options?: CodexMcpInstallerOptions,
 ): McpClientStatus {
-  const matching = findPortableRegistration(config, registration);
-  if (matching) {
-    const current = portableDefinitionIsCurrent(matching[1], registration);
-    return {
-      id,
-      label: CLIENT_LABELS[id],
-      state: current ? "installed" : "outdated",
-      serverName: matching[0],
-      message: current
-        ? `Installed in ${CLIENT_LABELS[id]}'s user configuration.`
-        : `Installed for this workspace, but the registration points to another runtime or extension build.`,
-      detected: !!executable,
-      canInstall: id === "cursor" || !!executable,
-    };
-  }
+  const label = CLIENT_LABELS[id];
+  const detected = !!executable;
+  const canInstall = id === "cursor" || detected;
+  const current = config.mcpServers?.[registration.serverName];
+  const legacy = legacyEntries(config);
 
-  const named = config.mcpServers?.[registration.serverName];
-  if (named) {
+  if (current && !portableDefinitionIsCurrent(current, registration)) {
     return {
-      id,
-      label: CLIENT_LABELS[id],
+      id, label, detected, canInstall,
       state: "outdated",
       serverName: registration.serverName,
-      message: "A registration with this workspace name exists but targets different content.",
-      detected: !!executable,
-      canInstall: id === "cursor" || !!executable,
+      message: "The user-level registration points to another runtime or extension build.",
     };
   }
-
-  const detected = !!executable;
+  if (legacy.length > 0) {
+    return {
+      id, label, detected, canInstall,
+      state: "outdated",
+      serverName: registration.serverName,
+      message: `${legacy.length} older per-project registration${legacy.length === 1 ? "" : "s"} found. Update to replace ${legacy.length === 1 ? "it" : "them"} with one user-level server that follows whichever project you open.`,
+    };
+  }
+  if (current) {
+    const note = id === "gemini"
+      ? geminiFolderTrustNote(options?.projectRoot, geminiHome(options))
+      : undefined;
+    return {
+      id, label, detected, canInstall,
+      state: "installed",
+      serverName: registration.serverName,
+      message: `Installed in ${label}'s user configuration; it serves the project ${label} is started in.${note ? ` ${note}` : ""}`,
+    };
+  }
   return {
-    id,
-    label: CLIENT_LABELS[id],
+    id, label, detected, canInstall: detected,
     state: detected ? "not-installed" : "unavailable",
     serverName: registration.serverName,
     message: detected
-      ? `Not installed in ${CLIENT_LABELS[id]}'s user configuration.`
-      : `${CLIENT_LABELS[id]} was not found on this machine.`,
-    detected,
-    canInstall: detected,
+      ? `Not installed in ${label}'s user configuration.`
+      : `${label} was not found on this machine.`,
   };
 }
 
 async function checkPortableClient(
   id: Exclude<McpClientId, "codex">,
   options: CodexMcpInstallerOptions,
-  registration: PortableRegistration,
 ): Promise<McpClientStatus> {
   try {
+    const registration = portableRegistration(options, id);
     const configured = id === "claude" ? options.configuredClaudeExecutable : options.configuredGeminiExecutable;
     const executable = resolveExecutable(id, configured);
     const config = readJsonMcpConfig(userConfigPath(id, options));
-    return portableStatus(id, config, registration, executable);
+    return portableStatus(id, config, registration, executable, options);
   } catch (error) {
     return {
       id,
       label: CLIENT_LABELS[id],
       state: "error",
-      serverName: registration.serverName,
+      serverName: MCP_SERVER_NAME,
       message: error instanceof Error ? error.message : String(error),
       detected: !!resolveExecutable(id),
       canInstall: false,
@@ -605,6 +785,7 @@ async function checkPortableClient(
   }
 }
 
+/** Standard `mcpServers` JSON for clients without a one-click installer. */
 export function createUniversalMcpConfig(options: CodexMcpInstallerOptions): string {
   const registration = portableRegistration(options);
   return JSON.stringify({
@@ -622,12 +803,11 @@ export function createUniversalMcpConfig(options: CodexMcpInstallerOptions): str
 export async function checkMcpClients(
   options: CodexMcpInstallerOptions,
 ): Promise<McpClientsStatus> {
-  const registration = portableRegistration(options);
   const [codex, claude, gemini, cursor] = await Promise.all([
     checkCodexMcpInstallation(options),
-    checkPortableClient("claude", options, registration),
-    checkPortableClient("gemini", options, registration),
-    checkPortableClient("cursor", options, registration),
+    checkPortableClient("claude", options),
+    checkPortableClient("gemini", options),
+    checkPortableClient("cursor", options),
   ]);
   return {
     clients: [
@@ -652,28 +832,31 @@ async function installCliClient(
   }
   const configPath = userConfigPath(id, options);
   const before = readJsonMcpConfig(configPath);
-  const existing = findPortableRegistration(before, registration)
-    || (before.mcpServers?.[registration.serverName]
-      ? [registration.serverName, before.mcpServers[registration.serverName]] as [string, PortableServerDefinition]
-      : undefined);
-  if (existing && portableDefinitionIsCurrent(existing[1], registration)) {
-    return portableStatus(id, before, registration, executable);
-  }
-  if (existing) {
-    await runExecutable(executable, ["mcp", "remove", "--scope", "user", existing[0]]);
+  const current = before.mcpServers?.[registration.serverName];
+  const legacy = legacyEntries(before);
+  if (current && portableDefinitionIsCurrent(current, registration) && legacy.length === 0) {
+    return portableStatus(id, before, registration, executable, options);
   }
 
-  const addArgs = buildUserScopedMcpAddArguments(
-    id,
-    registration.serverName,
-    registration.runtimeExecutable,
-    registration.args,
-  );
-  await runExecutable(executable, addArgs);
+  const stale = [...legacy, ...(current ? [registration.serverName] : [])];
+  try {
+    for (const name of stale) {
+      await runExecutable(executable, ["mcp", "remove", "--scope", "user", name]);
+    }
+    await runExecutable(executable, buildUserScopedMcpAddArguments(
+      id,
+      registration.serverName,
+      registration.runtimeExecutable,
+      registration.args,
+    ));
+  } catch (error) {
+    throw new Error(`${CLIENT_LABELS[id]} could not register the MCP server: ${describeCommandFailure(error)}`);
+  }
+
   const after = readJsonMcpConfig(configPath);
-  const status = portableStatus(id, after, registration, executable);
+  const status = portableStatus(id, after, registration, executable, options);
   if (status.state !== "installed") {
-    throw new Error(`${CLIENT_LABELS[id]} accepted the command, but its user-level MCP registration could not be verified.`);
+    throw new Error(`${CLIENT_LABELS[id]} accepted the command, but its user-level MCP registration could not be verified in ${configPath}.`);
   }
   return { ...status, restartRequired: true };
 }
@@ -690,9 +873,11 @@ export function buildUserScopedMcpAddArguments(
       "mcp", "add", "--scope", "user", "--transport", "stdio", serverName,
       "-e", "ELECTRON_RUN_AS_NODE=1", "--", runtimeExecutable, ...serverArgs,
     ]
+    // Env last: Gemini versions whose parser lets an array option keep consuming words would otherwise
+    // swallow the server name and command that follow `-e KEY=value`.
     : [
       "mcp", "add", "--scope", "user", "--transport", "stdio",
-      "-e", "ELECTRON_RUN_AS_NODE=1", serverName, runtimeExecutable, ...serverArgs,
+      serverName, runtimeExecutable, ...serverArgs, "-e", "ELECTRON_RUN_AS_NODE=1",
     ];
 }
 
@@ -702,13 +887,14 @@ function installCursorClient(
 ): McpClientStatus {
   const configPath = userConfigPath("cursor", options);
   const config = readJsonMcpConfig(configPath);
-  const matching = findPortableRegistration(config, registration);
-  if (matching && portableDefinitionIsCurrent(matching[1], registration)) {
-    return portableStatus("cursor", config, registration, resolveExecutable("cursor"));
+  const current = config.mcpServers?.[registration.serverName];
+  const legacy = legacyEntries(config);
+  if (current && portableDefinitionIsCurrent(current, registration) && legacy.length === 0) {
+    return portableStatus("cursor", config, registration, resolveExecutable("cursor"), options);
   }
   config.mcpServers = config.mcpServers || {};
-  if (matching && matching[0] !== registration.serverName) {
-    delete config.mcpServers[matching[0]];
+  for (const name of legacy) {
+    delete config.mcpServers[name];
   }
   config.mcpServers[registration.serverName] = {
     type: "stdio",
@@ -717,7 +903,7 @@ function installCursorClient(
     env: registration.env,
   };
   writeJsonMcpConfig(configPath, config);
-  const status = portableStatus("cursor", readJsonMcpConfig(configPath), registration, resolveExecutable("cursor"));
+  const status = portableStatus("cursor", readJsonMcpConfig(configPath), registration, resolveExecutable("cursor"), options);
   if (status.state !== "installed") {
     throw new Error("Cursor's global MCP registration could not be verified.");
   }
@@ -728,11 +914,11 @@ export async function installMcpClient(
   client: McpClientId,
   options: CodexMcpInstallerOptions,
 ): Promise<McpClientStatus> {
-  const registration = portableRegistration(options);
   if (client === "codex") {
     const status = await installCodexMcp(options);
     return { ...status, id: client, label: CLIENT_LABELS[client], detected: true };
   }
+  const registration = portableRegistration(options, client);
   if (client === "cursor") {
     return installCursorClient(registration, options);
   }

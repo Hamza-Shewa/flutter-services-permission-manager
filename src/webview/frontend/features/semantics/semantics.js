@@ -17,6 +17,9 @@ import {
   semanticsPreviewList,
   semanticsPromptProject,
   semanticsSearch,
+  semanticsSharedDetails,
+  semanticsSharedList,
+  semanticsSharedSummary,
   semanticsStatusFilter,
   semanticsSummary,
   semanticsTableBody,
@@ -87,6 +90,9 @@ function renderSummary(result) {
     [result.totals.accessibilityMissing, "Missing a11y semantics"],
     [result.totals.accessibilityUncertain, "A11y uncertain"],
     [result.totals.opaque, "Opaque surfaces"],
+    [result.totals.sharedWidgets ?? 0, "Shared widgets"],
+    [result.totals.callSitesMissingContract ?? 0, "Shared call sites missing IDs"],
+    [result.totals.composites ?? 0, "Multi-control widgets"],
     [result.totals.filesScanned, "Files scanned"],
   ];
   stats.forEach(([value, label]) => {
@@ -103,13 +109,70 @@ function renderSummary(result) {
   if (semanticsPromptProject) { semanticsPromptProject.textContent = result.projectRoot; }
 }
 
+function contractBadge(widget) {
+  const missing = widget.requiredParamsToAdd.length > 0 || widget.contract.status !== "complete";
+  return badge(missing ? `contract: ${widget.contract.status}` : "contract complete", missing ? "issue" : "ready");
+}
+
+function renderSharedWidgets(result) {
+  if (!semanticsSharedDetails || !semanticsSharedList || !semanticsSharedSummary) { return; }
+  const widgets = [...(result.widgets ?? []), ...(result.composites ?? [])];
+  semanticsSharedDetails.style.display = widgets.length ? "block" : "none";
+  semanticsSharedList.innerHTML = "";
+  const pending = widgets.filter((widget) => widget.requiredParamsToAdd.length > 0 || widget.contract.status !== "complete").length;
+  const composites = (result.composites ?? []).length;
+  semanticsSharedSummary.textContent = `Shared widgets: ${widgets.length - composites} controls + ${composites} multi-control (${pending} need a semantics contract)`;
+  widgets.forEach((widget) => {
+    const row = document.createElement("div");
+    row.className = "semantics-shared-row";
+
+    const isComposite = widget.kind === "composite";
+    const layer = badge(isComposite ? "C" : `L${widget.layer}`, "uncertain");
+    layer.title = isComposite
+      ? `${widget.rootCount} controls: needs a required identifier prefix`
+      : widget.wraps.length ? `Wraps ${widget.wraps.join(", ")}` : "Built from SDK controls only";
+
+    const name = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = widget.className;
+    const location = document.createElement("code");
+    location.textContent = `${widget.path}:${widget.line}`;
+    name.append(title, document.createElement("br"), location);
+
+    const usage = document.createElement("div");
+    usage.textContent = `${widget.callSites} uses · ${widget.callSitesMissing} missing`;
+
+    const needs = document.createElement("div");
+    needs.append(contractBadge(widget));
+    if (widget.requiredParamsToAdd.length) {
+      const detail = document.createElement("div");
+      detail.className = "semantics-finding-meta";
+      detail.textContent = widget.requiredParamsToAdd.join(" · ");
+      needs.appendChild(detail);
+    }
+
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "semantics-source";
+    open.textContent = `Open :${widget.line}`;
+    open.addEventListener("click", () => api.revealSourceReference(widget.path, widget.line, 1));
+
+    row.append(layer, name, usage, needs, open);
+    semanticsSharedList.appendChild(row);
+  });
+}
+
 function findingElement(finding) {
   const item = document.createElement("div");
   item.className = "semantics-finding";
 
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
-  checkbox.disabled = finding.kind === "opaque";
+  const insideSharedWidget = finding.role === "shared-definition-root" || finding.role === "composite-item";
+  checkbox.disabled = finding.kind === "opaque" || insideSharedWidget;
+  if (insideSharedWidget) {
+    checkbox.title = `Inside ${finding.owner?.className}: give that widget a required semantics parameter (or identifier prefix) instead.`;
+  }
   checkbox.checked = selected.has(finding.occurrenceId);
 
   const identity = document.createElement("div");
@@ -117,7 +180,11 @@ function findingElement(finding) {
   title.textContent = finding.widgetType;
   const meta = document.createElement("div");
   meta.className = "semantics-finding-meta";
-  meta.textContent = `${finding.kind} · ${finding.confidence} confidence · line ${finding.source.line}${finding.enabled === "disabled" ? " · disabled" : ""}`;
+  const remediationNote = finding.remediation ? ` · fix: ${finding.remediation}` : "";
+  const resolvedNote = finding.resolved
+    ? ` · ${finding.resolved.shared ? "shared" : "project"} widget (${finding.resolved.contract.status} contract)`
+    : "";
+  meta.textContent = `${finding.kind} · ${finding.confidence} confidence · line ${finding.source.line}${finding.enabled === "disabled" ? " · disabled" : ""}${resolvedNote}${remediationNote}`;
   identity.append(title, meta);
   if (finding.opaqueReason) {
     const reason = document.createElement("div");
@@ -173,6 +240,7 @@ export function renderInteractives() {
     return;
   }
   renderSummary(result);
+  renderSharedWidgets(result);
   const groups = result.groups
     .map((group) => ({ ...group, visibleFindings: group.findings.filter(findingMatches) }))
     .filter((group) => group.visibleFindings.length > 0);

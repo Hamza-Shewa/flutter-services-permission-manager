@@ -16,6 +16,7 @@ import {
   synthesizeAppIconFilename,
 } from "../../features/icons/icons.service.js";
 import {
+  clampOffsetPercent,
   clampScalePercent,
   composeWorkingImage,
   findContentBounds,
@@ -135,6 +136,28 @@ suite("App icon generation", () => {
     assert.strictEqual(decoded100.getPixelColor(2, 2), 0xff0000ff);
     // At 200%, that corner is cropped out of view - only the green field remains.
     assert.strictEqual(decoded200.getPixelColor(2, 2), 0x00ff00ff);
+  });
+
+  test("clampOffsetPercent clamps to [-100, 100] and treats non-numbers as centered", () => {
+    assert.strictEqual(clampOffsetPercent(undefined), 0);
+    assert.strictEqual(clampOffsetPercent(Number.NaN), 0);
+    assert.strictEqual(clampOffsetPercent(12.34), 12.3);
+    assert.strictEqual(clampOffsetPercent(-500), -100);
+    assert.strictEqual(clampOffsetPercent(500), 100);
+  });
+
+  test("composing with a pan offset moves the foreground by that percentage of the canvas", async () => {
+    const workDir = mkTempDir("fcm-preview-pan-");
+    const sourcePath = path.join(workDir, "source.png");
+    await writeSourcePng(sourcePath, 64);
+
+    const source = await loadForeground(sourcePath, "png", false);
+    // 50% foreground centered occupies [64, 192) of a 256px canvas; a +25% pan shifts it right by 64px.
+    const working = composeWorkingImage(source, 50, "#336699", PREVIEW_PX, { x: 25, y: 0 });
+    const decoded = await Jimp.fromBuffer(await renderSquarePng(working, PREVIEW_PX));
+    assert.strictEqual(decoded.getPixelColor(80, PREVIEW_PX / 2), 0x336699ff, "old left edge is now background");
+    assert.strictEqual(decoded.getPixelColor(160, PREVIEW_PX / 2), 0xff0000ff, "foreground is still under the center-right");
+    assert.strictEqual(decoded.getPixelColor(230, PREVIEW_PX / 2), 0xff0000ff, "foreground now reaches the right side");
   });
 
   test("composing pads with the background color when scaled down", async () => {

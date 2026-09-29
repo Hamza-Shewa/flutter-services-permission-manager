@@ -2193,6 +2193,13 @@
       color: var(--text-primary); background: var(--bg-primary);
       border: 1px solid var(--border-default); border-radius: var(--radius-sm);
     }
+    .semantics-shared { margin: 10px 0; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-secondary); padding: 8px 12px; }
+    .semantics-shared summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+    .semantics-shared-hint { margin: 6px 0; color: var(--text-secondary); font-size: 12px; }
+    .semantics-shared-list { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow: auto; }
+    .semantics-shared-row { display: grid; grid-template-columns: 34px minmax(120px, 1.2fr) minmax(90px, .8fr) minmax(140px, 1.6fr) auto; gap: 8px; align-items: center; font-size: 12px; padding: 4px 0; border-top: 1px solid var(--border-default); }
+    .semantics-shared-row:first-child { border-top: 0; }
+    .semantics-shared-row code { color: var(--text-secondary); font-size: 11px; }
     .semantics-badge { display: inline-block; border-radius: 10px; padding: 2px 7px; font-size: 11px; margin: 1px; }
     .semantics-badge.ready { color: #81c784; background: rgba(76,175,80,.12); }
     .semantics-badge.issue { color: #ef9a9a; background: rgba(211,47,47,.12); }
@@ -2310,8 +2317,10 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mcpConnectionsTitle" style="max-width:820px; width:min(820px, 94vw);">
       <h3 id="mcpConnectionsTitle">Connect Flutter Config Manager MCP</h3>
       <p style="color:var(--text-secondary); font-size:12px;">
-        Install the same bundled MCP server in a client's user-level configuration. Existing matching registrations
-        are detected first and cannot be installed twice. Each entry targets this Flutter workspace.
+        Install the bundled MCP server once in a client's user-level configuration. It is not tied to a project:
+        the client starts it in the folder you work in, and it serves that Flutter project (a subfolder such as
+        <code>lib/</code> works too). Existing matching registrations are detected first, and older per-project
+        entries are replaced by the single user-level one.
       </p>
       <div id="mcpConnectionsError" style="display:none; color:#ef9a9a; margin:10px 0;"></div>
       <div id="mcpClientList" class="mcp-client-list"></div>
@@ -2360,15 +2369,11 @@
           <div class="detail-card-label" style="font-size: 14px; color: var(--android-accent);">🚀 Migrate to
             Declarative Setup</div>
           <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
-            Upgrades your Android build files to the latest Flutter requirements: declarative Gradle plugins
-            with the latest recommended AGP &amp; Kotlin versions, SDK/NDK versions driven by Flutter's built-in
-            variables
-            (<code
-              style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">flutter.compileSdkVersion</code>,
-            <code
-              style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">flutter.ndkVersion</code>),
-            and <b>16 KB page size support</b>. Supports both <code>build.gradle</code> and
-            <code>build.gradle.kts</code>.
+            Moves your Android build files to the AGP 9 declarative setup: <code>plugins {}</code> in
+            <code>settings.gradle</code> (AGP, Kotlin, Firebase), Gradle wrapper, Java 17, raised
+            <code>compileSdk</code>/<code>targetSdk</code>/NDK, and the <code>android.builtInKotlin=false</code> /
+            <code>android.newDsl=false</code> flags Flutter needs. Versions are only ever raised, never lowered, and
+            <code>minSdk</code> is left alone. Works with <code>build.gradle</code> and <code>build.gradle.kts</code>.
           </div>
         </div>
         <button id="migrateAndroidButton" type="button" class="btn-primary"
@@ -2382,12 +2387,11 @@
           <div class="detail-card-label" style="font-size: 14px; color: var(--android-accent);">📱 Migrate to 16 KB
             Page Size</div>
           <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
-            <b>Fallback</b> for projects that still use outdated packages incompatible with the full migration.
-            Applies only the minimal changes required for <b>Android 15+ 16 KB page size</b> compatibility:
-            AGP 8.5.2+, targetSdk 35+, NDK 27+, and
-            <code
-              style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">android:extractNativeLibs="true"</code>.
-            Your existing legacy buildscript setup is left untouched.
+            Lighter alternative to the full migration for projects that can't take it yet. Makes the app ready for
+            <b>Android 15+ 16 KB page size</b>: pins the NDK to r28+ (16 KB aligned by default) when it is older,
+            and only if your AGP is older than 8.5.1 packages native libraries compressed
+            (<code style="background: var(--bg-primary); padding: 2px 4px; border-radius: 4px;">useLegacyPackaging</code>).
+            Nothing else in your build files changes.
           </div>
         </div>
         <button id="migrateAndroid16kbButton" type="button" class="btn-secondary"
@@ -3148,11 +3152,16 @@
     <div class="semantics-ai-prompt">
       <div>
         <strong>AI shared-widget remediation</strong>
-        <p>Copies a project-specific implementation prompt that reuses shared widget APIs before allowing leaf wrappers.</p>
+        <p>Copies a phased prompt: shared widgets get required semantics parameters first, then their call sites, then everything else. The shared-widget inventory below is embedded.</p>
         <code id="semanticsPromptProject" class="semantics-ai-project">The active Flutter workspace will be included.</code>
       </div>
       <button id="copySemanticsPromptButton" type="button" class="btn-secondary">Copy AI prompt</button>
     </div>
+    <details id="semanticsSharedDetails" class="semantics-shared" style="display:none;">
+      <summary id="semanticsSharedSummary"></summary>
+      <p class="semantics-shared-hint">Fix these once, top to bottom. Layer 0 widgets are built from SDK controls only; higher layers wrap a lower one.</p>
+      <div id="semanticsSharedList" class="semantics-shared-list"></div>
+    </details>
     <div class="toolbar">
       <input id="semanticsSearch" type="search" placeholder="Search file, widget, kind, or identifier" />
       <select id="semanticsStatusFilter">
@@ -3381,7 +3390,7 @@
     .imgtool-layout { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 14px; align-items: start; }
     @media (max-width: 760px) { .imgtool-layout { grid-template-columns: minmax(0, 1fr); } }
     .imgtool-controls { display: flex; flex-direction: column; gap: 12px; }
-    .imgtool-previews { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 8px; }
+    .imgtool-previews { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 8px; min-width: 0; }
     .imgtool-card { background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
     .imgtool-card-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-primary); }
     .imgtool-card-title .imgtool-hint { font-weight: 400; }
@@ -3469,6 +3478,20 @@
     .imgtool-phone { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
     .imgtool-phone-frame { border: 6px solid #111; border-radius: 22px; box-shadow: 0 0 0 1px #3a3a3a, var(--shadow-md); overflow: hidden; }
     .imgtool-phone-frame canvas { display: block; }
+    .imgtool [hidden] { display: none !important; }
+    .imgtool-actions { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; font-weight: 400; }
+    .imgtool-subtitle { margin-top: 4px; }
+    .imgtool-centered { text-align: center; }
+    .imgtool-panel { display: flex; flex-direction: column; gap: 8px; }
+    .imgtool-editor-wrap { position: relative; width: min(100%, 340px); aspect-ratio: 1; margin: 0 auto; }
+    .imgtool-editor { display: block; width: 100%; height: 100%; border-radius: var(--radius-md); background: var(--bg-tertiary); border: 1px solid var(--border-default); cursor: grab; touch-action: none; user-select: none; outline: none; transition: border-color var(--transition-fast); }
+    .imgtool-editor:hover { border-color: var(--text-muted); }
+    .imgtool-editor:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .imgtool-editor.dragging { cursor: grabbing; border-color: var(--accent); }
+    .imgtool-editor-badge { position: absolute; right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-variant-numeric: tabular-nums; color: #fff; background: rgba(0, 0, 0, 0.6); pointer-events: none; }
+    .imgtool-files-group { font-weight: 600; margin-top: 6px; }
+    .imgtool-files-row { padding-left: 10px; }
+    @media (prefers-reduced-motion: reduce) { .imgtool-editor, .imgtool-chip, .imgtool-drop { transition: none; } }
   </style>
 
   <section id="iconsSection" class="section platform-details" data-tab="icons">
@@ -3514,7 +3537,7 @@
           <div id="iconsAdjustRow" class="imgtool-card" style="display:none;">
             <div class="imgtool-card-title">
               <span>Size &amp; position</span>
-              <span class="imgtool-hint">Scroll over a preview to zoom · double-click the slider to reset</span>
+              <span class="imgtool-hint">double-click the slider to reset</span>
             </div>
             <div class="imgtool-chips" role="group" aria-label="Size presets">
               <button type="button" class="imgtool-chip" data-icons-preset="auto" title="Picks a size from the image: logos are fit inside the circular safe zone, full-bleed artwork fills the icon">✨ Auto</button>
@@ -3526,7 +3549,7 @@
               <input id="iconsScaleSlider" type="range" min="40" max="200" step="1" value="100" aria-label="Foreground size" />
               <label class="imgtool-num"><input id="iconsScaleNumber" type="number" min="40" max="200" step="1" value="100" aria-label="Foreground size percent" /><span>%</span></label>
             </div>
-            <p class="imgtool-hint">Below 100% adds padding; above 100% zooms in and crops the edges.</p>
+            <p class="imgtool-hint">Below 100% adds padding; above 100% zooms in and crops the edges. Drag the preview to reposition.</p>
             <label class="imgtool-check" title="Crop away empty or uniform-color margins before sizing, so the percentage refers to the artwork itself">
               <input id="iconsTrim" type="checkbox" /> Trim empty margins <span id="iconsTrimHint" class="imgtool-hint"></span>
             </label>
@@ -3584,67 +3607,90 @@
         <div class="imgtool-previews">
           <div id="iconsPreviewEmpty" class="imgtool-empty">Choose a source image to see live previews for every platform, the Play Store, and notifications.</div>
           <div id="iconsPreviewRow" style="display:none; flex-direction:column; gap:12px;">
+            <div class="imgtool-card">
+              <div class="imgtool-card-title">
+                <span>Crop &amp; position</span>
+                <span class="imgtool-actions">
+                  <label class="imgtool-check"><input id="iconsShowSafeZone" type="checkbox" checked /> Safe zone</label>
+                  <button id="iconsCenterButton" type="button" class="imgtool-chip" title="Move the artwork back to the center">Center</button>
+                  <button id="iconsResetButton" type="button" class="imgtool-chip" title="Back to the automatic size and position">Reset</button>
+                </span>
+              </div>
+              <div class="imgtool-editor-wrap">
+                <canvas id="iconsEditor" class="imgtool-editor" tabindex="0" role="application" aria-label="Icon crop editor. Drag to move, scroll to zoom, arrow keys to nudge."></canvas>
+                <span id="iconsZoomBadge" class="imgtool-editor-badge" aria-hidden="true">100%</span>
+              </div>
+              <p class="imgtool-hint imgtool-centered">Drag to move · scroll or pinch to zoom · arrow keys nudge · double-click to reset</p>
+            </div>
+
             <div id="iconsTilesCard" class="imgtool-card">
               <div class="imgtool-card-title">
-                <span>App icon</span>
-                <label class="imgtool-check"><input id="iconsShowSafeZone" type="checkbox" /> Show safe zone</label>
-              </div>
-              <div class="imgtool-tiles" id="iconsTiles">
-                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:22.5%;"><canvas data-icons-preview="colored"></canvas></div>iOS</div>
-                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Android legacy</div>
-                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:50%;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Circle mask</div>
-                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:28%;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Squircle mask</div>
-                <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:48px; height:48px; border-radius:22.5%;"><canvas data-icons-preview="colored"></canvas></div>Actual size</div>
-              </div>
-            </div>
-
-            <div class="imgtool-card">
-              <div class="imgtool-card-title">Home screen</div>
-              <div class="imgtool-home">
-                <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Photos</span></div>
-                <div class="imgtool-home-app"><div class="imgtool-home-icon"><canvas data-icons-preview="colored"></canvas></div><span data-icons-appname>Your app</span></div>
-                <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Maps</span></div>
-                <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Clock</span></div>
-              </div>
-            </div>
-
-            <div class="imgtool-card">
-              <div class="imgtool-card-title">Play Store listing <span class="imgtool-hint">512×512 · Google applies the rounded mask and shadow</span></div>
-              <div class="imgtool-play">
-                <div class="imgtool-play-icon"><canvas data-icons-preview="colored"></canvas></div>
-                <div class="imgtool-play-meta">
-                  <span class="imgtool-play-name" data-icons-appname>Your app</span>
-                  <span class="imgtool-play-dev">Your developer name</span>
-                  <span class="imgtool-play-stats">4.8 ★ · 1M+ downloads · Rated for 3+</span>
-                  <span class="imgtool-play-install">Install</span>
+                <span>Preview</span>
+                <div class="imgtool-segment" role="radiogroup" aria-label="Preview style">
+                  <label><input type="radio" name="iconsPreviewTab" value="shapes" checked /><span>Shapes</span></label>
+                  <label><input type="radio" name="iconsPreviewTab" value="home" /><span>Home screen</span></label>
+                  <label><input type="radio" name="iconsPreviewTab" value="store" /><span>Play Store</span></label>
+                  <label><input type="radio" name="iconsPreviewTab" value="notification" /><span>Notification</span></label>
                 </div>
               </div>
-            </div>
 
-            <div class="imgtool-card">
-              <div class="imgtool-card-title">Notification <span class="imgtool-hint">small icon = white silhouette</span></div>
-              <div class="imgtool-notif">
-                <div class="imgtool-statusbar">
-                  <span>9:41</span>
-                  <canvas data-icons-preview="silhouette"></canvas>
-                  <span class="imgtool-sb-right">▾ ▴ ▮</span>
+              <div data-icons-panel="shapes" class="imgtool-panel">
+                <div class="imgtool-tiles" id="iconsTiles">
+                  <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:22.5%;"><canvas data-icons-preview="colored"></canvas></div>iOS</div>
+                  <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Android legacy</div>
+                  <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:50%;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Circle mask</div>
+                  <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:96px; height:96px; border-radius:28%;"><canvas data-icons-preview="colored"></canvas><span class="imgtool-safe"></span></div>Squircle mask</div>
+                  <div class="imgtool-tile"><div class="imgtool-tile-frame imgtool-checker" style="width:48px; height:48px; border-radius:22.5%;"><canvas data-icons-preview="colored"></canvas></div>Actual size</div>
                 </div>
-                <div class="imgtool-notif-card">
-                  <div>
-                    <div class="imgtool-notif-head">
-                      <span class="imgtool-notif-small"><canvas data-icons-preview="silhouette"></canvas></span>
-                      <span data-icons-appname>Your app</span><span>· now</span>
-                    </div>
-                    <div class="imgtool-notif-title">New message</div>
-                    <div class="imgtool-notif-text">This is how your notification icon looks.</div>
+              </div>
+
+              <div data-icons-panel="home" class="imgtool-panel" hidden>
+                <div class="imgtool-home">
+                  <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Photos</span></div>
+                  <div class="imgtool-home-app"><div class="imgtool-home-icon"><canvas data-icons-preview="colored"></canvas></div><span data-icons-appname>Your app</span></div>
+                  <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Maps</span></div>
+                  <div class="imgtool-home-app"><div class="imgtool-home-icon placeholder"></div><span>Clock</span></div>
+                </div>
+              </div>
+
+              <div data-icons-panel="store" class="imgtool-panel" hidden>
+                <div class="imgtool-play">
+                  <div class="imgtool-play-icon"><canvas data-icons-preview="colored"></canvas></div>
+                  <div class="imgtool-play-meta">
+                    <span class="imgtool-play-name" data-icons-appname>Your app</span>
+                    <span class="imgtool-play-dev">Your developer name</span>
+                    <span class="imgtool-play-stats">4.8 ★ · 1M+ downloads · Rated for 3+</span>
+                    <span class="imgtool-play-install">Install</span>
                   </div>
-                  <div class="imgtool-notif-large"><canvas data-icons-preview="colored"></canvas></div>
                 </div>
+                <p class="imgtool-hint">512×512 · Google applies the rounded mask and shadow.</p>
               </div>
-              <p id="iconsSilhouetteWarning" class="imgtool-warn" style="display:none;">
-                This image has no transparency, so the small notification icon renders as a solid white square. Use a
-                source with a transparent background around the shape.
-              </p>
+
+              <div data-icons-panel="notification" class="imgtool-panel" hidden>
+                <div class="imgtool-notif">
+                  <div class="imgtool-statusbar">
+                    <span>9:41</span>
+                    <canvas data-icons-preview="silhouette"></canvas>
+                    <span class="imgtool-sb-right">▾ ▴ ▮</span>
+                  </div>
+                  <div class="imgtool-notif-card">
+                    <div>
+                      <div class="imgtool-notif-head">
+                        <span class="imgtool-notif-small"><canvas data-icons-preview="silhouette"></canvas></span>
+                        <span data-icons-appname>Your app</span><span>· now</span>
+                      </div>
+                      <div class="imgtool-notif-title">New message</div>
+                      <div class="imgtool-notif-text">This is how your notification icon looks.</div>
+                    </div>
+                    <div class="imgtool-notif-large"><canvas data-icons-preview="colored"></canvas></div>
+                  </div>
+                </div>
+                <p class="imgtool-hint">The small icon is a white silhouette; Android repaints it.</p>
+                <p id="iconsSilhouetteWarning" class="imgtool-warn" style="display:none;">
+                  This image has no transparency, so the small notification icon renders as a solid white square. Use a
+                  source with a transparent background around the shape.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -3705,7 +3751,7 @@
             </div>
             <p class="imgtool-hint">The logo's box on screen: 200 is about half the width of a typical phone.</p>
 
-            <div class="imgtool-card-title" style="margin-top:4px;"><span>Fit inside the box</span></div>
+            <div class="imgtool-card-title imgtool-subtitle"><span>Zoom inside the box</span></div>
             <div class="imgtool-range">
               <input id="splashScaleSlider" type="range" min="40" max="200" step="1" value="100" aria-label="Logo fit" />
               <label class="imgtool-num"><input id="splashScaleNumber" type="number" min="40" max="200" step="1" value="100" aria-label="Logo fit percent" /><span>%</span></label>
@@ -3761,7 +3807,22 @@
 
         <div class="imgtool-previews">
           <div id="splashPreviewEmpty" class="imgtool-empty">Choose a logo to see it on an Android phone and an iPhone at its real proportions.</div>
-          <div id="splashPreviewRow" class="imgtool-card" style="display:none;">
+          <div id="splashPreviewRow" style="display:none; flex-direction:column; gap:12px;">
+          <div class="imgtool-card">
+            <div class="imgtool-card-title">
+              <span>Crop &amp; position</span>
+              <span class="imgtool-actions">
+                <button id="splashCenterButton" type="button" class="imgtool-chip" title="Move the logo back to the center">Center</button>
+                <button id="splashResetButton" type="button" class="imgtool-chip" title="100% zoom, centered">Reset</button>
+              </span>
+            </div>
+            <div class="imgtool-editor-wrap">
+              <canvas id="splashEditor" class="imgtool-editor" tabindex="0" role="application" aria-label="Logo crop editor. Drag to move, scroll to zoom, arrow keys to nudge."></canvas>
+              <span id="splashZoomBadge" class="imgtool-editor-badge" aria-hidden="true">100%</span>
+            </div>
+            <p class="imgtool-hint imgtool-centered">The square is the logo box · drag to move · scroll or pinch to zoom · double-click to reset</p>
+          </div>
+          <div class="imgtool-card">
             <div class="imgtool-card-title">
               <span>Preview</span>
               <label class="imgtool-check"><input id="splashShowBounds" type="checkbox" /> Show logo box</label>
@@ -3770,7 +3831,7 @@
               <div class="imgtool-phone"><div class="imgtool-phone-frame"><canvas id="splashPhoneAndroid" data-device-w="360" data-device-h="800" style="width:162px; height:360px;"></canvas></div>Android · 360×800 dp</div>
               <div class="imgtool-phone"><div class="imgtool-phone-frame" style="border-radius:28px;"><canvas id="splashPhoneIOS" data-device-w="390" data-device-h="844" style="width:166px; height:360px;"></canvas></div>iPhone · 390×844 pt</div>
             </div>
-            <p class="imgtool-hint">Scroll over a phone to resize the logo.</p>
+          </div>
           </div>
         </div>
       </div>

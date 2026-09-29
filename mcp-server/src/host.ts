@@ -123,6 +123,22 @@ export function globToRegExp(glob: string): RegExp {
   return new RegExp(`^${re}$`);
 }
 
+/** Nearest ancestor (or the folder itself) that contains a pubspec.yaml, or undefined. */
+export function findFlutterRoot(start: string): string | undefined {
+  let current = path.resolve(start);
+  for (let depth = 0; depth < 12; depth++) {
+    if (fs.existsSync(path.join(current, 'pubspec.yaml'))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return undefined;
+    }
+    current = parent;
+  }
+  return undefined;
+}
+
 /** Resolve the target Flutter project root. Throws when it cannot be found. */
 export function resolveProjectRoot(): string {
   // 1. Explicit CLI arg: --project <path>
@@ -134,8 +150,11 @@ export function resolveProjectRoot(): string {
   // 2. Environment variable set by the VS Code extension / launcher.
   const envProject = process.env['FCM_MCP_PROJECT'];
 
-  // 3. Fall back to the current working directory.
-  const candidate = cliProject || envProject || process.cwd();
+  // 3. Fall back to the directory the client started the server in. A user-level registration has no
+  //    fixed project, so walk up from a subfolder (lib/, android/...) to the folder holding pubspec.yaml.
+  // A client that does not expand its workspace variable hands over the literal "${workspaceFolder}".
+  const usable = (value: string | undefined) => (value && !/\$\{[^}]+\}/.test(value) ? value : undefined);
+  const candidate = usable(cliProject) || usable(envProject) || findFlutterRoot(process.cwd()) || process.cwd();
   const root = path.resolve(candidate);
   if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
     throw new Error(`Flutter project path does not exist or is not a directory: ${root}`);

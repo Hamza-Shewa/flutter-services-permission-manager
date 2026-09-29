@@ -60,24 +60,75 @@ function dartString(value: string): string {
   return `'${value.replace(/\\/g, "\\\\")}'`;
 }
 
-function validateLocalizedExpression(expression: string | undefined, widgetSource: string, property: string): void {
+/**
+ * The expression must be a non-literal that already exists in the widget or somewhere in the
+ * project's Dart sources (generated localization accessors included), so semantics never
+ * introduces new hardcoded copy.
+ */
+function validateLocalizedExpression(
+  expression: string | undefined,
+  widgetSource: string,
+  property: string,
+  projectHas: (expression: string) => boolean,
+): void {
   if (!expression) {
     return;
   }
   const trimmed = expression.trim();
-  if (!trimmed || /^r?['"]/.test(trimmed) || trimmed.includes(";") || trimmed.includes("\n") || !widgetSource.includes(trimmed)) {
-    throw new Error(`${property} must be an existing non-literal localized expression from the widget source.`);
+  if (!trimmed || /^r?['"]/.test(trimmed) || trimmed.includes(";") || trimmed.includes("\n") ||
+    !(widgetSource.includes(trimmed) || projectHas(trimmed))) {
+    throw new Error(`${property} must be an existing non-literal localized expression from the widget source or the project's localization code.`);
   }
 }
 
-function buildEdit(finding: InteractiveFinding, request: SemanticsFixRequest, source: string): SemanticsPreviewEdit {
+/** Lazily reads every Dart file under lib/ (generated ones too) to answer "does this expression exist?". */
+function projectSearch(root: string): (expression: string) => boolean {
+  let text: string | undefined;
+  return (expression) => {
+    if (text === undefined) {
+      const chunks: string[] = [];
+      const stack = [path.join(root, "lib")];
+      while (stack.length > 0) {
+        const directory = stack.pop()!;
+        let entries: fs.Dirent[] = [];
+        try {
+          entries = fs.readdirSync(directory, { withFileTypes: true });
+        } catch {
+          continue;
+        }
+        for (const entry of entries) {
+          const absolute = path.join(directory, entry.name);
+          if (entry.isDirectory() && !entry.isSymbolicLink()) {
+            stack.push(absolute);
+          } else if (entry.isFile() && entry.name.endsWith(".dart")) {
+            chunks.push(fs.readFileSync(absolute, "utf8"));
+          }
+        }
+      }
+      text = chunks.join("\n");
+    }
+    return text.includes(expression);
+  };
+}
+
+function buildEdit(finding: InteractiveFinding, request: SemanticsFixRequest, source: string, projectHas: (expression: string) => boolean): SemanticsPreviewEdit {
   const identifier = dartString(request.identifier.trim());
   const widgetSource = source.slice(finding.source.startOffset, finding.source.endOffset);
-  validateLocalizedExpression(request.labelExpression, widgetSource, "labelExpression");
-  validateLocalizedExpression(request.hintExpression, widgetSource, "hintExpression");
+  validateLocalizedExpression(request.labelExpression, widgetSource, "labelExpression", projectHas);
+  validateLocalizedExpression(request.hintExpression, widgetSource, "hintExpression", projectHas);
 
   if (finding.opaqueReason) {
     throw new Error(`${finding.widgetType} is opaque and cannot be fixed automatically.`);
+  }
+
+  if (finding.role === "shared-definition-root") {
+    const owner = finding.owner?.className ?? "the shared widget";
+    throw new Error(`${finding.widgetType} at ${finding.source.path}:${finding.source.line} is inside ${owner}. Add required semantics parameters to ${owner} and pass them from its call sites instead of hardcoding one identifier here.`);
+  }
+
+  if (finding.role === "composite-item") {
+    const owner = finding.owner?.className ?? "the widget";
+    throw new Error(`${finding.widgetType} at ${finding.source.path}:${finding.source.line} is one of several controls inside ${owner}, which is reused. Give ${owner} a required identifier prefix parameter and build this control's identifier from it.`);
   }
 
   if (finding.semantics.identifierValue) {
@@ -88,9 +139,21 @@ function buildEdit(finding: InteractiveFinding, request: SemanticsFixRequest, so
     };
   }
 
+  const contract = finding.resolved?.contract;
+  if ((contract?.identifier ?? contract?.prefix) && contract.status === "complete" && !finding.semantics.wrapper && finding.semantics.argumentInsert) {
+    return buildContractEdit(finding, request, identifier);
+  }
+
+  // Icon-only SDK buttons name themselves through `tooltip`; that is the label, so it is not repeated on the Semantics node.
+  const labelViaTooltip = finding.remediation === "builtin-label" && !!request.labelExpression &&
+    !finding.semantics.labelExpression && !finding.semantics.tooltipExpression && !!finding.semantics.argumentInsert;
+  const child = labelViaTooltip
+    ? withNamedArgument(widgetSource, finding.semantics.argumentInsert!, finding.source.startOffset, `tooltip: ${request.labelExpression!.trim()}`)
+    : widgetSource;
+
   const extra = [
     `identifier: ${identifier}`,
-    request.labelExpression && !finding.semantics.labelExpression ? `label: ${request.labelExpression.trim()}` : undefined,
+    request.labelExpression && !finding.semantics.labelExpression && !labelViaTooltip ? `label: ${request.labelExpression.trim()}` : undefined,
     request.hintExpression && !finding.semantics.hintExpression ? `hint: ${request.hintExpression.trim()}` : undefined,
   ].filter((value): value is string => !!value);
 
@@ -107,13 +170,50 @@ function buildEdit(finding: InteractiveFinding, request: SemanticsFixRequest, so
     throw new Error(`Dynamic identifiers or localized label/hint expressions cannot be inserted safely in the const context at ${finding.source.path}:${finding.source.line}.`);
   }
   const replacement = finding.inConstContext
-    ? `const Semantics.fromProperties(properties: SemanticsProperties(${extra.join(", ")}), child: ${widgetSource})`
-    : `Semantics(${extra.join(", ")}, child: ${widgetSource})`;
+    ? `const Semantics.fromProperties(properties: SemanticsProperties(${extra.join(", ")}), child: ${child})`
+    : `Semantics(${extra.join(", ")}, child: ${child})`;
   return {
     startOffset: finding.source.startOffset,
     endOffset: finding.source.endOffset,
     replacement,
   };
+}
+
+/** Returns `widgetSource` with `argument` appended to its argument list (positions are relative to `base`). */
+function withNamedArgument(widgetSource: string, insert: { offset: number; leadingComma: boolean; empty: boolean }, base: number, argument: string): string {
+  const at = insert.offset - base;
+  const piece = insert.leadingComma ? `, ${argument}` : insert.empty ? argument : ` ${argument},`;
+  return widgetSource.slice(0, at) + piece + widgetSource.slice(at);
+}
+
+/**
+ * Passes the semantics through the project widget's own parameters
+ * (`MyButton(..., semanticsIdentifier: 'x')`) instead of wrapping it in a second
+ * `Semantics` node, which would compete with the one the widget already owns.
+ */
+function buildContractEdit(finding: InteractiveFinding, request: SemanticsFixRequest, identifier: string): SemanticsPreviewEdit {
+  const contract = finding.resolved!.contract;
+  const insert = finding.semantics.argumentInsert!;
+  const { dynamic } = validateIdentifier(request.identifier);
+  const needsLabel = !!contract.label?.required && !finding.semantics.labelExpression;
+  if (needsLabel && !request.labelExpression) {
+    throw new Error(`${finding.resolved!.className} requires ${contract.label!.name}; provide an existing localized labelExpression for ${finding.source.path}:${finding.source.line}.`);
+  }
+  if (finding.inConstContext && (dynamic || request.labelExpression || request.hintExpression)) {
+    throw new Error(`Dynamic identifiers or localized label/hint expressions cannot be inserted safely in the const context at ${finding.source.path}:${finding.source.line}.`);
+  }
+  const identifierParam = (contract.identifier ?? contract.prefix)!;
+  const args = [
+    `${identifierParam.name}: ${identifier}`,
+    request.labelExpression && contract.label && !finding.semantics.labelExpression
+      ? `${contract.label.name}: ${request.labelExpression.trim()}` : undefined,
+    request.hintExpression && contract.hint && !finding.semantics.hintExpression
+      ? `${contract.hint.name}: ${request.hintExpression.trim()}` : undefined,
+  ].filter((value): value is string => !!value);
+  const body = args.join(", ");
+  const trailingComma = !insert.leadingComma && !insert.empty;
+  const replacement = insert.leadingComma ? `, ${body}` : trailingComma ? ` ${body},` : body;
+  return { startOffset: insert.offset, endOffset: insert.offset, replacement };
 }
 
 function applyEdits(source: string, edits: SemanticsPreviewEdit[]): string {
@@ -184,6 +284,7 @@ export async function previewSemanticsFixes(
     }
   }
 
+  const projectHas = projectSearch(root);
   const grouped = new Map<string, Array<{ finding: InteractiveFinding; request: SemanticsFixRequest }>>();
   for (const request of requests) {
     const finding = byId.get(request.occurrenceId);
@@ -205,7 +306,7 @@ export async function previewSemanticsFixes(
     if (sha256(originalContent) !== expectedHash) {
       throw new Error(`${relativePath} changed after scanning. Rescan before previewing fixes.`);
     }
-    const edits = entries.map(({ finding, request }) => buildEdit(finding, request, originalContent));
+    const edits = entries.map(({ finding, request }) => buildEdit(finding, request, originalContent, projectHas));
     const proposedContent = applyEdits(originalContent, edits);
     if (!await validateDartSyntax(proposedContent)) {
       throw new Error(`Proposed changes would not parse as valid Dart: ${relativePath}`);

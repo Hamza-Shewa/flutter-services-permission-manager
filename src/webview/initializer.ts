@@ -307,10 +307,10 @@ function setupMessageHandler(
     .register("revealSourceReference", async (msg) => { if (msg.path) { await handleRevealSourceReference(ref, msg); } })
     .register("browseIconSource", async () => await handleBrowseIconSource(ref))
     .register("requestCurrentIconPreview", async () => await handleRequestCurrentIconPreview(ref, files))
-    .register("generateIcons", async (msg) => { if (msg.sourcePath) { await handleGenerateIcons(ref, { sourcePath: msg.sourcePath, platforms: msg.platforms, scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor, trimMargins: msg.trimMargins, androidFamilies: msg.androidFamilies }, files); } })
+    .register("generateIcons", async (msg) => { if (msg.sourcePath) { await handleGenerateIcons(ref, { sourcePath: msg.sourcePath, platforms: msg.platforms, scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor, trimMargins: msg.trimMargins, offsetX: msg.offsetX, offsetY: msg.offsetY, androidFamilies: msg.androidFamilies }, files); } })
     .register("browseSplashSource", async () => await handleBrowseSplashSource(ref))
     .register("requestCurrentSplashPreview", async () => await handleRequestCurrentSplashPreview(ref, files))
-    .register("generateSplash", async (msg) => { if (msg.sourcePath) { await handleGenerateSplash(ref, { sourcePath: msg.sourcePath, platforms: msg.platforms, scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor, trimMargins: msg.trimMargins, logoSize: msg.logoSize }, files); } })
+    .register("generateSplash", async (msg) => { if (msg.sourcePath) { await handleGenerateSplash(ref, { sourcePath: msg.sourcePath, platforms: msg.platforms, scalePercent: msg.scalePercent, backgroundColor: msg.backgroundColor, trimMargins: msg.trimMargins, offsetX: msg.offsetX, offsetY: msg.offsetY, logoSize: msg.logoSize }, files); } })
     .register("webview_error", (msg) => { console.error("[WEBVIEW ERROR]:", JSON.stringify(msg, null, 2)); })
     .register("webview_log", (msg) => { console.log("[WEBVIEW LOG]:", msg.message); });
 }

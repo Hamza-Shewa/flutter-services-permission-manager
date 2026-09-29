@@ -450,13 +450,14 @@ export async function generateIcons(options: GenerateIconsOptions): Promise<Icon
   try {
     const source = await loadForeground(sourcePath, kind, !!options.trimMargins);
     const scalePercent = clampIconScalePercent(options.scalePercent);
-    const coloredWorking = composeWorkingImage(source, scalePercent, options.backgroundColor, DEFAULT_WORKING_CANVAS_SIZE);
+    const offset = { x: options.offsetX, y: options.offsetY };
+    const coloredWorking = composeWorkingImage(source, scalePercent, options.backgroundColor, DEFAULT_WORKING_CANVAS_SIZE, offset);
     const android = wantsAndroid
       ? await generateAndroidIcons(
         options.androidManifestUri!,
         options.androidManifestContent,
         coloredWorking,
-        composeWorkingImage(source, scalePercent, undefined, DEFAULT_WORKING_CANVAS_SIZE),
+        composeWorkingImage(source, scalePercent, undefined, DEFAULT_WORKING_CANVAS_SIZE, offset),
         options.androidFamilies,
       )
       : undefined;

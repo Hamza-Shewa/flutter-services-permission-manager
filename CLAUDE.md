@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Flutter Config Manager is a VS Code extension that provides a unified webview UI for managing Flutter Android/iOS/macOS permissions, third-party service integrations (Facebook, Firebase, AdMob, Stripe, etc.), app-name localization, ARB/JSON translation files, dependency/asset cleanup, and accessibility ("Semantics") auditing — all by safely editing `AndroidManifest.xml`, `Info.plist`, `Podfile`, `AppDelegate.swift`, `strings.xml`, build.gradle, and Dart source, instead of requiring manual edits. It also ships a standalone MCP server (`mcp-server/`) so AI agents can perform the same operations.
+Flutter Config Manager is a VS Code extension that provides a unified webview UI for managing Flutter Android/iOS/macOS permissions, third-party service integrations (Facebook, Firebase, AdMob, Stripe, etc.), app-name localization, ARB/JSON translation files, app icon / splash screen generation, dependency/asset cleanup, and accessibility ("Semantics") auditing — all by safely editing `AndroidManifest.xml`, `Info.plist`, `Podfile`, `AppDelegate.swift`, `strings.xml`, build.gradle, and Dart source, instead of requiring manual edits. It also ships a standalone MCP server (`mcp-server/`) so AI agents can perform the same operations.
 
 ## Build, lint, test commands
 
@@ -22,7 +22,8 @@ npm run vscode:prepublish # compile + compile:mcp (what VS Code runs before pack
 ```
 
 - Tests use `@vscode/test-cli` + Mocha (`tdd` UI, 20s timeout) against compiled output in `out/test/**/*.test.js` — **always `npm run compile` first**, edits to `src/test/*.ts` are not picked up until compiled.
-- Test workspace fixture: `src/test/fixtures` (configured in `.vscode-test.mjs`).
+- Test workspace fixture: `src/test/fixtures` (configured in `.vscode-test.mjs`); tests run inside a real VS Code 1.80.0 instance, and `src/test/<area>/` mirrors `src/core` / `src/features` layout.
+- CI (`.github/workflows/ci.yml`) runs lint → compile → `xvfb-run npm test` on Node 22, but only triggers on pushes to `main` (this repo's default branch is `master`) and on PRs.
 - Run a single test file after compiling: `npx vscode-test --label unitTests -g "<test/describe name>"`, or narrow `files` in a local `.vscode-test.mjs` override. There is no separate "run one file" npm script — compile then filter with mocha's `-g` grep via the underlying CLI.
 - Coverage thresholds (`.c8rc`): 70% lines/functions/statements, 60% branches, excluding `src/test/**` and `src/webview/frontend/**`.
 - `mcp-server/` is its own TypeScript project (own `tsconfig.json`, `package.json`) and is excluded from the root `tsconfig.json` — build it separately with `npm run compile:mcp`.
@@ -36,8 +37,12 @@ The extension host (`src/extension.ts` → `out/`) runs Node/VS Code APIs and ow
 ### `src/core/` vs `src/features/`
 
 - `src/core/` — cross-cutting infrastructure, not tied to one UI tab: `constants/`, `shared/` (errors, logging, result, XML/plist parsing), `types/`, `utils/` (debounce, exec, file I/O), `providers/sidebar.provider.ts`, `mcp/` (VS Code MCP definition provider glue), and `platform/{android,ios}/` — the only code that should write to `AndroidManifest.xml`, `strings.xml`, `Info.plist`, `Podfile`, `AppDelegate.swift`, `.entitlements`. `workspace.service.ts` discovers project files; `document.service.ts` is the save orchestrator that coordinates permissions/services/appname/build writes across platforms.
-- `src/features/<feature>/` — one folder per UI tab (`permissions`, `services`, `localization`, `build`, `migration`, `packages`, `assets`, `semantics`), each with its own `index.ts` barrel, re-exported from `src/features/index.ts`. Feature code extracts/validates/transforms data and calls into `core/platform/*` to persist it — features should not touch platform files directly.
+- `src/features/<feature>/` — one folder per UI tab (`permissions`, `services`, `localization`, `build`, `migration`, `packages`, `assets`, `semantics`), each with its own `index.ts` barrel, re-exported from `src/features/index.ts`. Feature code extracts/validates/transforms data and calls into `core/platform/*` to persist it — features should not touch platform files directly. Exception: `icons` and `splash` write generated image assets (`mipmap-*`, `Assets.xcassets/**`, notification/splash drawables) themselves, rasterizing via `@resvg/resvg-wasm` (SVG) and `jimp`; they only *read* manifest/`Contents.json` to discover which slots exist. Semantics scanning parses Dart via `@lumis-sh/wasm-dart`.
 - `src/features/localization/arb-core.ts` is a deliberately **pure, vscode-free** extraction of ARB/JSON parse-serialize-translate logic, re-exported by the vscode-coupled `arb-translations.service.ts`. New pure translation logic belongs in `arb-core.ts` so the standalone `mcp-server` can import it directly. The same purity constraint applies to anything under `out/core/platform/**` and `out/core/constants/**` that `mcp-server` imports.
+
+- `src/features/migration/` (Gradle AGP 9 / 16 KB migrations) is layered the same way: `migration-transforms.ts` = pure string transforms, `migration-core.ts` = vscode-free file orchestration taking an `androidDir` (unit-testable against temp dirs), `migration.service.ts` = workspace/version lookup wrapper. It also rewrites Gradle/manifest files directly, an exception to the platform-write rule above. Unit tests only prove the text; when changing these transforms, validate with a real build: `flutter create` an app, run the migration on a copy, `flutter build apk --debug`, then `zipalign -c -P 16 -v 4` on the APK. Known AGP 9 traps: `android:extractNativeLibs` in the manifest fails the build (use `useLegacyPackaging`), `flutter-plugin-loader` must not be `apply false`, never downgrade AGP/Gradle, and `flutter.compileSdkVersion` can be lower than what plugins require (hence the `maxOf` floor).
+
+- `src/features/semantics/` is layered the same way: `dart-source.ts` (tree-sitter parsing primitives), `widget-index.ts` (project-owned widget definitions, import/export resolution, semantics contracts, shared-control classification and fix-order layers), `scanner.ts` (findings; scans repeat until the set of interactive project controls is stable), `fixer.ts` (hash-guarded previews; uses a widget's own parameter when it has a complete contract), `prompt.ts` (the phased AI prompt, data-driven from the scan). All of it is pure (no vscode), so the MCP server reuses it.
 
 ### Data flow
 
@@ -51,6 +56,11 @@ The extension host (`src/extension.ts` → `out/`) runs Node/VS Code APIs and ow
 ### MCP server (`mcp-server/`)
 
 Standalone Node project that imports the **compiled** pure modules from `../out/**` (no vscode dependency): `out/core/platform/{android,ios}/*`, `out/features/localization/arb-core.js` + `machine-translator.js`, `out/core/constants/index.js`. The root `tsconfig.json` emits `.d.ts` declarations specifically so `mcp-server` gets types on those imports. Project resolution order: `--project` CLI arg > `FCM_MCP_PROJECT` env var > cwd. Inside VS Code 1.93+, `src/core/mcp/definition-provider.ts` auto-registers it via `vscode.lm.registerMcpServerDefinitionProvider` (feature-detected, no-op on older VS Code). `mcp-server/src/semantics.ts` and `android-automation.ts` expose the Semantics scanning/fix and Appium-based Android UI automation tools respectively — automation never falls back to coordinate taps and requires a short-lived confirmation token for consequential actions.
+
+### Repo hygiene
+
+- `coverage/` (including `coverage/tmp/*.json`) is tracked in git, so any `npm test` run dirties the working tree — don't stage it unless intentionally updating reports.
+- `AGENTS.md`, `GEMINI.md` and `.github/copilot-instructions.md` are parallel AI-agent guides for this repo; keep them consistent when changing build/architecture facts. `*.vsix` files in the root are gitignored release artifacts.
 
 ### Config catalogs (edit these, not code, for new permissions/services)
 

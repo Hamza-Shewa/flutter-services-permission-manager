@@ -20,6 +20,9 @@ export interface IconComposeOptions {
   scalePercent?: number;
   backgroundColor?: string;
   trimMargins?: boolean;
+  /** Pan of the foreground, in percent of the canvas (-100..100). */
+  offsetX?: number;
+  offsetY?: number;
 }
 
 /**
