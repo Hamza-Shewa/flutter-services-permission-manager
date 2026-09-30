@@ -560,19 +560,22 @@ function renderPackagesTable() {
     // Action Button
     const actionCell = document.createElement("td");
     if (pkg.kind === "direct" || pkg.kind === "dev") {
-      const upgradeBtn = document.createElement("button");
-      upgradeBtn.className = "btn-upgrade-single";
-      upgradeBtn.textContent = "Update";
-      upgradeBtn.addEventListener("click", () => {
-        if (packagesLoadingIndicator) {
-          packagesLoadingIndicator.style.display = "block";
-          packagesLoadingIndicator.querySelector("div").textContent = `Upgrading ${pkg.package}...`;
-        }
-        if (packagesTableContainer) {
-          packagesTableContainer.style.display = "none";
-        }
-        api.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package });
-      });
+    const plan = utils.packageUpgradePlan(pkg);
+    const upgradeBtn = document.createElement("button");
+    upgradeBtn.className = "btn-upgrade-single";
+    upgradeBtn.textContent = plan.label;
+    upgradeBtn.title = plan.title;
+    upgradeBtn.disabled = !!plan.disabled;
+    upgradeBtn.addEventListener("click", () => {
+      if (packagesLoadingIndicator) {
+        packagesLoadingIndicator.style.display = "block";
+        packagesLoadingIndicator.querySelector("div").textContent = `Upgrading ${pkg.package}...`;
+      }
+      if (packagesTableContainer) {
+        packagesTableContainer.style.display = "none";
+      }
+      api.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package, major: !!plan.major });
+    });
       actionCell.appendChild(upgradeBtn);
     }
     row.appendChild(actionCell);

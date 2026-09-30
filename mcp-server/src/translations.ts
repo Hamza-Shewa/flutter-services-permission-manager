@@ -14,6 +14,8 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 import type { TranslationFileData } from '../../out/core/types/index.js';
 import {
+  assertSafeTranslationFileName,
+  assertValidLocale,
   autoAddMissingKeys,
   findReferenceFile,
   isTranslationCandidate,
@@ -89,7 +91,8 @@ export function loadTranslationFiles(root: string, dir?: string): TranslationFil
 
 /** Write a translation file back to disk (no-op when unchanged). */
 function saveTranslationFile(root: string, data: TranslationFileData): void {
-  const target = path.join(root, data.fileName.split('/').join(path.sep));
+  const fileName = assertSafeTranslationFileName(data.fileName);
+  const target = path.join(root, fileName.split('/').join(path.sep));
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, serializeTranslationContent(data), 'utf8');
 }
@@ -128,6 +131,12 @@ export async function translateLocaleTool(
 
   if (!locale) {
     return textResult({ ok: false, error: 'Missing required "locale".' });
+  }
+  try {
+    assertValidLocale(locale);
+    normalizeTranslationDir(dir);
+  } catch (error) {
+    return textResult({ ok: false, error: error instanceof Error ? error.message : String(error) });
   }
 
   const translations = loadTranslationFiles(root, dir);
@@ -172,6 +181,12 @@ export async function addTranslationLocaleTool(
 
   if (!locale) {
     return textResult({ ok: false, error: 'Missing required "locale".' });
+  }
+  try {
+    assertValidLocale(locale);
+    normalizeTranslationDir(dir);
+  } catch (error) {
+    return textResult({ ok: false, error: error instanceof Error ? error.message : String(error) });
   }
 
   const translations = loadTranslationFiles(root, dir);

@@ -22,12 +22,17 @@ function isFile(candidate: string): boolean {
     }
 }
 
-function fromPath(): string | undefined {
-    const result = spawnSync(process.platform === 'win32' ? 'where' : 'which', [flutterExeName()], { encoding: 'utf8' });
+/** First match of `name` on PATH (`where`/`which`), or undefined. */
+export function findOnPath(name: string): string | undefined {
+    const result = spawnSync(process.platform === 'win32' ? 'where' : 'which', [name], { encoding: 'utf8' });
     if (result.status === 0 && result.stdout) {
         return result.stdout.trim().split(/\r?\n/)[0];
     }
     return undefined;
+}
+
+function fromPath(): string | undefined {
+    return findOnPath(flutterExeName());
 }
 
 /**
@@ -91,6 +96,24 @@ function posixShellRcCandidates(): string[] {
     return candidates;
 }
 
+/**
+ * `flutter.sdk` from the project's `android/local.properties` - the SDK Flutter itself last used for this
+ * project. Java properties escape `\\` and `\:`, which are undone here.
+ */
+export function flutterSdkFromLocalProperties(projectRoot: string | undefined): string | undefined {
+    if (!projectRoot) { return undefined; }
+    for (const relative of [path.join('android', 'local.properties'), 'local.properties']) {
+        try {
+            const text = fs.readFileSync(path.join(projectRoot, relative), 'utf8');
+            const match = /^\s*flutter\.sdk\s*=\s*(.+?)\s*$/m.exec(text);
+            if (match) { return match[1].replace(/\\(.)/g, '$1'); }
+        } catch {
+            // No such file: keep looking.
+        }
+    }
+    return undefined;
+}
+
 export interface FlutterLocatorOptions {
     /** Project root; checked for a local FVM SDK at `.fvm/flutter_sdk` before any wider search. */
     projectRoot?: string;
@@ -110,6 +133,10 @@ export function findFlutterExecutable(options: FlutterLocatorOptions = {}): stri
         process.env.FCM_FLUTTER_EXECUTABLE,
         process.env.FLUTTER_ROOT ? path.join(process.env.FLUTTER_ROOT, 'bin', exe) : undefined,
         options.projectRoot ? path.join(options.projectRoot, '.fvm', 'flutter_sdk', 'bin', exe) : undefined,
+        (() => {
+            const sdk = flutterSdkFromLocalProperties(options.projectRoot);
+            return sdk ? path.join(sdk, 'bin', exe) : undefined;
+        })(),
     ].filter((candidate): candidate is string => !!candidate);
 
     for (const candidate of explicitCandidates) {

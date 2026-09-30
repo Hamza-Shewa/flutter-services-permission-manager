@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { execWithEnv, getFlutterCommand } from '../../core/utils/exec.js';
+import { runFlutter } from '../../core/utils/exec.js';
+import { ProcessError } from '../../core/utils/process.js';
 import { migrateAndroidSetup, migrateAndroid16kbSetup, type MigrationReport } from '../../features/migration/migration.service.js';
 import { logger, toError, toErrorMessage } from '../../core/shared/index.js';
 import type { WebviewRef } from './index.js';
@@ -60,19 +61,18 @@ export async function handleUpgradePackages(ref: WebviewRef): Promise<void> {
         // Send an initial status indicating it's running
         ref.webview.postMessage({ type: 'saveResult', success: true, message: "Upgrading Flutter packages... Please wait." });
 
-        execWithEnv(`${getFlutterCommand()} pub upgrade`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
-            if (error) {
-                console.error('Flutter pub upgrade error:', error);
-                console.error('stderr:', stderr);
-                ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to upgrade packages: ${error.message}` });
-                return;
-            }
+        try {
+            await runFlutter(['pub', 'upgrade'], { cwd: workspaceRoot, timeoutMs: 300_000 });
+        } catch (error) {
+            const detail = error instanceof ProcessError ? `${error.message}${error.stderr ? ` - ${error.stderr}` : ''}` : toErrorMessage(error);
+            logger.error('Flutter pub upgrade error:', toError(error));
+            ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to upgrade packages: ${detail}` });
+            return;
+        }
 
-            console.log('Flutter pub upgrade stdout:', stdout);
-            ref.webview.postMessage({ type: 'saveResult', success: true, message: "Flutter packages upgraded successfully!" });
-        });
+        ref.webview.postMessage({ type: 'saveResult', success: true, message: "Flutter packages upgraded successfully!" });
     } catch (error) {
-        console.error('Upgrade packages error:', error);
+        logger.error('Upgrade packages error:', toError(error));
         ref.webview.postMessage({ type: 'saveResult', success: false, message: `Failed to upgrade packages: ${toErrorMessage(error)}` });
     }
 }

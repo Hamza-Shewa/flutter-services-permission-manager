@@ -271,7 +271,7 @@ function setupMessageHandler(
     .register("migrateAndroid16kb", async () => await handleMigrateAndroid16kb(ref))
     .register("upgradePackages", async () => await handleUpgradePackages(ref))
     .register("requestPackagesAnalysis", async () => await handleRequestPackagesAnalysis(ref))
-    .register("upgradeSinglePackage", async (msg) => { if (msg.packageName) { await handleUpgradeSinglePackage(ref, msg.packageName); } })
+    .register("upgradeSinglePackage", async (msg) => { if (msg.packageName) { await handleUpgradeSinglePackage(ref, msg.packageName, msg.major === true); } })
     .register("searchPackages", async (msg) => { if (msg.query !== undefined) { await handleSearchPackages(ref, msg.query); } })
     .register("requestPackageDetails", async (msg) => { if (msg.packageName) { await handleRequestPackageDetails(ref, msg.packageName); } })
     .register("addPackage", async (msg) => { if (msg.packageName) { await handleAddPackage(ref, msg.packageName); } })

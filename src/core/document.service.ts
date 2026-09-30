@@ -48,7 +48,9 @@ import {
   replaceFirst, 
   escapeRegExp, 
   formatGradleValue, 
-  replaceGradlePropertyLine 
+  replaceGradlePropertyLine,
+  isKotlinDsl,
+  versionNameExpression,
 } from "../features/build/build-file-utils.js";
 import type { ProjectFiles } from "./workspace.service.js";
 import {
@@ -108,12 +110,12 @@ function updateAndroidBuildFiles(
     tasks.push((async () => {
       const uris = [files.androidBuildGradleUri, files.androidBuildGradleKtsUri, files.androidSettingsGradleUri, files.androidSettingsGradleKtsUri].filter(Boolean) as vscode.Uri[];
       for (const uri of uris) {
-        const doc = await vscode.workspace.openTextDocument(uri);
-        const original = doc.getText();
-        let updated = original;
-        updated = replaceFirst(updated, /(com\.android\.tools\.build:gradle:)[^"'\s)]+/i, `$1${agpVersion}`);
-        updated = replaceFirst(updated, /(id\s*["']com\.android\.(?:application|library)["']\s*version\s*["'])[^"']+(["'])/i, `$1${agpVersion}$2`);
-        await updateFileIfChanged(uri, original, updated);
+        await updateDocument(uri, (original) => {
+          let updated = original;
+          updated = replaceFirst(updated, /(com\.android\.tools\.build:gradle:)[^"'\s)]+/i, `$1${agpVersion}`);
+          updated = replaceFirst(updated, /(id\s*["']com\.android\.(?:application|library)["']\s*version\s*["'])[^"']+(["'])/i, `$1${agpVersion}$2`);
+          return updated;
+        });
       }
     })());
   }
@@ -123,20 +125,20 @@ function updateAndroidBuildFiles(
     tasks.push((async () => {
       const uris = [files.androidBuildGradleUri, files.androidBuildGradleKtsUri, files.androidSettingsGradleUri, files.androidSettingsGradleKtsUri].filter(Boolean) as vscode.Uri[];
       for (const uri of uris) {
-        const doc = await vscode.workspace.openTextDocument(uri);
-        const original = doc.getText();
+        await updateDocument(uri, (original) => {
         
-        // Only update if Kotlin configuration already exists
-        const hasKotlin = /kotlin_version|org\.jetbrains\.kotlin|kotlin\("android"\)/i.test(original);
-        if (!hasKotlin) {
-          continue;
-        }
+          // Only update if Kotlin configuration already exists
+          const hasKotlin = /kotlin_version|org\.jetbrains\.kotlin|kotlin\("android"\)/i.test(original);
+          if (!hasKotlin) {
+            return original;
+          }
 
-        let updated = original;
-        updated = replaceFirst(updated, /(kotlin_version\s*=?\s*["'])[^"']+(["'])/i, `$1${kotlinVersion}$2`);
-        updated = replaceFirst(updated, /(id\s*["']org\.jetbrains\.kotlin\.[^"']+["']\s*version\s*["'])[^"']+(["'])/i, `$1${kotlinVersion}$2`);
-        updated = replaceFirst(updated, /(org\.jetbrains\.kotlin\.(?:android|jvm)["']\s*version\s*["'])[^"']+(["'])/i, `$1${kotlinVersion}$2`);
-        await updateFileIfChanged(uri, original, updated);
+          let updated = original;
+          updated = replaceFirst(updated, /(kotlin_version\s*=?\s*["'])[^"']+(["'])/i, `$1${kotlinVersion}$2`);
+          updated = replaceFirst(updated, /(id\s*["']org\.jetbrains\.kotlin\.[^"']+["']\s*version\s*["'])[^"']+(["'])/i, `$1${kotlinVersion}$2`);
+          updated = replaceFirst(updated, /(org\.jetbrains\.kotlin\.(?:android|jvm)["']\s*version\s*["'])[^"']+(["'])/i, `$1${kotlinVersion}$2`);
+          return updated;
+        });
       }
     })());
   }
@@ -157,33 +159,39 @@ function updateAndroidBuildFiles(
   if (appBuildUris.length > 0) {
     tasks.push((async () => {
       for (const uri of appBuildUris) {
-        const doc = await vscode.workspace.openTextDocument(uri);
-        const original = doc.getText();
-        let updated = original;
-        if (numericValues.compileSdk) {
-          updated = replaceGradlePropertyLine(updated, "compileSdkVersion", numericValues.compileSdk, false);
-          updated = replaceGradlePropertyLine(updated, "compileSdk", numericValues.compileSdk, false);
-        }
-        if (numericValues.minSdk) {
-          updated = replaceGradlePropertyLine(updated, "minSdkVersion", numericValues.minSdk, false);
-        }
-        if (numericValues.targetSdk) {
-          updated = replaceGradlePropertyLine(updated, "targetSdkVersion", numericValues.targetSdk, false);
-        }
-        if (textValues.namespace) {
-          updated = replaceGradlePropertyLine(updated, "namespace", textValues.namespace, true);
-        }
-        if (textValues.applicationId) {
-          updated = replaceGradlePropertyLine(updated, "applicationId", textValues.applicationId, true);
-        }
+        const kotlinDsl = isKotlinDsl(uri.fsPath);
+        await updateDocument(uri, (original) => {
+          let updated = original;
+          const setLine = (keys: string[], value: string, quote = false): void => {
+            for (const key of keys) {
+              updated = replaceGradlePropertyLine(updated, key, value, quote, { kotlinDsl });
+            }
+          };
+          // The old (`compileSdkVersion`) and new (`compileSdk`) property names both exist in the wild.
+          if (numericValues.compileSdk) {
+            setLine(["compileSdkVersion", "compileSdk"], numericValues.compileSdk);
+          }
+          if (numericValues.minSdk) {
+            setLine(["minSdkVersion", "minSdk"], numericValues.minSdk);
+          }
+          if (numericValues.targetSdk) {
+            setLine(["targetSdkVersion", "targetSdk"], numericValues.targetSdk);
+          }
+          if (textValues.namespace) {
+            setLine(["namespace"], textValues.namespace, true);
+          }
+          if (textValues.applicationId) {
+            setLine(["applicationId"], textValues.applicationId, true);
+          }
 
-        // Always set versionName to flutterVersionName.toString()
-        updated = replaceGradlePropertyLine(updated, "versionName", "flutterVersionName.toString()", false);
+          // `flutterVersionName` only exists in older Groovy templates; everything else reads `flutter.versionName`.
+          setLine(["versionName"], versionNameExpression(original, kotlinDsl));
 
-        if (numericValues.versionCode) {
-          updated = replaceGradlePropertyLine(updated, "versionCode", numericValues.versionCode, false);
-        }
-        await updateFileIfChanged(uri, original, updated);
+          if (numericValues.versionCode) {
+            setLine(["versionCode"], numericValues.versionCode);
+          }
+          return updated;
+        });
       }
     })());
   }
@@ -202,39 +210,39 @@ function updateIOSBuildFiles(
     tasks.push((async () => {
       const podfileUri = files.iosPodfileUri;
       if (podfileUri) {
-        const doc = await vscode.workspace.openTextDocument(podfileUri);
-        const original = doc.getText();
+        await updateDocument(podfileUri, (original) => {
         
-        // Fix platform line
-        let updated = replaceFirst(original, /platform\s*:ios,\s*['"][^'"]+['"]/i, `platform :ios, '${deploymentTarget}'`);
+          // Fix platform line
+          let updated = replaceFirst(original, /platform\s*:ios,\s*['"][^'"]+['"]/i, `platform :ios, '${deploymentTarget}'`);
         
-        // Ensure COCOAPODS_DISABLE_STATS is present
-        if (!updated.includes("COCOAPODS_DISABLE_STATS")) {
-          const envBlock = "\n# CocoaPods analytics sends network stats synchronously affecting flutter build latency.\nENV['COCOAPODS_DISABLE_STATS'] = 'true'\n";
-          // Insert after platform line
-          updated = updated.replace(/(platform\s*:ios,\s*['"][^'"]+['"])/i, `$1\n${envBlock}`);
-        }
-
-        // Ensure project 'Runner' block is present
-        if (!updated.includes("project 'Runner'")) {
-          const projectBlock = "\nproject 'Runner', {\n  'Debug' => :debug,\n  'Profile' => :release,\n  'Release' => :release,\n}\n";
-          // Insert after ENV block or platform line
-          if (updated.includes("COCOAPODS_DISABLE_STATS")) {
-            updated = updated.replace(/(ENV\['COCOAPODS_DISABLE_STATS'\]\s*=\s*'true')/i, `$1\n${projectBlock}`);
-          } else {
-             updated = updated.replace(/(platform\s*:ios,\s*['"][^'"]+['"])/i, `$1\n${projectBlock}`);
+          // Ensure COCOAPODS_DISABLE_STATS is present
+          if (!updated.includes("COCOAPODS_DISABLE_STATS")) {
+            const envBlock = "\n# CocoaPods analytics sends network stats synchronously affecting flutter build latency.\nENV['COCOAPODS_DISABLE_STATS'] = 'true'\n";
+            // Insert after platform line
+            updated = updated.replace(/(platform\s*:ios,\s*['"][^'"]+['"])/i, `$1\n${envBlock}`);
           }
-        }
 
-        await updateFileIfChanged(podfileUri, original, updated);
+          // Ensure project 'Runner' block is present
+          if (!updated.includes("project 'Runner'")) {
+            const projectBlock = "\nproject 'Runner', {\n  'Debug' => :debug,\n  'Profile' => :release,\n  'Release' => :release,\n}\n";
+            // Insert after ENV block or platform line
+            if (updated.includes("COCOAPODS_DISABLE_STATS")) {
+              updated = updated.replace(/(ENV\['COCOAPODS_DISABLE_STATS'\]\s*=\s*'true')/i, `$1\n${projectBlock}`);
+            } else {
+               updated = updated.replace(/(platform\s*:ios,\s*['"][^'"]+['"])/i, `$1\n${projectBlock}`);
+            }
+          }
+
+          return updated;
+        });
       }
 
       const pbxprojUri = files.iosPbxprojUri;
       if (pbxprojUri) {
-        const doc = await vscode.workspace.openTextDocument(pbxprojUri);
-        const original = doc.getText();
-        const updated = replaceFirst(original, /(IPHONEOS_DEPLOYMENT_TARGET\s*=\s*)[^;]+(;)/i, `$1${deploymentTarget}$2`);
-        await updateFileIfChanged(pbxprojUri, original, updated);
+        await updateDocument(pbxprojUri, (original) => {
+          const updated = replaceFirst(original, /(IPHONEOS_DEPLOYMENT_TARGET\s*=\s*)[^;]+(;)/i, `$1${deploymentTarget}$2`);
+          return updated;
+        });
       }
     })());
   }
@@ -242,20 +250,20 @@ function updateIOSBuildFiles(
   const swiftVersion = getDetailValue(details, "swiftVersion");
   if (swiftVersion && files.iosPbxprojUri) {
     tasks.push((async () => {
-      const doc = await vscode.workspace.openTextDocument(files.iosPbxprojUri!);
-      const original = doc.getText();
-      const updated = replaceFirst(original, /(SWIFT_VERSION\s*=\s*)[^;]+(;)/i, `$1${swiftVersion}$2`);
-      await updateFileIfChanged(files.iosPbxprojUri, original, updated);
+      await updateDocument(files.iosPbxprojUri!, (original) => {
+        const updated = replaceFirst(original, /(SWIFT_VERSION\s*=\s*)[^;]+(;)/i, `$1${swiftVersion}$2`);
+        return updated;
+      });
     })());
   }
 
   const bundleIdentifier = getDetailValue(details, "bundleIdentifier");
   if (bundleIdentifier && files.iosPbxprojUri) {
     tasks.push((async () => {
-      const doc = await vscode.workspace.openTextDocument(files.iosPbxprojUri!);
-      const original = doc.getText();
-      const updated = replaceFirst(original, /(PRODUCT_BUNDLE_IDENTIFIER\s*=\s*)[^;]+(;)/i, `$1${bundleIdentifier}$2`);
-      await updateFileIfChanged(files.iosPbxprojUri, original, updated);
+      await updateDocument(files.iosPbxprojUri!, (original) => {
+        const updated = replaceFirst(original, /(PRODUCT_BUNDLE_IDENTIFIER\s*=\s*)[^;]+(;)/i, `$1${bundleIdentifier}$2`);
+        return updated;
+      });
     })());
   }
 
@@ -471,19 +479,72 @@ async function updateAppNameLocalizations(
   }
 }
 
+/** Serializes edits per file so two read-modify-write cycles can never interleave and overwrite each other. */
+const documentLocks = new Map<string, Promise<unknown>>();
+
+async function withDocumentLock<T>(uri: vscode.Uri, task: () => Promise<T>): Promise<T> {
+  const key = uri.toString();
+  const previous = documentLocks.get(key) ?? Promise.resolve();
+  const run = previous.catch(() => undefined).then(task);
+  documentLocks.set(key, run);
+  try {
+    return await run;
+  } finally {
+    if (documentLocks.get(key) === run) {
+      documentLocks.delete(key);
+    }
+  }
+}
+
+/** Replaces the whole document and saves it. Throws when VS Code refuses the edit or the save does not stick. */
+async function writeDocument(doc: vscode.TextDocument, content: string): Promise<void> {
+  const edit = new vscode.WorkspaceEdit();
+  const fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length));
+  edit.replace(doc.uri, fullRange, content);
+  if (!(await vscode.workspace.applyEdit(edit))) {
+    throw new Error(`VS Code did not apply the change to ${doc.uri.fsPath}.`);
+  }
+  await doc.save();
+  if (doc.isDirty) {
+    throw new Error(`Could not save ${doc.uri.fsPath}.`);
+  }
+}
+
+/**
+ * Read-modify-write one file atomically: the current text is read inside the per-file lock, so parallel
+ * tasks that edit different parts of the same file (Gradle, pbxproj, Podfile) each see the previous result.
+ * Resolves to whether the file changed. `transform` must be synchronous and must not call back into this module.
+ */
+export async function updateDocument(
+  uri: vscode.Uri,
+  transform: (current: string) => string,
+): Promise<boolean> {
+  return withDocumentLock(uri, async () => {
+    const doc = await vscode.workspace.openTextDocument(uri);
+    const original = doc.getText();
+    const updated = transform(original);
+    if (updated === original) {
+      return false;
+    }
+    await writeDocument(doc, updated);
+    return true;
+  });
+}
+
 export async function replaceDocumentContent(
   uri: vscode.Uri,
   content: string,
 ): Promise<void> {
-  const doc = await vscode.workspace.openTextDocument(uri);
-  const edit = new vscode.WorkspaceEdit();
-  const fullRange = new vscode.Range(
-    doc.positionAt(0),
-    doc.positionAt(doc.getText().length),
-  );
-  edit.replace(uri, fullRange, content);
-  await vscode.workspace.applyEdit(edit);
-  await doc.save();
+  await withDocumentLock(uri, async () => {
+    const doc = await vscode.workspace.openTextDocument(uri);
+    if (doc.getText() === content) {
+      if (doc.isDirty) {
+        await doc.save();
+      }
+      return;
+    }
+    await writeDocument(doc, content);
+  });
 }
 
 /**

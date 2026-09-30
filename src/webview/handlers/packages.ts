@@ -22,11 +22,11 @@ export async function handleRequestPackagesAnalysis(ref: WebviewRef): Promise<vo
     }
 }
 
-export async function handleUpgradeSinglePackage(ref: WebviewRef, packageName: string): Promise<void> {
+export async function handleUpgradeSinglePackage(ref: WebviewRef, packageName: string, major = false): Promise<void> {
     try {
         ref.webview.postMessage({ type: 'saveResult', success: true, message: `Upgrading ${packageName}... Please wait.` });
         
-        await upgradePackage(packageName);
+        await upgradePackage(packageName, { major });
         
         ref.webview.postMessage({ type: 'saveResult', success: true, message: `Successfully upgraded ${packageName}!` });
         

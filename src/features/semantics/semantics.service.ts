@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as vscode from "vscode";
-import { execWithEnv, getFlutterCommand } from "../../core/utils/exec.js";
+import { runFlutter } from "../../core/utils/exec.js";
 import { checkFlutterVersion } from "../../core/shared/flutter-locator.js";
 import {
   consumeSemanticsPreview,
@@ -52,25 +52,20 @@ function ensureNoDirtyDartDocuments(root: string): void {
   }
 }
 
-function ensureIdentifierCompatibility(root: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    execWithEnv(`${getFlutterCommand()} --version --machine`, { cwd: root }, (error, stdout) => {
-      if (error) {
-        reject(new Error("Flutter 3.19 or newer is required for Semantics.identifier fixes, but the project Flutter SDK version could not be verified."));
-        return;
-      }
-      const { ok, version } = checkFlutterVersion(stdout);
-      if (!version) {
-        reject(new Error("Flutter 3.19 or newer is required for Semantics.identifier fixes, but flutter --version returned an unreadable result."));
-        return;
-      }
-      if (!ok) {
-        reject(new Error(`Flutter 3.19 or newer is required for Semantics.identifier fixes; detected ${version}.`));
-        return;
-      }
-      resolve();
-    });
-  });
+async function ensureIdentifierCompatibility(root: string): Promise<void> {
+  let stdout: string;
+  try {
+    ({ stdout } = await runFlutter(['--version', '--machine'], { cwd: root, timeoutMs: 60_000 }));
+  } catch (error) {
+    throw new Error(`Flutter 3.19 or newer is required for Semantics.identifier fixes, but the project Flutter SDK version could not be verified: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+  }
+  const { ok, version } = checkFlutterVersion(stdout);
+  if (!version) {
+    throw new Error("Flutter 3.19 or newer is required for Semantics.identifier fixes, but flutter --version returned an unreadable result.");
+  }
+  if (!ok) {
+    throw new Error(`Flutter 3.19 or newer is required for Semantics.identifier fixes; detected ${version}.`);
+  }
 }
 
 export async function scanWorkspaceInteractives(): Promise<InteractiveScanResult> {

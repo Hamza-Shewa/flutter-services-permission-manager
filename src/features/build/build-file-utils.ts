@@ -23,18 +23,36 @@ export function formatGradleValue(value: string, quote: boolean): string {
   return `"${trimmed.replace(/"/g, '\\"')}"`;
 }
 
+/** True for `build.gradle.kts` / `settings.gradle.kts` (Kotlin DSL: assignments need `=`, no Groovy helpers). */
+export function isKotlinDsl(fileName: string): boolean {
+  return /\.kts$/i.test(fileName);
+}
+
+/**
+ * The expression to use for `versionName`: keep Groovy's `flutterVersionName` only when the file really
+ * defines it (older templates); current templates and every Kotlin DSL file use `flutter.versionName`.
+ */
+export function versionNameExpression(content: string, kotlinDsl: boolean): string {
+  if (kotlinDsl || !/\bflutterVersionName\s*=/.test(content)) {
+    return "flutter.versionName";
+  }
+  return "flutterVersionName";
+}
+
 export function replaceGradlePropertyLine(
   content: string,
   key: string,
   value: string,
   quoteValue: boolean,
+  options: { kotlinDsl?: boolean } = {},
 ): string {
   const safeValue = normalizeTextValue(value);
   const escapedKey = escapeRegExp(key);
-  const regex = new RegExp(`^(\\s*)${escapedKey}(\\s*=)?\\s*.*$`, "m");
+  // The lookahead stops `compileSdk` from matching `compileSdkVersion` and `applicationId` from matching `applicationIdSuffix`.
+  const regex = new RegExp(`^(\\s*)${escapedKey}(?![A-Za-z0-9_])(\\s*=)?\\s*.*$`, "m");
 
   return content.replace(regex, (_match, indent: string, assignment: string | undefined) => {
-    const operator = assignment ? " = " : " ";
+    const operator = assignment || options.kotlinDsl ? " = " : " ";
     return `${indent}${key}${operator}${formatGradleValue(safeValue, quoteValue)}`;
   });
 }

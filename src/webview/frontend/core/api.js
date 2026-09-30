@@ -8,7 +8,7 @@ export function requestPackagesAnalysis() { vscode.postMessage({ type: "requestP
 export function searchPackages(query) { vscode.postMessage({ type: "searchPackages", query }); }
 export function requestPackageDetails(packageName) { vscode.postMessage({ type: "requestPackageDetails", packageName }); }
 export function addPackage(packageName) { vscode.postMessage({ type: "addPackage", packageName }); }
-export function upgradeSinglePackage(packageName) { vscode.postMessage({ type: "upgradeSinglePackage", packageName }); }
+export function upgradeSinglePackage(packageName, major = false) { vscode.postMessage({ type: "upgradeSinglePackage", packageName, major }); }
 export function removeAllFlaggedPackages(packages) { vscode.postMessage({ type: "removeAllFlaggedPackages", packages }); }
 export function downgradePackage(packageName) { vscode.postMessage({ type: "downgradePackage", packageName }); }
 export function installDependencyValidator() { vscode.postMessage({ type: "installDependencyValidator" }); }

@@ -311,7 +311,49 @@ export function isTranslationCandidate(relPath: string): boolean {
  */
 export function normalizeTranslationDir(dir?: string): string | undefined {
   const trimmed = (dir || '').trim().replace(/^[\/]+|[\/]+$/g, '');
-  return trimmed === '' ? undefined : trimmed.replace(/\\/g, '/');
+  if (trimmed === '') {
+    return undefined;
+  }
+  return assertSafeRelativePath(trimmed, 'Translations folder');
+}
+
+/**
+ * Rejects a path that could leave the project: `..` segments, drive letters / UNC prefixes, NUL bytes.
+ * Paths here are always project-relative, so anything else is a bug or an attack. Returns the POSIX form.
+ */
+export function assertSafeRelativePath(relativePath: string, label = 'Path'): string {
+  const normalized = relativePath.replace(/\\/g, '/');
+  if (
+    normalized.includes('\0') ||
+    /^[a-zA-Z]:/.test(normalized) ||
+    normalized.startsWith('//') ||
+    normalized.split('/').some((segment) => segment === '..')
+  ) {
+    throw new Error(`${label} must stay inside the project: "${relativePath}".`);
+  }
+  return normalized;
+}
+
+/** A translation file the extension / MCP server may write: a safe relative path ending in .arb or .json. */
+export function assertSafeTranslationFileName(fileName: string): string {
+  const normalized = assertSafeRelativePath(fileName, 'Translation file');
+  if (normalized.startsWith('/') || !/\.(arb|json)$/i.test(normalized)) {
+    throw new Error(`Translation file must be a relative .arb or .json path: "${fileName}".`);
+  }
+  return normalized;
+}
+
+const LOCALE_CODE = /^[a-z]{2,3}(?:[_-][a-z0-9]{2,8}){0,2}$/i;
+
+/**
+ * Validates a locale code (`ar`, `pt_BR`, `zh-Hans-CN`, `es-419`) before it becomes part of a file name,
+ * so it cannot smuggle path separators or `..` into the location a file is written to.
+ */
+export function assertValidLocale(locale: string): string {
+  if (!LOCALE_CODE.test(locale)) {
+    throw new Error(`"${locale}" is not a valid locale code (expected something like "ar", "pt_BR" or "zh-Hans").`);
+  }
+  return locale;
 }
 
 /**

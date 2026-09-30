@@ -79,3 +79,25 @@ export function setStatus(message, type) {
     statusMessage.className = `status ${type || ""}`.trim();
   }
 
+
+/**
+ * What the Update button for an outdated package can really do. `pub upgrade <pkg>` only moves within the
+ * version range already in pubspec.yaml, so a new major version needs `--major-versions`, and a version that
+ * other dependencies hold back cannot be installed at all.
+ */
+export function packageUpgradePlan(pkg) {
+  const current = pkg.current?.version;
+  const withinRange = pkg.upgradable?.version;
+  const resolvable = pkg.resolvable?.version;
+  const latest = pkg.latest?.version;
+  if (withinRange && withinRange !== current) {
+    return { label: "Update", major: false, title: `Update to ${withinRange} (inside your current version range)` };
+  }
+  if (resolvable && resolvable !== current) {
+    return { label: `Update to ${resolvable}`, major: true, title: "Changes the version range in pubspec.yaml (new major version)" };
+  }
+  if (latest && latest !== current) {
+    return { label: "Held back", disabled: true, title: `${latest} exists but other dependencies do not allow it yet` };
+  }
+  return { label: "Update", major: false, title: "" };
+}

@@ -94,6 +94,8 @@ export type WebviewMessage =
   | {
     type: "upgradeSinglePackage";
     packageName: string;
+    /** Move past the version range in pubspec.yaml (`pub upgrade --major-versions`). */
+    major?: boolean;
   }
   | {
     type: "searchPackages";

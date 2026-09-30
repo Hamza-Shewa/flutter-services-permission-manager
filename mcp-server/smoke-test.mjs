@@ -187,6 +187,22 @@ check('add_translation_locale creates fr file', () => {
   assert.strictEqual(fr.appTitle, '');
 });
 
+// ---- path traversal is refused -------------------------------------------
+const evilLocale = await client.callTool({
+  name: 'add_translation_locale',
+  arguments: { locale: '../../../evil', referenceLocale: 'en' },
+});
+const evilDir = await client.callTool({
+  name: 'add_translation_locale',
+  arguments: { locale: 'de', referenceLocale: 'en', dir: '../outside' },
+});
+check('add_translation_locale rejects traversing locale and dir', () => {
+  assert.strictEqual(JSON.parse(evilLocale.content[0].text).ok, false);
+  assert.strictEqual(JSON.parse(evilDir.content[0].text).ok, false);
+  assert.ok(!fs.existsSync(join(fixture, '..', 'evil.arb')));
+  assert.ok(!fs.existsSync(join(fixture, 'lib', 'l10n', 'app_de.arb')));
+});
+
 // ---- semantics scan / guarded fix -----------------------------------------
 const scanInteractiveRes = await client.callTool({ name: 'scan_interactives', arguments: {} });
 const interactiveScan = JSON.parse(scanInteractiveRes.content[0].text);
@@ -254,6 +270,17 @@ check('start_android_session connects to an existing Appium server', () => {
   assert.strictEqual(automationSession.ok, true);
   assert.ok(automationSession.sessionId);
 });
+
+for (const badUrl of ['http://169.254.169.254', 'http://intranet.example.com:4723', 'ftp://127.0.0.1', 'http://user:pw@127.0.0.1:4723']) {
+  const refused = await client.callTool({
+    name: 'start_android_session',
+    arguments: { appiumUrl: badUrl, appPackage: 'com.example.app' },
+  });
+  check(`start_android_session refuses ${badUrl}`, () => {
+    assert.strictEqual(refused.isError, true);
+    assert.match(refused.content[0].text, /localhost|http or https|credentials/);
+  });
+}
 
 const runtimeInspectRes = await client.callTool({
   name: 'inspect_runtime_ui',

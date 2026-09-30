@@ -11,7 +11,9 @@ export {
     replaceFirst,
     escapeRegExp,
     formatGradleValue,
-    replaceGradlePropertyLine
+    replaceGradlePropertyLine,
+    isKotlinDsl,
+    versionNameExpression
 } from './build-file-utils.js';
 
 export { getRecommendedVersions } from './version-fetcher.js';

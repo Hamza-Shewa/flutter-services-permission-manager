@@ -1,5 +1,6 @@
 import { state, getState, setState, on } from '../../core/state.js';
 import * as api from '../../core/api.js';
+import { packageUpgradePlan } from '../../core/utils.js';
 import { androidTableBody, iosTableBody, searchInput, categoryFilter, addAndroidButton, addIosButton, saveAndroidBuildDetailsButton, saveIosBuildDetailsButton, iosSearchInput, iosCategoryFilter, saveButton, saveAppNameButton, saveServicesButton, savePackageNamesButton, saveAllButton, statusMessage, toastContainer, refreshButton, androidPackageNameInput, iosBundleIdentifierInput, analyzePackagesButton, updateAllPackagesButton, toggleTransitiveButton, packagesLoadingIndicator, packagesTableContainer, packagesTableBody, packageSearchInput, packageSearchSpinner, packageSearchDropdown, popularPackagesContainer, packagePreviewCard, previewPackageName, previewPackageVersion, previewPackageDescription, previewLoading, previewAddButton, validatorHeaderActions, validatorLoadingIndicator, validatorLoadingText, validatorTableContainer, validatorTableBody, validatorNotInstalledContainer, installValidatorButton, modalBackdrop, modalSearch, modalResults, modalError, modalValueContainer, modalValueInput, modalValueSelect, modalValueHint, androidCountChip, iosCountChip, macosCountChip, macosTableBody, macosSearchInput, macosCategoryFilter, addMacosButton, androidDetailsSection, iosDetailsSection, androidDetailsGrid, iosDetailsGrid, androidSection, iosSection, macosSection, modalCancel, modalAdd, crossPlatformModalBackdrop, crossPlatformModalTitle, crossPlatformModalMessage, crossPlatformSuggestions, crossPlatformModalError, crossPlatformModalSkip, crossPlatformModalAdd, syncPermissionsButton, equivalentModalBackdrop, equivalentModalTitle, equivalentModalMessage, equivalentSuggestions, equivalentModalError, equivalentModalCancel, equivalentModalAdd, syncModalBackdrop, syncModalList, syncModalError, syncModalCancel, syncModalConfirm, deleteSafetyModalBackdrop, deleteSafetyCancel, deleteSafetyConfirm, addServiceButton, servicesContainer, serviceSearch, serviceModalBackdrop, serviceModalTitle, serviceModalContent, serviceModalError, serviceModalCancel, serviceModalSave, addServiceModalBackdrop, addServiceList, addServiceModalCancel, appNameDefault, appNameLangDropdown, appNameLangDropdownTrigger, appNameLangDropdownMenu, appNameLangSearch, appNameLangOptions, appNameLangList } from '../../core/elements.js';
 
 export function handleSavePackageNames() {
@@ -117,19 +118,22 @@ export function renderPackagesTable() {
       // Action Button
       const actionCell = document.createElement("td");
       if (pkg.kind === "direct" || pkg.kind === "dev") {
-        const upgradeBtn = document.createElement("button");
-        upgradeBtn.className = "btn-upgrade-single";
-        upgradeBtn.textContent = "Update";
-        upgradeBtn.addEventListener("click", () => {
-          if (packagesLoadingIndicator) {
-            packagesLoadingIndicator.style.display = "block";
-            packagesLoadingIndicator.querySelector("div").textContent = `Upgrading ${pkg.package}...`;
-          }
-          if (packagesTableContainer) {
-            packagesTableContainer.style.display = "none";
-          }
-          api.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package });
-        });
+      const plan = packageUpgradePlan(pkg);
+      const upgradeBtn = document.createElement("button");
+      upgradeBtn.className = "btn-upgrade-single";
+      upgradeBtn.textContent = plan.label;
+      upgradeBtn.title = plan.title;
+      upgradeBtn.disabled = !!plan.disabled;
+      upgradeBtn.addEventListener("click", () => {
+        if (packagesLoadingIndicator) {
+          packagesLoadingIndicator.style.display = "block";
+          packagesLoadingIndicator.querySelector("div").textContent = `Upgrading ${pkg.package}...`;
+        }
+        if (packagesTableContainer) {
+          packagesTableContainer.style.display = "none";
+        }
+        api.postMessage({ type: "upgradeSinglePackage", packageName: pkg.package, major: !!plan.major });
+      });
         actionCell.appendChild(upgradeBtn);
       }
       row.appendChild(actionCell);

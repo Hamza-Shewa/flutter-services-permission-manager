@@ -1,8 +1,10 @@
-import { execFile } from "child_process";
 import { createHash } from "crypto";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { ProcessError as CommandError, runProcess } from "../../core/utils/process.js";
+
+export { buildProcessInvocation, type ProcessInvocation } from "../../core/utils/process.js";
 
 /** `gemini mcp add` starts Node, reads settings and can touch the network on a cold start; 20s was too tight. */
 const COMMAND_TIMEOUT_MS = 60_000;
@@ -42,11 +44,6 @@ export interface McpClientsStatus {
   manualConfig: string;
 }
 
-export interface ProcessInvocation {
-  file: string;
-  args: string[];
-}
-
 interface CommandResult {
   stdout: string;
   stderr: string;
@@ -69,18 +66,6 @@ interface CodexServerDefinition {
     args?: string[];
     env?: Record<string, string>;
   };
-}
-
-class CommandError extends Error {
-  constructor(
-    message: string,
-    readonly stdout: string,
-    readonly stderr: string,
-    readonly exitCode?: number | string | null,
-    readonly timedOut = false,
-  ) {
-    super(message);
-  }
 }
 
 function normalizeForComparison(value: string): string {
@@ -280,37 +265,6 @@ export function childEnvironment(
   return { ...env, PATH: [...new Set([...directories, ...existing])].join(path.delimiter) };
 }
 
-/**
- * Node cannot execute Windows .cmd/.bat shims directly. PowerShell's encoded
- * command form avoids shell interpolation of workspace paths and arguments.
- */
-export function buildProcessInvocation(
-  executable: string,
-  args: string[],
-  platform: NodeJS.Platform = process.platform,
-  env: NodeJS.ProcessEnv = process.env,
-): ProcessInvocation {
-  if (platform !== "win32" || !/\.(?:cmd|bat)$/i.test(executable)) {
-    return { file: executable, args };
-  }
-
-  const payload = Buffer.from(JSON.stringify({ executable, args }), "utf8").toString("base64");
-  const script = [
-    // Without this, -NonInteractive PowerShell prints "Preparing modules for first use" as CLIXML on stderr.
-    `$ProgressPreference = 'SilentlyContinue'`,
-    `$payload = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${payload}')) | ConvertFrom-Json`,
-    `& $payload.executable @($payload.args)`,
-    `if ($null -eq $LASTEXITCODE) { exit 0 } else { exit $LASTEXITCODE }`,
-  ].join("; ");
-  const encoded = Buffer.from(script, "utf16le").toString("base64");
-  const windowsRoot = env.SystemRoot || env.WINDIR || "C:\\Windows";
-  return {
-    file: path.win32.join(windowsRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
-    // -OutputFormat Text keeps the child's stderr readable; the default for redirected -EncodedCommand is CLIXML.
-    args: ["-NoLogo", "-NoProfile", "-NonInteractive", "-InputFormat", "None", "-OutputFormat", "Text", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
-  };
-}
-
 /** Terminal colour codes and the encoded PowerShell wrapper make raw process errors unreadable in a dialog. */
 export function describeCommandFailure(error: unknown): string {
   // PowerShell wraps stderr in CLIXML records; terminals add colour codes. Neither belongs in a dialog.
@@ -338,21 +292,10 @@ export function describeCommandFailure(error: unknown): string {
 }
 
 function runExecutable(executable: string, args: string[]): Promise<CommandResult> {
-  const invocation = buildProcessInvocation(executable, args);
-  return new Promise((resolve, reject) => {
-    execFile(
-      invocation.file,
-      invocation.args,
-      { encoding: "utf8", timeout: COMMAND_TIMEOUT_MS, maxBuffer: MAX_OUTPUT_BYTES, windowsHide: true, env: childEnvironment(executable) },
-      (error, stdout, stderr) => {
-        const result = { stdout: stdout || "", stderr: stderr || "" };
-        if (error) {
-          reject(new CommandError(error.message, result.stdout, result.stderr, (error as NodeJS.ErrnoException).code, (error as { killed?: boolean }).killed === true));
-          return;
-        }
-        resolve(result);
-      },
-    );
+  return runProcess(executable, args, {
+    env: childEnvironment(executable),
+    timeoutMs: COMMAND_TIMEOUT_MS,
+    maxBuffer: MAX_OUTPUT_BYTES,
   });
 }
 

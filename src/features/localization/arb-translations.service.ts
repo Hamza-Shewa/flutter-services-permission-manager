@@ -17,6 +17,9 @@ import {
   parseTranslationContent,
   serializeTranslationContent,
   normalizeTranslationDir,
+  assertSafeRelativePath,
+  assertSafeTranslationFileName,
+  assertValidLocale,
   findReferenceFile,
   findMissingKeys,
   autoAddMissingKeys,
@@ -34,6 +37,9 @@ export {
   parseTranslationContent,
   serializeTranslationContent,
   normalizeTranslationDir,
+  assertSafeRelativePath,
+  assertSafeTranslationFileName,
+  assertValidLocale,
   findReferenceFile,
   findMissingKeys,
   autoAddMissingKeys,
@@ -134,6 +140,7 @@ export async function createTranslationFileForLocale(
   reference?: TranslationFileData,
   dir?: string,
 ): Promise<TranslationFileData | null> {
+  assertValidLocale(locale);
   const isArb = reference ? reference.isArb : true;
   const extension = isArb ? 'arb' : 'json';
 
@@ -203,7 +210,7 @@ export async function saveTranslationFiles(
 
   for (const data of translations) {
     try {
-      const uri = vscode.Uri.joinPath(workspaceRoot, data.fileName);
+      const uri = vscode.Uri.joinPath(workspaceRoot, assertSafeTranslationFileName(data.fileName));
       await vscode.workspace.fs.writeFile(
         uri,
         Buffer.from(serializeTranslationContent(data), 'utf8'),

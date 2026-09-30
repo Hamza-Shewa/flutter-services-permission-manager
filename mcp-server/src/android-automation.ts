@@ -87,7 +87,45 @@ function ensureFlutterIdentifierSupport(root: string): string {
   return version;
 }
 
-async function requestAppium(baseUrl: string, method: string, endpoint: string, body?: unknown): Promise<unknown> {
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+/**
+ * Appium is a remote-control channel for a device, and a caller-supplied URL would turn this server into a
+ * request relay (SSRF). Only loopback http(s) URLs are accepted unless FCM_APPIUM_ALLOW_REMOTE=1 is set by
+ * whoever starts the server - never by the MCP client.
+ */
+export function assertAppiumUrl(raw: string): string {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(`"${raw}" is not a valid Appium URL.`);
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("The Appium URL must use http or https.");
+  }
+  if (url.username || url.password) {
+    throw new Error("The Appium URL must not contain credentials.");
+  }
+  if (!LOOPBACK_HOSTS.has(url.hostname.toLowerCase()) && process.env.FCM_APPIUM_ALLOW_REMOTE !== "1") {
+    throw new Error(
+      `Refusing to talk to Appium at "${url.hostname}": only localhost is allowed. ` +
+        "Forward the port (for example ssh -L 4723:localhost:4723) or start this MCP server with FCM_APPIUM_ALLOW_REMOTE=1.",
+    );
+  }
+  return url.toString();
+}
+
+function apkPath(value: string): string {
+  const resolved = path.resolve(value);
+  if (!/\.apk$/i.test(resolved)) {
+    throw new Error("appPath must point to an .apk file.");
+  }
+  return resolved;
+}
+
+async function requestAppium(rawBaseUrl: string, method: string, endpoint: string, body?: unknown): Promise<unknown> {
+  const baseUrl = assertAppiumUrl(rawBaseUrl);
   const url = new URL(endpoint, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
   const payload = body === undefined ? undefined : JSON.stringify(body);
   const transport = url.protocol === "https:" ? https : http;
@@ -105,12 +143,13 @@ async function requestAppium(baseUrl: string, method: string, endpoint: string, 
         try {
           parsed = raw ? JSON.parse(raw) : {};
         } catch {
-          reject(new Error(`Appium returned non-JSON data (${response.statusCode}): ${raw.slice(0, 300)}`));
+          reject(new Error(`Appium returned a non-JSON response (HTTP ${response.statusCode}).`));
           return;
         }
         if ((response.statusCode ?? 500) >= 400) {
-          const message = (parsed as { value?: { message?: string } }).value?.message ?? raw;
-          reject(new Error(`Appium request failed (${response.statusCode}): ${message}`));
+          // Only Appium's own error message - never the raw body, which a non-Appium endpoint could fill with anything.
+          const message = (parsed as { value?: { message?: unknown } }).value?.message;
+          reject(new Error(`Appium request failed (HTTP ${response.statusCode})${typeof message === "string" ? `: ${message.slice(0, 300)}` : "."}`));
           return;
         }
         resolve(parsed);
@@ -246,7 +285,7 @@ export async function startAndroidSessionTool(root: string, args: Record<string,
     "appium:automationName": "UiAutomator2",
     "appium:noReset": args.noReset ?? true,
     ...(args.deviceId ? { "appium:udid": args.deviceId } : {}),
-    ...(args.appPath ? { "appium:app": path.resolve(String(args.appPath)) } : {}),
+    ...(args.appPath ? { "appium:app": apkPath(String(args.appPath)) } : {}),
     ...(args.appPackage ? { "appium:appPackage": args.appPackage } : {}),
     ...(args.appActivity ? { "appium:appActivity": args.appActivity } : {}),
   };
@@ -255,8 +294,8 @@ export async function startAndroidSessionTool(root: string, args: Record<string,
     value?: { sessionId?: string };
   };
   const appiumSessionId = response.value?.sessionId ?? response.sessionId;
-  if (!appiumSessionId) {
-    throw new Error("Appium created no session ID.");
+  if (!appiumSessionId || !/^[A-Za-z0-9_-]{1,128}$/.test(appiumSessionId)) {
+    throw new Error("Appium returned no usable session ID.");
   }
   const id = crypto.randomUUID();
   sessions.set(id, { id, appiumSessionId, appiumUrl, root, confirmations: new Map() });

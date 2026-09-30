@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { execWithEnv, getFlutterCommand, getDartCommand } from '../../core/utils/exec.js';
+import { runDart, runFlutter } from '../../core/utils/exec.js';
+import { ProcessError } from '../../core/utils/process.js';
 import { toErrorMessage } from '../../core/shared/index.js';
 import * as https from 'https';
 import * as net from 'net';
@@ -47,6 +48,38 @@ function extractUnreachableUrl(message: string): string | undefined {
 
 /** Safety net so `pub` commands never hang forever (e.g. unreachable git host). */
 const PUB_COMMAND_TIMEOUT = 120_000;
+
+/** pub.dev package names: lower-case letters, digits and underscores, starting with a letter. */
+const PACKAGE_NAME = /^[a-z][a-z0-9_]{0,63}$/;
+
+/**
+ * Package names arrive from pubspec.yaml (repo-controlled) and from the webview, and end up as a `pub`
+ * argument. Anything outside the pub.dev naming rules is rejected before a process is started.
+ */
+export function assertValidPackageName(name: unknown): string {
+    if (typeof name !== 'string' || !PACKAGE_NAME.test(name)) {
+        throw new Error(`"${String(name).slice(0, 60)}" is not a valid pub package name (lower-case letters, digits and underscores only).`);
+    }
+    return name;
+}
+
+/** Runs `flutter pub <args>` in the workspace and turns a failure into the friendly VPN/network message when it applies. */
+async function runPub(args: string[], workspaceRoot: string, failure: string): Promise<void> {
+    try {
+        await runFlutter(['pub', ...args], { cwd: workspaceRoot, timeoutMs: PUB_COMMAND_TIMEOUT });
+    } catch (error) {
+        const detail = error instanceof ProcessError ? `${error.message} - ${error.stderr}` : toErrorMessage(error);
+        throw friendlyCommandError(`${failure}: ${detail}`, workspaceRoot);
+    }
+}
+
+function requireWorkspaceRoot(): string {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceRoot) {
+        throw new Error('No workspace root found');
+    }
+    return workspaceRoot;
+}
 
 /**
  * Converts a command failure into a clear, actionable error. When the failure
@@ -249,29 +282,33 @@ export async function assertPackageHostsReachable(workspaceRoot: string): Promis
     }
 }
 
-function runPubOutdated(workspaceRoot: string): Promise<OutdatedPackage[]> {
-    return new Promise((resolve, reject) => {
-        execWithEnv(
-            `${getFlutterCommand()} pub outdated --json`,
-            { cwd: workspaceRoot, maxBuffer: 1024 * 1024 * 10, timeout: PUB_COMMAND_TIMEOUT },
-            (error, stdout, stderr) => {
-                if (error && error.code !== 0 && stdout.trim() === '') {
-                    const errorMessage = error.message + stderr;
-                    if (errorMessage.includes('No pubspec.yaml file found')) {
-                        return reject(new Error("the current project is not a flutter project or it doesn't have a pubspec.yaml file"));
-                    }
-                    return reject(new Error(errorMessage));
-                }
-
-                try {
-                    const result = JSON.parse(stdout) as PubOutdatedResponse;
-                    resolve(result.packages || []);
-                } catch (parseError) {
-                    reject(new Error(`Failed to parse pub outdated JSON output: ${toErrorMessage(parseError)}`));
-                }
+async function runPubOutdated(workspaceRoot: string): Promise<OutdatedPackage[]> {
+    let stdout: string;
+    try {
+        ({ stdout } = await runFlutter(['pub', 'outdated', '--json'], {
+            cwd: workspaceRoot,
+            maxBuffer: 1024 * 1024 * 10,
+            timeoutMs: PUB_COMMAND_TIMEOUT,
+        }));
+    } catch (error) {
+        // `pub outdated` can exit non-zero yet still print usable JSON.
+        if (error instanceof ProcessError && error.stdout.trim() !== '') {
+            stdout = error.stdout;
+        } else {
+            const errorMessage = error instanceof ProcessError ? error.message + error.stderr : toErrorMessage(error);
+            if (errorMessage.includes('No pubspec.yaml file found')) {
+                throw new Error("the current project is not a flutter project or it doesn't have a pubspec.yaml file");
             }
-        );
-    });
+            throw new Error(errorMessage);
+        }
+    }
+
+    try {
+        const result = JSON.parse(stdout) as PubOutdatedResponse;
+        return result.packages || [];
+    } catch (parseError) {
+        throw new Error(`Failed to parse pub outdated JSON output: ${toErrorMessage(parseError)}`);
+    }
 }
 
 export async function analyzePackages(): Promise<OutdatedPackage[]> {
@@ -314,38 +351,30 @@ export async function analyzePackages(): Promise<OutdatedPackage[]> {
     }
 }
 
-export async function upgradePackage(packageName: string): Promise<void> {
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) {
-        throw new Error('No workspace root found');
-    }
-    await assertPackageHostsReachable(workspaceRoot);
+export interface UpgradeOptions {
+    /**
+     * Also move past the version range in pubspec.yaml (`pub upgrade --major-versions`). A plain `pub upgrade <pkg>`
+     * stays inside the existing constraint, so it cannot reach a new major version.
+     */
+    major?: boolean;
+}
 
-    return new Promise((resolve, reject) => {
-        execWithEnv(`${getFlutterCommand()} pub upgrade ${packageName}`, { cwd: workspaceRoot, timeout: PUB_COMMAND_TIMEOUT }, (error, stdout, stderr) => {
-            if (error) {
-                return reject(friendlyCommandError(`Failed to upgrade package ${packageName}: ${error.message} - ${stderr}`, workspaceRoot));
-            }
-            resolve();
-        });
-    });
+export async function upgradePackage(packageName: string, options: UpgradeOptions = {}): Promise<void> {
+    const name = assertValidPackageName(packageName);
+    const workspaceRoot = requireWorkspaceRoot();
+    await assertPackageHostsReachable(workspaceRoot);
+    await runPub(
+        ['upgrade', ...(options.major ? ['--major-versions'] : []), name],
+        workspaceRoot,
+        `Failed to upgrade package ${name}`,
+    );
 }
 
 export async function addPackage(packageName: string): Promise<void> {
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) {
-        throw new Error('No workspace root found');
-    }
+    const name = assertValidPackageName(packageName);
+    const workspaceRoot = requireWorkspaceRoot();
     await assertPackageHostsReachable(workspaceRoot);
-
-    return new Promise((resolve, reject) => {
-        execWithEnv(`${getFlutterCommand()} pub add ${packageName}`, { cwd: workspaceRoot, timeout: PUB_COMMAND_TIMEOUT }, (error, stdout, stderr) => {
-            if (error) {
-                return reject(friendlyCommandError(`Failed to add package ${packageName}: ${error.message} - ${stderr}`, workspaceRoot));
-            }
-            resolve();
-        });
-    });
+    await runPub(['add', name], workspaceRoot, `Failed to add package ${name}`);
 }
 
 export async function searchPackages(query: string): Promise<string[]> {
@@ -417,90 +446,52 @@ export async function checkDependencyValidator(): Promise<boolean> {
 }
 
 export async function installDependencyValidator(): Promise<void> {
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) { throw new Error('No workspace root found'); }
+    const workspaceRoot = requireWorkspaceRoot();
     await assertPackageHostsReachable(workspaceRoot);
-
-    return new Promise((resolve, reject) => {
-        execWithEnv(`${getFlutterCommand()} pub add dev:dependency_validator`, { cwd: workspaceRoot, timeout: PUB_COMMAND_TIMEOUT }, (error, stdout, stderr) => {
-            if (error) {
-                return reject(friendlyCommandError(`Failed to install dependency_validator: ${error.message} - ${stderr}`, workspaceRoot));
-            }
-            resolve();
-        });
-    });
+    await runPub(['add', 'dev:dependency_validator'], workspaceRoot, 'Failed to install dependency_validator');
 }
 
 export async function runDependencyValidator(): Promise<DependencyValidationIssue[]> {
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) { throw new Error('No workspace root found'); }
+    const workspaceRoot = requireWorkspaceRoot();
 
-    return new Promise((resolve, reject) => {
-        execWithEnv(`${getDartCommand()} run dependency_validator`, { cwd: workspaceRoot }, (error, stdout, stderr) => {
-            // Note: dependency_validator exits with code 1 if it finds unused dependencies,
-            // so we ignore `error` and rely on stdout for parsing.
-            const output = stdout.toString() + '\n' + stderr.toString();
+    // dependency_validator exits with code 1 when it finds unused dependencies, so a non-zero exit is expected:
+    // the report is parsed from whatever it printed.
+    let output: string;
+    try {
+        const result = await runDart(['run', 'dependency_validator'], { cwd: workspaceRoot, timeoutMs: PUB_COMMAND_TIMEOUT });
+        output = `${result.stdout}\n${result.stderr}`;
+    } catch (error) {
+        if (!(error instanceof ProcessError)) {
+            throw error;
+        }
+        output = `${error.stdout}\n${error.stderr}`;
+    }
 
-            const issues: DependencyValidationIssue[] = [];
-
-            const downgradeMatch = output.match(/should be downgraded to dev_dependencies:([\s\S]*?)(?=\n[A-Z]|$)/i);
-            if (downgradeMatch) {
-                const lines = downgradeMatch[1].split('\n');
-                for (const line of lines) {
-                    const pkg = line.trim().replace(/^\*\s*/, '').trim();
-                    if (pkg) { issues.push({ package: pkg, issueType: 'downgrade' }); }
-                }
-            }
-
-            const mayBeUnusedMatch = output.match(/may be unused, or you may be using assets from these packages:([\s\S]*?)(?=\n[A-Z]|$)/i);
-            if (mayBeUnusedMatch) {
-                const lines = mayBeUnusedMatch[1].split('\n');
-                for (const line of lines) {
-                    const pkg = line.trim().replace(/^\*\s*/, '').trim();
-                    if (pkg) { issues.push({ package: pkg, issueType: 'may_be_unused' }); }
-                }
-            }
-
-            const unusedMatch = output.match(/These packages are unused:([\s\S]*?)(?=\n[A-Z]|$)/i);
-            if (unusedMatch) {
-                const lines = unusedMatch[1].split('\n');
-                for (const line of lines) {
-                    const pkg = line.trim().replace(/^\*\s*/, '').trim();
-                    if (pkg) { issues.push({ package: pkg, issueType: 'unused' }); }
-                }
-            }
-
-            resolve(issues);
-        });
-    });
+    const issues: DependencyValidationIssue[] = [];
+    const collect = (pattern: RegExp, issueType: DependencyValidationIssue['issueType']): void => {
+        const match = output.match(pattern);
+        if (!match) { return; }
+        for (const line of match[1].split('\n')) {
+            const pkg = line.trim().replace(/^\*\s*/, '').trim();
+            if (pkg) { issues.push({ package: pkg, issueType }); }
+        }
+    };
+    collect(/should be downgraded to dev_dependencies:([\s\S]*?)(?=\n[A-Z]|$)/i, 'downgrade');
+    collect(/may be unused, or you may be using assets from these packages:([\s\S]*?)(?=\n[A-Z]|$)/i, 'may_be_unused');
+    collect(/These packages are unused:([\s\S]*?)(?=\n[A-Z]|$)/i, 'unused');
+    return issues;
 }
 
 export async function removePackage(packageName: string): Promise<void> {
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) { throw new Error('No workspace root found'); }
+    const name = assertValidPackageName(packageName);
+    const workspaceRoot = requireWorkspaceRoot();
     await assertPackageHostsReachable(workspaceRoot);
-
-    return new Promise((resolve, reject) => {
-        execWithEnv(`${getFlutterCommand()} pub remove ${packageName}`, { cwd: workspaceRoot, timeout: PUB_COMMAND_TIMEOUT }, (error, stdout, stderr) => {
-            if (error) {
-                return reject(friendlyCommandError(`Failed to remove package ${packageName}: ${error.message} - ${stderr}`, workspaceRoot));
-            }
-            resolve();
-        });
-    });
+    await runPub(['remove', name], workspaceRoot, `Failed to remove package ${name}`);
 }
 
 export async function downgradePackage(packageName: string): Promise<void> {
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) { throw new Error('No workspace root found'); }
+    const name = assertValidPackageName(packageName);
+    const workspaceRoot = requireWorkspaceRoot();
     await assertPackageHostsReachable(workspaceRoot);
-
-    return new Promise((resolve, reject) => {
-        execWithEnv(`${getFlutterCommand()} pub add dev:${packageName}`, { cwd: workspaceRoot, timeout: PUB_COMMAND_TIMEOUT }, (error, stdout, stderr) => {
-            if (error) {
-                return reject(friendlyCommandError(`Failed to downgrade package ${packageName}: ${error.message} - ${stderr}`, workspaceRoot));
-            }
-            resolve();
-        });
-    });
+    await runPub(['add', `dev:${name}`], workspaceRoot, `Failed to downgrade package ${name}`);
 }
