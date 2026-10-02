@@ -130,6 +130,57 @@ suite("Shared widget semantics", () => {
     assert.ok(prompt.includes("(+3 more; the full list is scan_interactives.widgets)"));
   });
 
+  test("prompt usage distinguishes missing, dynamic and duplicate call sites despite aggregate flags", () => {
+    const updated = structuredClone(scan);
+    const calls = flattenInteractiveFindings(updated);
+    const primary = calls.filter((finding) => finding.resolved?.className === "PrimaryButton");
+    primary[0].automation = "dynamic";
+    primary[0].semantics.identifierExpression = "'cart.${item.id}.checkout'";
+    primary[1].automation = "duplicate";
+    primary[1].semantics.identifierExpression = "'cart.checkout'";
+    const product = calls.find((finding) => finding.resolved?.className === "ProductRow")!;
+    product.automation = "dynamic";
+    product.semantics.identifierExpression = "'cart.product.${product.id}'";
+
+    // Leave callSitesMissing and totals unchanged: the scanner includes dynamic
+    // expressions in these flags, so the prompt must classify actual findings.
+    const prompt = buildSemanticsImplementationPrompt(updated);
+    const primaryRow = prompt.split("\n").find((line) => line.startsWith("L0 | PrimaryButton |"))!;
+    const productRow = prompt.split("\n").find((line) => line.startsWith("ProductRow |"))!;
+    assert.ok(primaryRow.includes("4 call sites, 2 missing, 1 dynamic, 1 duplicate"), primaryRow);
+    assert.ok(productRow.includes("3 call sites, 2 missing, 1 dynamic, 0 duplicate"), productRow);
+    assert.ok(!prompt.includes("call sites without an identifier"));
+    assert.ok(prompt.includes("includes dynamic/duplicate IDs, not just absent arguments"));
+    assert.ok(prompt.includes("Preserve raw before/after totals"));
+  });
+
+  test("prompt distinguishes inherited text names from unnamed icon variants and tooltip-only evidence", () => {
+    const prompt = buildSemanticsImplementationPrompt(scan);
+    assert.ok(prompt.includes("text detected; inspect each variant"));
+    assert.ok(prompt.includes("required nullable String? tooltip still allows null"));
+    assert.ok(prompt.includes("Semantics.label being null is valid when child Text"));
+    assert.ok(prompt.includes("SemanticsData.tooltip while SemanticsData.label stays empty"));
+    assert.ok(prompt.includes("reuse its existing localized tooltip parameter as Semantics.label"));
+    assert.ok(prompt.includes("Keep the visual tooltip"));
+    assert.ok(prompt.includes("never ExcludeSemantics the IconButton"));
+    assert.ok(prompt.includes("meaningful hint independently of whether label is null"));
+    assert.ok(prompt.includes("Test actual label values, not just constructor arguments"));
+    assert.ok(prompt.includes("Null/empty unresolved values remain genuine name gaps"));
+  });
+
+  test("prompt preserves compile ordering, logical actions and native verification limits", () => {
+    const prompt = buildSemanticsImplementationPrompt(scan);
+    assert.ok(prompt.includes("that layer's Phase 2 call sites before requiring a clean analyzer"));
+    assert.ok(prompt.includes("Never merge a card, input with suffix action"));
+    assert.ok(prompt.includes("scope attachments by message ID + attachment ID"));
+    assert.ok(prompt.includes("Suppress only placeholder automation tags at the owning leaf boundary"));
+    assert.ok(prompt.includes("ask whether one stable action ID is intended"));
+    assert.ok(prompt.includes("fail to recognize identifier-to-prefix forwarding"));
+    assert.ok(prompt.includes("onIncrease/onDecrease is the slider control itself"));
+    assert.ok(prompt.includes("no device is attached, report this check unverified, not passed"));
+    assert.ok(prompt.includes("reproduce suspected pre-existing failures"));
+  });
+
   suite("fixes", () => {
     function copyFixture(): string {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "flutter-shared-semantics-"));
