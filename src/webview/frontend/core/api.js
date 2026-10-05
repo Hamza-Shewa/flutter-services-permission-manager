@@ -15,6 +15,7 @@ export function installDependencyValidator() { vscode.postMessage({ type: "insta
 export function checkDependencyValidator() { vscode.postMessage({ type: "checkDependencyValidator" }); }
 export function runDependencyValidator() { vscode.postMessage({ type: "runDependencyValidator" }); }
 export function analyzeUnusedAssets() { vscode.postMessage({ type: "analyzeUnusedAssets" }); }
+export function convertImagesToWebp(apply, quality, lossless) { vscode.postMessage({ type: "convertImagesToWebp", apply, quality, lossless }); }
 export function deleteUnusedAsset(assetPath) { vscode.postMessage({ type: "deleteUnusedAsset", assetPath }); }
 export function deleteAllUnusedAssets(assetPaths) { vscode.postMessage({ type: "deleteAllUnusedAssets", assetPaths }); }
 export function revealAssetReference(file, line, column) { vscode.postMessage({ type: "revealAssetReference", file, line, column }); }

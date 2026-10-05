@@ -72,7 +72,7 @@ When adding a service, also check whether `src/core/types/services.ts` needs new
 
 ### Standalone scripts (`scripts/`)
 
-`check-unused-assets.js` and `scan-interactives.js` are also runnable outside VS Code against compiled `out/` for CLI-driven asset cleanup and Semantics/accessibility scanning (see README for flags).
+`check-unused-assets.js` and `scan-interactives.js` are also runnable outside VS Code against compiled `out/` for CLI-driven asset cleanup and Semantics/accessibility scanning (see README for flags). `convert-images-to-webp.js` is fully standalone (Jimp decodes, the `@jsquash/webp` WASM encoder writes; it hands the `.wasm` bytes to the encoder itself because Node cannot fetch them by URL); dry-run by default, `--apply` also deletes originals and rewrites string-literal references, and it refuses to touch images referenced by runtime-built paths, partial names or tool configs. The Assets tab drives it through `convertImagesToWebp` in `assets.service.ts`, and the MCP server through `mcp-server/src/webp.ts` (`preview_webp_conversion` / `apply_webp_conversion`, single-use preview id like the semantics tools). Match asset names in NFC (macOS stores them decomposed).
 
 ## Conventions
 

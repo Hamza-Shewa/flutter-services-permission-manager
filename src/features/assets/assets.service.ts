@@ -4,7 +4,10 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { toErrorMessage } from '../../core/shared/index.js';
-import type { UnusedAsset, AssetDynamicRef } from '../../core/types/services.js';
+import { runProcess } from '../../core/utils/process.js';
+import type { UnusedAsset, AssetDynamicRef, WebpConversionResult } from '../../core/types/services.js';
+
+export type { WebpConversionImage, WebpConversionResult } from '../../core/types/services.js';
 
 /**
  * Result of scanning a Flutter project for unused assets.
@@ -31,8 +34,8 @@ interface UnusedAssetsScriptPayload {
  * `<extensionRoot>/scripts/check-unused-assets.js`; from the compiled
  * `out/features/assets/` this is three levels up (out/features -> out -> root).
  */
-function getScriptPath(): string {
-    return path.resolve(__dirname, '..', '..', '..', 'scripts', 'check-unused-assets.js');
+function getScriptPath(name = 'check-unused-assets.js'): string {
+    return path.resolve(__dirname, '..', '..', '..', 'scripts', name);
 }
 
 function runScript(workspaceRoot: string, extraArgs: string[]): Promise<string> {
@@ -184,4 +187,45 @@ export async function deleteUnusedAssets(
         }
     }
     return deleted;
+}
+
+/** Options for {@link convertImagesToWebp}; they map one-to-one to `scripts/convert-images-to-webp.js`. */
+export interface WebpConversionOptions {
+    /** Write the files, delete the originals and rewrite references. Without it nothing is written. */
+    apply?: boolean;
+    /** With `apply`: keep the originals and leave references alone. */
+    keepOriginals?: boolean;
+    /** Lossy quality 1-100 (default 85). */
+    quality?: number;
+    lossless?: boolean;
+    /** Limit the conversion to this project-relative folder. */
+    assetsPath?: string;
+    /** Asset folders to leave alone. */
+    ignoreAssetDirs?: string[];
+}
+
+/**
+ * Converts the project's PNG/JPG/JPEG assets to WebP (see `scripts/convert-images-to-webp.js`).
+ * Runs as a dry run unless `options.apply` is set.
+ */
+export async function convertImagesToWebp(
+    workspaceRoot: string,
+    options: WebpConversionOptions = {},
+): Promise<WebpConversionResult> {
+    const args = [getScriptPath('convert-images-to-webp.js'), '--path', workspaceRoot, '--json'];
+    if (options.apply) { args.push('--apply'); }
+    if (options.apply && options.keepOriginals) { args.push('--keep-originals'); }
+    if (options.lossless) { args.push('--lossless'); }
+    if (options.quality !== undefined) { args.push('--quality', String(options.quality)); }
+    if (options.assetsPath) { args.push('--assets-path', options.assetsPath); }
+    for (const dir of options.ignoreAssetDirs ?? []) { args.push('--ignore-asset-dirs', dir); }
+
+    // The extension host runs on Electron; ELECTRON_RUN_AS_NODE makes the same binary behave as plain Node.
+    const env = { ...process.env, ELECTRON_RUN_AS_NODE: '1' };
+    try {
+        const { stdout } = await runProcess(process.execPath || 'node', args, { cwd: workspaceRoot, env, timeoutMs: 600_000, maxBuffer: 1024 * 1024 * 50 });
+        return JSON.parse(stdout) as WebpConversionResult;
+    } catch (error) {
+        throw new Error(`WebP conversion failed: ${toErrorMessage(error)}`);
+    }
 }

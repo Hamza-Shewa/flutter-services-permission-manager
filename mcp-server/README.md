@@ -25,6 +25,8 @@ it makes is byte-for-byte identical to what the VS Code UI produces.
 | `scan_interactives` | Inventory interactive Flutter widgets with confidence, accessibility/automation status, opaque-surface warnings, and exact source references. |
 | `preview_semantics_fixes` | Build a non-mutating, short-lived preview for reviewed dotted `Semantics.identifier` values. |
 | `apply_semantics_fixes` | Apply a single-use preview only while all source hashes still match. |
+| `preview_webp_conversion` | Read-only: encode the PNG/JPG/JPEG assets declared in `pubspec.yaml` as WebP in memory and report size/quality per image, or why one is skipped. Returns a single-use `previewId`. |
+| `apply_webp_conversion` | Write the `.webp` files, delete the originals and rewrite string-literal references in Dart/JSON/`pubspec.yaml`. Needs a fresh `previewId` and is refused if the images or references changed since. |
 | `check_android_automation` | Check Android SDK, adb/emulator, Appium, UiAutomator2, devices, and server reachability without installing anything. |
 | `start_android_session` / `end_android_session` | Manage a session on an existing Appium UiAutomator2 server. |
 | `inspect_runtime_ui` | Read native accessibility identifiers, duplicates, and matching Dart source references. |

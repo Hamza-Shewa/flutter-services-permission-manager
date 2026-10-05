@@ -332,6 +332,91 @@ check('text-entry results are redacted', () => {
 await client.callTool({ name: 'end_android_session', arguments: { sessionId: automationSession.sessionId } });
 await new Promise((resolve) => mockAppium.close(resolve));
 
+// ---- WebP conversion (preview -> apply) -------------------------------------
+{
+  const { createRequire } = await import('node:module');
+  const os = await import('node:os');
+  const { Jimp } = createRequire(import.meta.url)(join(repoRoot, 'node_modules', 'jimp'));
+  const webpRoot = fs.mkdtempSync(join(os.tmpdir(), 'fcm-mcp-webp-'));
+  const writeGradientPng = async (file) => {
+    const size = 128;
+    const image = new Jimp({ width: size, height: size, color: 0xffffffff });
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const r = Math.round((x / size) * 255);
+        const g = Math.round((y / size) * 255);
+        image.bitmap.data.writeUInt32BE(((r << 24) | (g << 16) | 0x80ff) >>> 0, (y * size + x) * 4);
+      }
+    }
+    fs.mkdirSync(dirname(file), { recursive: true });
+    fs.writeFileSync(file, await image.getBuffer('image/png'));
+  };
+  fs.writeFileSync(join(webpRoot, 'pubspec.yaml'), 'name: sample\nflutter:\n  assets:\n    - assets/images/\n');
+  await writeGradientPng(join(webpRoot, 'assets', 'images', 'hero.png'));
+  await writeGradientPng(join(webpRoot, 'assets', 'images', 'other.png'));
+  fs.mkdirSync(join(webpRoot, 'lib'), { recursive: true });
+  fs.writeFileSync(join(webpRoot, 'lib', 'main.dart'), "const hero = 'assets/images/hero.png';\nconst other = 'assets/images/other.png';\n");
+
+  const webpServer = createServer(webpRoot);
+  const [webpClientTransport, webpServerTransport] = InMemoryTransport.createLinkedPair();
+  const webpClient = new Client({ name: 'smoke-webp', version: '0.0.0' });
+  await Promise.all([webpServer.connect(webpServerTransport), webpClient.connect(webpClientTransport)]);
+  const call = async (name, args) => {
+    const res = await webpClient.callTool({ name, arguments: args });
+    return { isError: res.isError === true, data: JSON.parse(res.content[0].text) };
+  };
+
+  const preview = await call('preview_webp_conversion', {});
+  check('preview_webp_conversion reports savings and writes nothing', () => {
+    assert.strictEqual(preview.data.ok, true);
+    assert.ok(preview.data.previewId);
+    assert.strictEqual(preview.data.summary.convertible, 2);
+    assert.ok(preview.data.summary.bytesSaved > 0);
+    assert.ok(fs.existsSync(join(webpRoot, 'assets', 'images', 'hero.png')));
+    assert.ok(!fs.existsSync(join(webpRoot, 'assets', 'images', 'hero.webp')));
+  });
+
+  const unknown = await call('apply_webp_conversion', { previewId: '00000000-0000-4000-8000-000000000000' });
+  check('apply_webp_conversion refuses an unknown preview', () => {
+    assert.strictEqual(unknown.isError, true);
+  });
+
+  const unsafe = await call('preview_webp_conversion', { assetsPath: '../outside' });
+  check('preview_webp_conversion rejects folders outside the project', () => {
+    assert.strictEqual(unsafe.isError, true);
+  });
+
+  const applied = await call('apply_webp_conversion', { previewId: preview.data.previewId });
+  check('apply_webp_conversion converts, deletes originals and rewrites references', () => {
+    assert.strictEqual(applied.data.ok, true);
+    assert.strictEqual(applied.data.converted, 2);
+    assert.ok(fs.existsSync(join(webpRoot, 'assets', 'images', 'hero.webp')));
+    assert.ok(!fs.existsSync(join(webpRoot, 'assets', 'images', 'hero.png')));
+    const dart = fs.readFileSync(join(webpRoot, 'lib', 'main.dart'), 'utf8');
+    assert.ok(dart.includes("'assets/images/hero.webp'") && dart.includes("'assets/images/other.webp'"));
+  });
+
+  const reused = await call('apply_webp_conversion', { previewId: preview.data.previewId });
+  check('a preview can only be applied once', () => {
+    assert.strictEqual(reused.isError, true);
+  });
+
+  // A preview goes stale when the project changes underneath it.
+  await writeGradientPng(join(webpRoot, 'assets', 'images', 'late.png'));
+  fs.appendFileSync(join(webpRoot, 'lib', 'main.dart'), "const late = 'assets/images/late.png';\n");
+  const stale = await call('preview_webp_conversion', {});
+  fs.writeFileSync(join(webpRoot, 'lib', 'dynamic.dart'), "String path(String n) => 'assets/images/$n.png';\n");
+  const staleApply = await call('apply_webp_conversion', { previewId: stale.data.previewId });
+  check('apply_webp_conversion refuses a preview made stale by a later change', () => {
+    assert.strictEqual(staleApply.isError, true);
+    assert.ok(fs.existsSync(join(webpRoot, 'assets', 'images', 'late.png')));
+  });
+
+  await webpClient.close();
+  await webpServer.close();
+  fs.rmSync(webpRoot, { recursive: true, force: true });
+}
+
 await client.close();
 await server.close();
 

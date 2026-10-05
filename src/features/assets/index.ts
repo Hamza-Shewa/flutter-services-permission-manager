@@ -7,7 +7,8 @@
 export {
     analyzeUnusedAssets,
     deleteUnusedAssets,
-    getIgnoredAssetPaths
+    getIgnoredAssetPaths,
+    convertImagesToWebp
 } from './assets.service.js';
 
-export type { UnusedAssetsResult } from './assets.service.js';
+export type { UnusedAssetsResult, WebpConversionOptions, WebpConversionResult, WebpConversionImage } from './assets.service.js';

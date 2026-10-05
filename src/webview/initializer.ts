@@ -57,6 +57,7 @@ import {
   handleDowngradePackage,
   handleRemoveAllFlaggedPackages,
   handleAnalyzeUnusedAssets,
+  handleConvertImagesToWebp,
   handleDeleteUnusedAssets,
   handleRevealAssetReference,
   handleUpdateIgnoredAssetPaths,
@@ -282,6 +283,7 @@ function setupMessageHandler(
     .register("downgradePackage", async (msg) => { if (msg.packageName) { await handleDowngradePackage(ref, msg.packageName); } })
     .register("removeAllFlaggedPackages", async (msg) => { if (msg.packages) { await handleRemoveAllFlaggedPackages(ref, msg.packages); } })
     .register("analyzeUnusedAssets", async () => await handleAnalyzeUnusedAssets(ref))
+    .register("convertImagesToWebp", async (msg) => await handleConvertImagesToWebp(ref, { apply: msg.apply === true, quality: typeof msg.quality === "number" ? msg.quality : undefined, lossless: msg.lossless === true }))
     .register("deleteUnusedAsset", async (msg) => { if (msg.assetPath) { await handleDeleteUnusedAssets(ref, [msg.assetPath]); } })
     .register("deleteAllUnusedAssets", async (msg) => { if (msg.assetPaths) { await handleDeleteUnusedAssets(ref, msg.assetPaths); } })
     .register("revealAssetReference", async (msg) => { if (msg.file) { await handleRevealAssetReference(ref, { file: msg.file, line: msg.line, column: msg.column }); } })

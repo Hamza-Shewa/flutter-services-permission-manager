@@ -6,6 +6,7 @@ import {
     analyzeUnusedAssets,
     deleteUnusedAssets,
     getIgnoredAssetPaths,
+    convertImagesToWebp,
 } from '../../features/assets/assets.service.js';
 
 /**
@@ -166,5 +167,38 @@ export async function handleDeleteUnusedAssets(
             success: false,
             message: `Failed to delete unused assets: ${toErrorMessage(error)}`,
         });
+    }
+}
+
+/**
+ * Previews (`apply: false`) or performs (`apply: true`) the PNG/JPEG to WebP conversion of the project's
+ * declared assets, and posts the report back to the webview.
+ */
+export async function handleConvertImagesToWebp(
+    ref: WebviewRef,
+    options: { apply: boolean; quality?: number; lossless?: boolean },
+): Promise<void> {
+    try {
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        if (!workspaceRoot) {
+            throw new Error('No workspace root found');
+        }
+        const result = await convertImagesToWebp(workspaceRoot, {
+            apply: options.apply,
+            quality: options.quality,
+            lossless: options.lossless === true,
+            ignoreAssetDirs: getIgnoredAssetPaths().ignoredAssetDirectories,
+        });
+        ref.webview.postMessage({ type: 'webpConversionResult', applied: options.apply, result });
+        if (options.apply) {
+            ref.webview.postMessage({
+                type: 'saveResult',
+                success: true,
+                message: `Converted ${result.converted} image(s) to WebP, saving ${(result.bytesSaved / 1024).toFixed(1)} KB.`,
+            });
+        }
+    } catch (error) {
+        console.error('WebP conversion error:', error);
+        ref.webview.postMessage({ type: 'webpConversionResult', applied: options.apply, error: toErrorMessage(error) });
     }
 }

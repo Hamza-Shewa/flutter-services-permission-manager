@@ -168,3 +168,27 @@ export interface AppNameLocalizationConfig {
     defaultName: string;
     localizations: Record<string, string>;
 }
+
+/** One image in a PNG/JPEG to WebP conversion report. */
+export interface WebpConversionImage {
+    path: string;
+    status: 'converted' | 'would-convert' | 'skipped' | 'failed';
+    reason?: string;
+    webp?: string;
+    before?: number;
+    after?: number;
+    psnr?: number | null;
+}
+
+export interface WebpConversionResult {
+    applied: boolean;
+    totalImages: number;
+    converted: number;
+    skipped: number;
+    failed: number;
+    bytesBefore: number;
+    bytesAfter: number;
+    bytesSaved: number;
+    rewrittenFiles: string[];
+    images: WebpConversionImage[];
+}

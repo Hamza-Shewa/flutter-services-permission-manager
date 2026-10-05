@@ -6,6 +6,7 @@ import * as permissions from './features/permissions/permissions.js';
 import * as services from './features/services/services.js';
 import * as packages from './features/packages/packages.js';
 import * as assets from './features/assets/assets.js';
+import * as webp from './features/assets/webp.js';
 import * as localization from './features/localization/localization.js';
 import * as translations from './features/localization/translations.js';
 import * as buildDetails from './features/build/build-details.js';
@@ -1102,6 +1103,10 @@ bus.on("dependencyValidationResult", (message) => {
 
 bus.on("unusedAssetsResult", (message) => {
   assets.handleUnusedAssetsResult(message);
+});
+
+bus.on("webpConversionResult", (message) => {
+  webp.handleWebpConversionResult(message);
 });
 
 api.sendReady();

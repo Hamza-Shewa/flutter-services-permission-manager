@@ -54,6 +54,16 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
     node scripts/check-unused-assets.js --path . --ignore-dynamic-files icons.dart   # skip only dynamic patterns
     ```
 
+    **Convert images to WebP**: in the same **Assets** tab, **Convert images to WebP** re-encodes the PNG/JPG/JPEG files declared in `pubspec.yaml` (typically 40–70% smaller with almost no visible change), deletes the originals and rewrites the references in your Dart, JSON and YAML files. **Preview savings** first; nothing is touched until you convert. Images that are referenced by a path built at runtime (`'assets/img/$name.png'`), by a bare file name or by tool configuration such as `flutter_launcher_icons` are skipped, and each result is checked (decoded again, PSNR 35 dB or better) before it replaces the original. Also available as a script:
+
+    ```bash
+    node scripts/convert-images-to-webp.js --path /path/to/flutter/project            # dry-run: report the savings
+    node scripts/convert-images-to-webp.js --path . --apply                           # convert, delete originals, update references
+    node scripts/convert-images-to-webp.js --path . --apply --keep-originals          # only write the .webp files
+    node scripts/convert-images-to-webp.js --path . --apply --lossless                # exact pixels
+    node scripts/convert-images-to-webp.js --path . --assets-path assets/images --quality 90
+    ```
+
 10. **Audit Semantics**: Open the **Semantics** tab. Expand a file row for exact widget references, edit the suggested dotted identifiers, select the desired fixes, review the combined preview, and apply. The standalone scanner is also available after compilation:
 
     ```bash

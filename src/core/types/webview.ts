@@ -7,7 +7,7 @@ import type {
   IOSPermission,
   IOSPermissionEntry,
 } from "./permissions.js";
-import type { ServiceEntry, ServiceConfig, UnusedAsset } from "./services.js";
+import type { ServiceEntry, ServiceConfig, UnusedAsset, WebpConversionResult } from "./services.js";
 import type { TranslationFileData } from "./translations.js";
 import type {
   ApplySemanticsResult,
@@ -125,6 +125,13 @@ export type WebviewMessage =
     packages: string[];
   }
   | { type: "analyzeUnusedAssets" }
+  | {
+    type: "convertImagesToWebp";
+    /** false = preview the savings only; true = convert, delete originals and rewrite references */
+    apply: boolean;
+    quality?: number;
+    lossless?: boolean;
+  }
   | {
     type: "deleteUnusedAsset";
     assetPath: string;
@@ -292,6 +299,14 @@ export interface UnusedAssetsPayload {
   ignoredDynamicDirectories?: string[];
   /** Files whose dynamic patterns are ignored (literal refs still count) */
   ignoredDynamicFiles?: string[];
+  error?: string;
+}
+
+/** PNG/JPEG to WebP conversion preview or result (extension to webview) */
+export interface WebpConversionPayload {
+  type: "webpConversionResult";
+  applied: boolean;
+  result?: WebpConversionResult;
   error?: string;
 }
 

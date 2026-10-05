@@ -2,7 +2,7 @@
   "name": "flutter-config-manager",
   "displayName": "Flutter Config Manager",
   "description": "Manage Flutter Android/iOS/macOS permissions, services, and app name localizations. Update manifests, plists, Podfile, and AppDelegate from one VS Code UI.",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "publisher": "hamza-shewa",
   "author": {
     "name": "Hamza Shewa",
@@ -251,6 +251,7 @@
     "typescript-eslint": "^8.52.0"
   },
   "dependencies": {
+    "@jsquash/webp": "^1.5.0",
     "@lumis-sh/wasm-dart": "0.26.3",
     "@resvg/resvg-wasm": "^2.6.2",
     "fast-xml-parser": "^5.10.1",

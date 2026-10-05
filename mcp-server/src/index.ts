@@ -77,6 +77,12 @@ import {
   waitRuntimeSchema,
   waitRuntimeTool,
 } from './android-automation.js';
+import {
+  applyWebpConversionTool,
+  applyWebpSchema,
+  previewWebpConversionTool,
+  previewWebpSchema,
+} from './webp.js';
 
 const SERVER_NAME = 'flutter-config-manager';
 const SERVER_VERSION = '1.1.0';
@@ -238,6 +244,30 @@ export function createServer(root: string): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async (args) => applySemanticsFixesTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'preview_webp_conversion',
+    {
+      title: 'Preview converting PNG/JPEG assets to WebP',
+      description:
+        'Read-only. Encodes the PNG/JPG/JPEG files declared as assets in pubspec.yaml to WebP in memory and reports, per image, the size before/after and the quality (PSNR), or why it is skipped (path built at runtime, partial file name, tool config such as flutter_launcher_icons, size/quality not better, name clash). Returns a previewId for apply_webp_conversion. Usually 40-70% smaller with almost no visible change; Flutter reads WebP natively on every platform.',
+      inputSchema: previewWebpSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => previewWebpConversionTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'apply_webp_conversion',
+    {
+      title: 'Apply a previewed WebP conversion',
+      description:
+        'Writes the .webp files from a preview, deletes the original PNG/JPEG files and rewrites the string-literal references to them in Dart, JSON and pubspec.yaml (unless the preview was made with keepOriginals). Refused when the preview is unknown, expired (15 minutes), already used, or the images/references changed since. Afterwards run flutter analyze, the tests and the app: paths built from variables cannot be detected.',
+      inputSchema: applyWebpSchema,
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    },
+    async (args) => applyWebpConversionTool(root, args as Record<string, unknown>),
   );
 
   server.registerTool(

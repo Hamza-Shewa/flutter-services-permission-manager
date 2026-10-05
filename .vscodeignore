@@ -155,3 +155,18 @@ mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/server/express.js
 mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/server/streamableHttp.js
 mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/server/sse.js
 mcp-server/node_modules/@modelcontextprotocol/sdk/dist/*/examples/**
+
+# Documentation: only the README and CHANGELOG the Marketplace listing needs; every other Markdown file
+# (repo guides, dependency READMEs) is dead weight in the package.
+**/*.md
+!README.md
+!CHANGELOG.md
+!THIRD_PARTY_NOTICES.md
+!node_modules/**/LICENSE.md
+!node_modules/**/LICENCE.md
+!node_modules/**/license.md
+!node_modules/**/licence.md
+!mcp-server/node_modules/**/LICENSE.md
+!mcp-server/node_modules/**/LICENCE.md
+!mcp-server/node_modules/**/license.md
+!mcp-server/node_modules/**/licence.md

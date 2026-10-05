@@ -393,6 +393,7 @@ export {
 } from './packages.js';
 export {
   handleAnalyzeUnusedAssets,
+  handleConvertImagesToWebp,
   handleDeleteUnusedAssets,
   handleRevealAssetReference,
   handleUpdateIgnoredAssetPaths,
