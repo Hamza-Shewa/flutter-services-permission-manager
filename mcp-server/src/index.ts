@@ -78,6 +78,16 @@ import {
   waitRuntimeTool,
 } from './android-automation.js';
 import {
+  findRoutePathsSchema,
+  findRoutePathsTool,
+  listTrailsSchema,
+  listTrailsTool,
+  saveTrailSchema,
+  saveTrailTool,
+  scanRoutesSchema,
+  scanRoutesTool,
+} from './trail.js';
+import {
   applyWebpConversionTool,
   applyWebpSchema,
   previewWebpConversionTool,
@@ -85,7 +95,7 @@ import {
 } from './webp.js';
 
 const SERVER_NAME = 'flutter-config-manager';
-const SERVER_VERSION = '1.1.0';
+const SERVER_VERSION = '1.2.0';
 
 /** Create an McpServer with every tool registered against the given project. */
 export function createServer(root: string): McpServer {
@@ -220,6 +230,54 @@ export function createServer(root: string): McpServer {
       annotations: { readOnlyHint: true, destructiveHint: false },
     },
     async (args) => scanInteractivesTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'scan_routes',
+    {
+      title: 'Scan the app route graph',
+      description:
+        'Statically extracts the Flutter app\'s screens and navigation. Routers read: go_router (including typed routes), auto_route, Fluro, GetX, flutter_modular, Beamer, Routemaster, VRouter, Qlevar, Sailor and the built-in Navigator (named route maps, onGenerateRoute switch/if tables, MaterialPageRoute); also bottom-navigation tabs, redirects, helper methods that wrap navigation, and sheets/dialogs shown through a route name. `routers` reports which packages the project uses and how well each is read (full, partial, none), and `diagnostics` warns when a router is not understood. Every edge has its call site (file:line), the trigger (user tap, state listener, redirect), the conditions around the call (if/switch/ternary) and `attribution`, how sure the scan is about the screen the call belongs to (class > file > composition > folder > shared > unresolved). Navigation helpers (methods that forward a route to the router) are detected automatically. The default `summary` lists routes, the edges with an unknown source screen and the calls whose destination is computed at runtime; use `route` to get one route\'s incoming and outgoing edges, or `detail: "full"` for every edge. It cannot see conditions that live in Bloc state, first-launch logic or screens that are not in code: read the cited source for those.',
+      inputSchema: scanRoutesSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => scanRoutesTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'find_route_paths',
+    {
+      title: 'Find navigation paths to a screen',
+      description:
+        'Finds the shortest chains of screens from the app entry (or `from`) to the target route `to`, which can be a route id, path, name or widget class. Each hop lists the edges behind it with source location, trigger and conditions. When no path exists, `unattributedIntoTarget` lists edges into the target whose source screen is unknown, which is usually why. Candidate chains only: confirm each hop in the cited source before treating it as the user journey.',
+      inputSchema: findRoutePathsSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => findRoutePathsTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'list_trails',
+    {
+      title: 'List saved trails',
+      description:
+        'Lists the user journeys ("trails") saved in .flutter-config-manager/trails.json, each with `issues` for routes or files that no longer exist in the code.',
+      inputSchema: listTrailsSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false },
+    },
+    async (args) => listTrailsTool(root, args as Record<string, unknown>),
+  );
+
+  server.registerTool(
+    'save_trail',
+    {
+      title: 'Save a user journey trail',
+      description:
+        'Saves (or replaces, by id) one user journey in .flutter-config-manager/trails.json so the Trail tab can show it. A trail is an ordered list of steps; each step has a title, a kind (screen, sheet, dialog, action, decision, outcome), an optional `route` that must be a route id from scan_routes, an optional `source` file (project-relative, must exist), an optional `condition` for steps that only sometimes happen (set `optional` too), and `branches` ({label, to: step id}) for alternative continuations such as failure. Nothing is written unless every route, file and branch target validates; the error lists what to fix. Only call this after reading the code for the journey.',
+      inputSchema: saveTrailSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    },
+    async (args) => saveTrailTool(root, args as Record<string, unknown>),
   );
 
   server.registerTool(

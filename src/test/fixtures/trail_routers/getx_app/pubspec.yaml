@@ -1,0 +1,3 @@
+name: getx_app
+dependencies:
+  get: any

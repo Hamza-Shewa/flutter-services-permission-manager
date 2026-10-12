@@ -13,7 +13,7 @@ export async function getWebviewContent(
 ): Promise<string> {
     const htmlPath = vscode.Uri.joinPath(extensionUri, 'src', 'flutter-config.html');
     const rawData = await vscode.workspace.fs.readFile(htmlPath);
-    const html = rawData.toString();
+    const html = new TextDecoder().decode(rawData);
 
     const scriptUri = webview.asWebviewUri(
         vscode.Uri.joinPath(extensionUri, 'src', 'webview', 'frontend', 'index.js')

@@ -1,0 +1,3 @@
+name: vrouter_app
+dependencies:
+  vrouter: any

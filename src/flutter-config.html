@@ -2207,6 +2207,56 @@
     .semantics-source { color: var(--ios-accent); background: transparent; border: 0; cursor: pointer; padding: 2px 0; text-align: left; }
     .semantics-preview-list { max-height: 55vh; overflow: auto; display: grid; gap: 12px; }
     .semantics-preview-file pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg-primary); padding: 10px; border-radius: 4px; font-size: 11px; }
+    /* ===== Trail tab ===== */
+    .trail-lock {
+      margin: 16px 0;
+      padding: 22px 20px;
+      border: 1px dashed var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      text-align: center;
+    }
+    .trail-lock h3 { margin: 0 0 8px; font-size: 14px; }
+    .trail-lock p { margin: 0 auto 14px; max-width: 560px; color: var(--text-secondary); font-size: 12px; line-height: 1.55; }
+    .trail-note { color: var(--text-secondary); font-size: 12px; margin: 0 0 6px; }
+    .trail-goal { display: flex; gap: 8px; align-items: center; flex: 1 1 320px; }
+    .trail-goal input { flex: 1; min-width: 0; }
+    .semantics-badge.trail-kind { color: var(--text-secondary); background: var(--bg-elevated); }
+    .trail-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 18px 0 8px; }
+    .trail-heading h3 { margin: 0; font-size: 14px; }
+    .trail-heading span { color: var(--text-secondary); font-size: 12px; }
+    .trail-list { display: grid; gap: 10px; }
+    .trail-card { border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-secondary); }
+    .trail-card > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; cursor: pointer; font-weight: 600; font-size: 13px; }
+    .trail-card-meta { color: var(--text-secondary); font-size: 11px; font-weight: 400; }
+    .trail-card-body { padding: 2px 14px 12px; }
+    .trail-goal-text { margin: 4px 0 10px; color: var(--text-secondary); font-size: 12px; }
+    .trail-steps, .trail-hops { list-style: none; margin: 0; padding: 0; }
+    .trail-step { display: grid; grid-template-columns: 26px 1fr; gap: 10px; position: relative; padding-bottom: 12px; }
+    .trail-step:last-child { padding-bottom: 0; }
+    .trail-step:not(:last-child)::before { content: ""; position: absolute; left: 12px; top: 26px; bottom: 0; border-left: 2px solid var(--border-default); }
+    .trail-step.optional:not(:last-child)::before { border-left-style: dashed; }
+    .trail-step-num { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 600; background: var(--bg-elevated); border: 1px solid var(--border-default); }
+    .trail-step.optional .trail-step-num { border-style: dashed; }
+    .trail-step-title { font-weight: 600; font-size: 13px; }
+    .trail-step-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+    .trail-when { margin-top: 3px; font-size: 12px; color: #ffcc80; }
+    .trail-step-note { margin-top: 3px; font-size: 12px; color: var(--text-secondary); }
+    .trail-route { color: var(--text-secondary); font-size: 11px; }
+    .trail-branches { list-style: none; margin: 5px 0 0; padding: 0; display: grid; gap: 2px; font-size: 12px; }
+    .trail-branches li::before { content: "↳ "; color: var(--text-secondary); }
+    .trail-issues { margin: 8px 0 0; padding: 7px 10px; border-radius: var(--radius-sm); background: rgba(245,124,0,.12); color: #ffcc80; font-size: 12px; }
+    .trail-card-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .trail-finder { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0 10px; }
+    .trail-finder input { flex: 1 1 180px; min-width: 0; }
+    .trail-path { border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-secondary); padding: 10px 12px; margin-bottom: 10px; }
+    .trail-path-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary); }
+    .trail-hop { padding: 3px 0 3px 12px; margin-left: 5px; border-left: 2px solid var(--border-default); font-size: 12px; color: var(--text-secondary); }
+    .trail-hop code { font-size: 11px; }
+    .trail-screen { font-weight: 600; font-size: 13px; }
+    .trail-gap { font-size: 12px; padding: 3px 0; border-top: 1px solid var(--border-default); }
+    .trail-gap:first-child { border-top: 0; }
+    .trail-gap-list { max-height: 260px; overflow: auto; }
     .tabs-mcp-control {
       display: flex;
       align-items: center;
@@ -2303,6 +2353,7 @@
       <button type="button" class="tab" data-tab="packages" role="tab" aria-selected="false">📦 Packages</button>
       <button type="button" class="tab" data-tab="assets" role="tab" aria-selected="false">🖼️ Assets</button>
       <button type="button" class="tab" data-tab="semantics" role="tab" aria-selected="false">♿ Semantics</button>
+      <button type="button" class="tab" data-tab="trail" role="tab" aria-selected="false">🧭 Trail</button>
       <button type="button" class="tab" data-tab="icons" role="tab" aria-selected="false">🎨 Icons</button>
       <button type="button" class="tab" data-tab="splash" role="tab" aria-selected="false">🌊 Splash</button>
     </div>
@@ -3197,6 +3248,71 @@
       </div>
     </div>
   </div>
+
+  <section id="trailSection" class="section platform-details" data-tab="trail">
+    <div class="section-header">
+      <div class="section-header-with-button">
+        <h2>🧭 Trail</h2>
+        <div style="display:flex; gap:8px;">
+          <button id="copyTrailMermaidButton" type="button" class="btn-secondary" disabled title="Copy the whole route graph as a Mermaid flowchart">Copy Mermaid</button>
+          <button id="scanTrailButton" type="button" class="btn-primary">Scan routes</button>
+        </div>
+      </div>
+    </div>
+    <p class="trail-note">
+      Maps how a user moves through the app: which screen leads to which, what triggers it and under what condition.
+      The scan reads <code>lib/**/*.dart</code> (go_router, Navigator, bottom navigation, redirects, bottom sheets and dialogs);
+      an AI agent connected through MCP turns it into verified user journeys.
+    </p>
+
+    <div id="trailLock" class="trail-lock" style="display:none;">
+      <h3 id="trailLockTitle">Connect an AI agent to use Trail</h3>
+      <p id="trailLockText">
+        The scan can list screens and navigation calls, but a real journey also depends on things only reading the code
+        shows: Bloc states that decide success or failure, first-launch logic, OTP sheets, redirects. Trail therefore
+        works through an AI agent (Claude, Codex, Gemini, Cursor, or Copilot agent mode) that uses this extension's MCP tools.
+      </p>
+      <button id="trailConnectButton" type="button" class="btn-primary">Connect an AI agent</button>
+    </div>
+
+    <div id="trailContent" style="display:none;">
+      <div id="trailError" style="display:none; margin:12px 0; color:#ef9a9a;"></div>
+      <div id="trailLoading" style="display:none; padding:20px; text-align:center; color:var(--text-secondary);">Scanning routes…</div>
+      <div id="trailSummary" class="semantics-summary" style="display:none;"></div>
+      <div id="trailRouters" class="trail-note" style="display:none;"></div>
+      <div id="trailWarnings" class="trail-issues" style="display:none;"></div>
+
+      <div class="semantics-ai-prompt">
+        <div>
+          <strong>Ask your agent to map a journey</strong>
+          <p>Copies a prompt with the scan results, the gaps the scan cannot see and the steps to follow. Paste it into the connected agent; it saves the finished trail here.</p>
+          <div class="trail-goal" style="margin-top:8px;">
+            <input id="trailGoalInput" type="text" maxlength="300" placeholder="Journey, e.g. pay a beneficiary with LyPay and get a receipt" aria-label="Journey to map" />
+          </div>
+        </div>
+        <button id="copyTrailPromptButton" type="button" class="btn-secondary">Copy AI prompt</button>
+      </div>
+
+      <div class="trail-heading"><h3>Saved trails</h3><span id="trailCount"></span></div>
+      <div id="trailList" class="trail-list"></div>
+      <div id="trailEmpty" class="trail-note" style="padding:14px 0;">No trails yet. Copy the prompt above and give it to your agent; trails are saved in <code>.flutter-config-manager/trails.json</code>, so you can commit and share them.</div>
+
+      <div class="trail-heading"><h3>Find a path</h3><span>candidate chains from the static scan</span></div>
+      <div class="trail-finder">
+        <input id="trailFromInput" list="trailRouteOptions" placeholder="From (blank = app start)" aria-label="From screen" />
+        <input id="trailToInput" list="trailRouteOptions" placeholder="To screen, path or widget" aria-label="To screen" />
+        <button id="findTrailPathsButton" type="button" class="btn-secondary">Find paths</button>
+        <datalist id="trailRouteOptions"></datalist>
+      </div>
+      <div id="trailPaths"></div>
+
+      <details id="trailGaps" class="semantics-shared" style="display:none;">
+        <summary id="trailGapsSummary"></summary>
+        <p class="semantics-shared-hint">Where the scan could not tell which screen a navigation call belongs to, or where the destination is computed at runtime. These are the first places your agent will check.</p>
+        <div id="trailGapList" class="trail-gap-list"></div>
+      </details>
+    </div>
+  </section>
 
   <section id="assetsSection" class="section platform-details" data-tab="assets">
     <div class="section-header">

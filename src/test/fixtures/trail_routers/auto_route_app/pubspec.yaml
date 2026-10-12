@@ -1,0 +1,3 @@
+name: auto_route_app
+dependencies:
+  auto_route: any

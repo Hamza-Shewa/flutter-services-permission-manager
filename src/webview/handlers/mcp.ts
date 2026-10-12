@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as path from "path";
 import * as vscode from "vscode";
 import {
   checkMcpClients,
@@ -23,11 +25,22 @@ function installerOptions(extensionRoot: string): CodexMcpInstallerOptions {
   };
 }
 
+/**
+ * VS Code's Copilot agent mode lists the server this extension registers through `registerMcpServerDefinitionProvider`,
+ * so it needs no separate connection. Only report it when both halves exist.
+ */
+function builtInAgent(extensionRoot: string): { available: boolean; label: string } {
+  const hasProviderApi = typeof (vscode.lm as Partial<typeof vscode.lm>).registerMcpServerDefinitionProvider === "function";
+  const hasServer = fs.existsSync(path.join(extensionRoot, "mcp-server", "out", "index.js"));
+  const hasCopilot = !!vscode.extensions.getExtension("GitHub.copilot-chat");
+  return { available: hasProviderApi && hasServer && hasCopilot, label: "GitHub Copilot (agent mode)" };
+}
+
 export async function handleCheckMcpClients(ref: WebviewRef, extensionRoot: string): Promise<void> {
   ref.webview.postMessage({ type: "mcpClientsStatus", clients: [], manualConfig: "", loading: true });
   try {
     const status = await checkMcpClients(installerOptions(extensionRoot));
-    ref.webview.postMessage({ type: "mcpClientsStatus", ...status });
+    ref.webview.postMessage({ type: "mcpClientsStatus", ...status, builtInAgent: builtInAgent(extensionRoot) });
   } catch (error) {
     ref.webview.postMessage({
       type: "mcpClientsStatus",
@@ -58,7 +71,7 @@ export async function handleInstallMcpClient(
     options = installerOptions(extensionRoot);
     const result = await installMcpClient(client, options);
     const status = await checkMcpClients(options);
-    ref.webview.postMessage({ type: "mcpClientsStatus", ...status });
+    ref.webview.postMessage({ type: "mcpClientsStatus", ...status, builtInAgent: builtInAgent(extensionRoot) });
     void vscode.window.showInformationMessage(
       `${result.label} MCP connected at user level. It serves whichever Flutter project you start ${result.label} in. Restart or open a new task in that client to load the tools.`,
     );
@@ -69,7 +82,7 @@ export async function handleInstallMcpClient(
       const clients = status.clients.map((item) => item.id === client
         ? { ...item, state: "error" as const, message }
         : item);
-      ref.webview.postMessage({ type: "mcpClientsStatus", ...status, clients });
+      ref.webview.postMessage({ type: "mcpClientsStatus", ...status, clients, builtInAgent: builtInAgent(extensionRoot) });
     } else {
       ref.webview.postMessage({ type: "mcpClientsStatus", clients: [], manualConfig: "", error: message });
     }

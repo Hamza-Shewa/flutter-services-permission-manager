@@ -419,6 +419,14 @@ export {
   handleRevealSourceReference,
 } from './semantics.js';
 export {
+  handleScanTrail,
+  handleLoadTrails,
+  handleFindTrailPaths,
+  handleCopyTrailPrompt,
+  handleCopyTrailMermaid,
+  handleDeleteTrail,
+} from './trail.js';
+export {
   handleCheckMcpClients,
   handleInstallMcpClient,
   handleCopyMcpConfig,

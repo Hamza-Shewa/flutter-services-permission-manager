@@ -16,6 +16,11 @@ import type {
   SemanticsFixRequest,
 } from "../../features/semantics/types.js";
 import type {
+  ExpandedRoutePathsResult,
+  TrailGraphSummary,
+  TrailWithIssues,
+} from "../../features/trail/types.js";
+import type {
   McpClientId,
   McpClientStatus,
 } from "../../features/semantics/codex-mcp-installer.js";
@@ -218,6 +223,12 @@ export type WebviewMessage =
   | { type: "scanInteractives" }
   | { type: "copySemanticsPrompt" }
   | { type: "dumpAndroidUi"; mode: "export" | "clipboard" }
+  | { type: "scanTrail" }
+  | { type: "loadTrails" }
+  | { type: "findTrailPaths"; from?: string; to: string }
+  | { type: "copyTrailPrompt"; goal?: string }
+  | { type: "copyTrailMermaid"; routes?: string[] }
+  | { type: "deleteTrail"; id: string }
   | { type: "checkMcpClients" }
   | { type: "installMcpClient"; client: McpClientId }
   | { type: "copyMcpConfig" }
@@ -357,6 +368,12 @@ export type WebviewOutgoingMessage =
   | SemanticsFixAppliedMessage
   | SemanticsPromptCopyingMessage
   | SemanticsPromptCopiedMessage
+  | TrailLoadingMessage
+  | TrailGraphMessage
+  | TrailsLoadedMessage
+  | TrailPathsMessage
+  | TrailErrorMessage
+  | TrailCopiedMessage
   | McpClientsStatusMessage
   | McpClientInstallingMessage
   | McpConfigCopiedMessage
@@ -407,12 +424,44 @@ export interface SemanticsPromptCopiedMessage {
   type: "semanticsPromptCopied";
 }
 
+export interface TrailLoadingMessage {
+  type: "trailLoading";
+  loading: boolean;
+}
+
+export interface TrailGraphMessage {
+  type: "trailGraph";
+  graph: TrailGraphSummary;
+}
+
+export interface TrailsLoadedMessage {
+  type: "trailsLoaded";
+  trails: TrailWithIssues[];
+}
+
+export interface TrailPathsMessage {
+  type: "trailPaths";
+  result: ExpandedRoutePathsResult;
+}
+
+export interface TrailErrorMessage {
+  type: "trailError";
+  message: string;
+}
+
+export interface TrailCopiedMessage {
+  type: "trailCopied";
+  what: "prompt" | "mermaid";
+}
+
 export interface McpClientsStatusMessage {
   type: "mcpClientsStatus";
   clients: McpClientStatus[];
   manualConfig: string;
   loading?: boolean;
   error?: string;
+  /** An AI agent built into the editor (VS Code's Copilot agent mode) that already sees the MCP server. */
+  builtInAgent?: { available: boolean; label: string };
 }
 
 export interface McpClientInstallingMessage {

@@ -12,6 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { getInteractiveScannerOptions } from '../../features/semantics/semantics.service.js';
+import { getTrailScannerOptions } from '../../features/trail/trail.service.js';
 import { resolveSdkPath } from '../utils/exec.js';
 
 /** Provider id declared in `contributes.mcpServerDefinitionProviders`. */
@@ -21,7 +22,7 @@ export const MCP_PROVIDER_ID = 'flutter-config-manager';
 export const MCP_SERVER_LABEL = 'flutter-config-manager';
 
 /** Server version — bump to force a tool refresh. */
-const MCP_SERVER_VERSION = '1.1.0';
+const MCP_SERVER_VERSION = '1.2.0';
 
 /**
  * Register the MCP server definition provider, if supported by the running
@@ -68,6 +69,7 @@ export function registerMcpServerDefinitionProvider(
           ...server.env,
           FCM_MCP_PROJECT: folder.uri.fsPath,
           FCM_INTERACTIVES_OPTIONS: JSON.stringify(getInteractiveScannerOptions()),
+          FCM_TRAIL_OPTIONS: JSON.stringify(getTrailScannerOptions()),
           ...(flutterExecutable ? { FCM_FLUTTER_EXECUTABLE: flutterExecutable } : {}),
         };
       }

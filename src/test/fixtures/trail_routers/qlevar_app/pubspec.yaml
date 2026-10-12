@@ -1,0 +1,3 @@
+name: qlevar_app
+dependencies:
+  qlevar_router: any

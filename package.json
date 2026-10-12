@@ -196,6 +196,22 @@
           "default": [],
           "description": "Directories under lib/ (for example \"shared\" or \"core/widgets\") whose interactive controls are always treated as shared widgets. Leave empty to use the defaults: shared, common, components, widgets, core/widgets, core/ui, design_system, ui_kit."
         },
+        "flutter-config-manager.trail.excludedGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Project-relative globs to exclude from the Trail route scan. Generated Dart files are excluded automatically."
+        },
+        "flutter-config-manager.trail.navigationCallees": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Extra method names the Trail scan should treat as navigation calls, for example a project helper that takes a route. Helpers that forward a route to the router are detected automatically."
+        },
         "flutter-config-manager.android.adbPath": {
           "type": "string",
           "default": "",
@@ -242,10 +258,10 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.19.19",
     "@types/vscode": "^1.80.0",
-    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
-    "c8": "^11.0.0",
+    "c8": "^12.0.0",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.52.0"

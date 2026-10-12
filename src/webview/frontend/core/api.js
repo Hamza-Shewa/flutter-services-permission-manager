@@ -35,6 +35,12 @@ export function browseTranslationsDir() { vscode.postMessage({ type: "browseTran
 export function scanInteractives() { vscode.postMessage({ type: "scanInteractives" }); }
 export function copySemanticsPrompt() { vscode.postMessage({ type: "copySemanticsPrompt" }); }
 export function dumpAndroidUi(mode) { vscode.postMessage({ type: "dumpAndroidUi", mode }); }
+export function scanTrail() { vscode.postMessage({ type: "scanTrail" }); }
+export function loadTrails() { vscode.postMessage({ type: "loadTrails" }); }
+export function findTrailPaths(from, to) { vscode.postMessage({ type: "findTrailPaths", from, to }); }
+export function copyTrailPrompt(goal) { vscode.postMessage({ type: "copyTrailPrompt", goal }); }
+export function copyTrailMermaid(routes) { vscode.postMessage({ type: "copyTrailMermaid", routes }); }
+export function deleteTrail(id) { vscode.postMessage({ type: "deleteTrail", id }); }
 export function checkMcpClients() { vscode.postMessage({ type: "checkMcpClients" }); }
 export function installMcpClient(client) { vscode.postMessage({ type: "installMcpClient", client }); }
 export function copyMcpConfig() { vscode.postMessage({ type: "copyMcpConfig" }); }

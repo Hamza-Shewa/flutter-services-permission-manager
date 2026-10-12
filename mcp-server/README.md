@@ -23,6 +23,9 @@ it makes is byte-for-byte identical to what the VS Code UI produces.
 | `translate_locale` | Machine-translate a locale file from the reference locale (free keyless providers: MyMemory → Google → LibreTranslate). |
 | `add_translation_locale` | Create a new locale file inheriting reference keys (empty values). |
 | `scan_interactives` | Inventory interactive Flutter widgets with confidence, accessibility/automation status, opaque-surface warnings, and exact source references. |
+| `scan_routes` | Extract the app's route graph (go_router, Navigator, bottom-navigation tabs, redirects, sheets/dialogs) with call sites, triggers, conditions and attribution. |
+| `find_route_paths` | Candidate chains of screens from the app start (or `from`) to a target route, with the edges behind each hop. |
+| `list_trails` / `save_trail` | Read and save validated user-journey trails in `.flutter-config-manager/trails.json` (shown in the extension's Trail tab). |
 | `preview_semantics_fixes` | Build a non-mutating, short-lived preview for reviewed dotted `Semantics.identifier` values. |
 | `apply_semantics_fixes` | Apply a single-use preview only while all source hashes still match. |
 | `preview_webp_conversion` | Read-only: encode the PNG/JPG/JPEG assets declared in `pubspec.yaml` as WebP in memory and report size/quality per image, or why one is skipped. Returns a single-use `previewId`. |

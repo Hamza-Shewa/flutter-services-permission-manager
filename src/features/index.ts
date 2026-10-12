@@ -13,6 +13,7 @@ export * from './build/index.js';
 export * from './migration/index.js';
 export * from './packages/index.js';
 export * from './semantics/index.js';
+export * from './trail/index.js';
 export * from './assets/index.js';
 export * from './localization/index.js';
 export * from './icons/index.js';

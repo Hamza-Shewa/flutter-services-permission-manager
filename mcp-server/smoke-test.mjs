@@ -16,6 +16,7 @@ import { dirname, join, resolve } from 'node:path';
 import fs from 'node:fs';
 import assert from 'node:assert';
 import http from 'node:http';
+import os from 'node:os';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -234,6 +235,95 @@ check('apply_semantics_fixes applies the reviewed preview', () => {
   assert.strictEqual(fixResult.ok, true);
   assert.ok(fs.readFileSync(semanticsPath, 'utf8').includes("Semantics(identifier: 'auth.login.submit'"));
 });
+
+// ---- trail: route graph, paths, saved journeys ----------------------------
+// Runs against a temp copy so the repo fixture never gains a .flutter-config-manager/ folder.
+const trailSource = join(repoRoot, 'src', 'test', 'fixtures', 'trail_project');
+const trailTemp = fs.mkdtempSync(join(os.tmpdir(), 'fcm-trail-'));
+fs.cpSync(trailSource, trailTemp, { recursive: true });
+const trailServer = createServer(trailTemp);
+const [trailClientTransport, trailServerTransport] = InMemoryTransport.createLinkedPair();
+const trailClient = new Client({ name: 'smoke-trail-client', version: '1.0.0' });
+await trailServer.server.connect(trailServerTransport);
+await trailClient.connect(trailClientTransport);
+
+const scanRoutesRes = await trailClient.callTool({ name: 'scan_routes', arguments: {} });
+const routesSummary = JSON.parse(scanRoutesRes.content[0].text);
+check('scan_routes lists routes, the entry screen and computed destinations', () => {
+  const ids = routesSummary.routes.map((route) => route.id);
+  assert.ok(ids.includes('AppRoute.login') && ids.includes('AppRoute.receipt'));
+  assert.deepStrictEqual(routesSummary.entry[0], 'AppRoute.splash');
+  assert.strictEqual(routesSummary.unresolvedNavigation.length, 1);
+  assert.strictEqual(routesSummary.edges, undefined, 'the summary does not carry every edge');
+});
+
+const loginRes = await trailClient.callTool({ name: 'scan_routes', arguments: { route: 'AppRoute.login' } });
+const loginEdges = JSON.parse(loginRes.content[0].text);
+check('scan_routes route filter returns incoming and outgoing edges with conditions', () => {
+  const toFinance = loginEdges.outgoing.find((edge) => edge.to === 'AppRoute.financeMenu');
+  assert.ok(toFinance.guards.includes('state.isActive'));
+  assert.ok(toFinance.source.path.endsWith('submit_listener.dart'));
+  assert.ok(loginEdges.incoming.length > 0);
+});
+
+const pathsRes = await trailClient.callTool({ name: 'find_route_paths', arguments: { to: 'ReceiptPage', maxPaths: 2 } });
+const paths = JSON.parse(pathsRes.content[0].text);
+check('find_route_paths returns the journey with the edges behind each hop', () => {
+  assert.strictEqual(paths.paths[0].routes[0], 'AppRoute.splash');
+  assert.strictEqual(paths.paths[0].routes.at(-1), 'AppRoute.receipt');
+  assert.ok(paths.paths[0].hops.every((hop) => hop.edges.length > 0 && hop.edges[0].source.path));
+});
+
+const goodTrail = {
+  title: 'Pay with LyPay',
+  goal: 'Pay a beneficiary with LyPay and get a receipt',
+  steps: [
+    { id: 'launch', title: 'App launch', kind: 'screen', route: 'AppRoute.splash', source: { path: 'lib/pages/splash_page.dart' } },
+    { id: 'welcome', title: 'Onboarding', kind: 'screen', route: 'AppRoute.welcome', optional: true, condition: 'only the first time the app is launched' },
+    { id: 'login', title: 'Log in', kind: 'screen', route: '/login' },
+    { id: 'pay', title: 'Submit payment', kind: 'action', source: { path: 'lib/pages/pay/beneficiary/listeners/submit_listener.dart', line: 5 }, branches: [{ label: 'payment failed', to: 'failed' }] },
+    { id: 'receipt', title: 'Receipt', kind: 'screen', route: 'AppRoute.receipt' },
+    { id: 'failed', title: 'Payment failed', kind: 'outcome', route: 'AppRoute.result' },
+  ],
+};
+const saveRes = await trailClient.callTool({ name: 'save_trail', arguments: goodTrail });
+const saved = JSON.parse(saveRes.content[0].text);
+check('save_trail validates, normalises a route path to its id and writes the project file', () => {
+  assert.strictEqual(saved.created, true);
+  assert.strictEqual(saved.trail.id, 'pay-with-lypay');
+  assert.strictEqual(saved.trail.steps[2].route, 'AppRoute.login');
+  assert.ok(saved.warnings.some((warning) => warning.includes('AppRoute.login')));
+  assert.ok(fs.existsSync(join(trailTemp, '.flutter-config-manager', 'trails.json')));
+});
+
+const badTrailRes = await trailClient.callTool({
+  name: 'save_trail',
+  arguments: {
+    title: 'Broken',
+    steps: [
+      { id: 'a', title: 'A', kind: 'screen', route: 'AppRoute.doesNotExist' },
+      { id: 'b', title: 'B', kind: 'screen', source: { path: '../outside.txt' }, branches: [{ label: 'x', to: 'missing' }] },
+    ],
+  },
+});
+check('save_trail rejects unknown routes, escaping paths and dangling branches without writing', () => {
+  assert.strictEqual(badTrailRes.isError, true);
+  const message = badTrailRes.content[0].text;
+  assert.match(message, /not a route in the graph/);
+  assert.match(message, /not an existing file inside the project/);
+  assert.match(message, /not a step of this trail/);
+  const stored = JSON.parse(fs.readFileSync(join(trailTemp, '.flutter-config-manager', 'trails.json'), 'utf8'));
+  assert.strictEqual(stored.trails.length, 1);
+});
+
+const listTrailsRes = await trailClient.callTool({ name: 'list_trails', arguments: {} });
+const listedTrails = JSON.parse(listTrailsRes.content[0].text);
+check('list_trails returns the saved journey with no issues', () => {
+  assert.strictEqual(listedTrails.trails.length, 1);
+  assert.deepStrictEqual(listedTrails.trails[0].issues, []);
+});
+await trailClient.close();
+fs.rmSync(trailTemp, { recursive: true, force: true });
 
 // ---- Android runtime adapter (mock Appium server) -------------------------
 const appiumRequests = [];

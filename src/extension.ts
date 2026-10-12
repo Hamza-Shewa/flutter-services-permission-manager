@@ -198,7 +198,9 @@ async function handleCheckUnusedAssets(): Promise<void> {
     ...assets.map((asset) => ({
       label: "$(file-media) " + asset.path,
       description:
-        asset.size != null ? `${(asset.size / 1024).toFixed(1)} KB` : "",
+        asset.size !== null && asset.size !== undefined
+          ? `${(asset.size / 1024).toFixed(1)} KB`
+          : "",
       assetPath: asset.path,
     })),
   ];

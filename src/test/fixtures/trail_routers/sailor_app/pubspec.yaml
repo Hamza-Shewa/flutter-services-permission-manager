@@ -1,0 +1,3 @@
+name: sailor_app
+dependencies:
+  sailor: any

@@ -77,6 +77,12 @@ import {
   handlePreviewSemanticsFixes,
   handleApplySemanticsFixes,
   handleRevealSourceReference,
+  handleScanTrail,
+  handleLoadTrails,
+  handleFindTrailPaths,
+  handleCopyTrailPrompt,
+  handleCopyTrailMermaid,
+  handleDeleteTrail,
   handleCheckMcpClients,
   handleInstallMcpClient,
   handleCopyMcpConfig,
@@ -301,6 +307,12 @@ function setupMessageHandler(
     .register("scanInteractives", async () => await handleScanInteractives(ref))
     .register("copySemanticsPrompt", async () => await handleCopySemanticsPrompt(ref))
     .register("dumpAndroidUi", async (msg) => await handleDumpAndroidUi(ref, msg.mode === "clipboard" ? "clipboard" : "export"))
+    .register("scanTrail", async () => await handleScanTrail(ref))
+    .register("loadTrails", async () => await handleLoadTrails(ref))
+    .register("findTrailPaths", async (msg) => { if (msg.to) { await handleFindTrailPaths(ref, msg.from, msg.to); } })
+    .register("copyTrailPrompt", async (msg) => await handleCopyTrailPrompt(ref, msg.goal))
+    .register("copyTrailMermaid", async (msg) => await handleCopyTrailMermaid(ref, msg.routes))
+    .register("deleteTrail", async (msg) => { if (msg.id) { await handleDeleteTrail(ref, msg.id); } })
     .register("checkMcpClients", async () => await handleCheckMcpClients(ref, extensionRoot))
     .register("installMcpClient", async (msg) => await handleInstallMcpClient(ref, extensionRoot, msg.client))
     .register("copyMcpConfig", async () => await handleCopyMcpConfig(ref, extensionRoot))
