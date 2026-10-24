@@ -15,9 +15,10 @@ it makes is byte-for-byte identical to what the VS Code UI produces.
 | Tool | Description |
 |------|-------------|
 | `get_project_info` | Resolved Flutter project root, project name, and discovered platform files (AndroidManifest.xml, Info.plist, Podfile, …). |
-| `list_permissions` | Permissions currently present in the Android manifest and iOS/macOS Info.plist, enriched with catalog metadata. |
-| `add_permission` | Add a permission to Android and/or iOS (preserves existing structure/comments). |
-| `remove_permission` | Remove a permission from Android and/or iOS. |
+| `list_permissions` | Permissions currently present in the Android manifest and iOS/macOS Info.plist, with catalog metadata, each element's attributes (`maxSdkVersion`, `usesPermissionFlags`, sdk-23, `tools:node`), the entries removed by the manifest merger, the project SDK levels and variant advice. |
+| `audit_permissions` | Read-only: minSdk/targetSdk/compileSdk, AGP/Gradle and iOS deployment target, plus advice (and mergeable fixes) for every declared permission. |
+| `add_permission` | Add a permission, or change its `maxSdkVersion` / `minSdkVersion` / `usesPermissionFlags` / `sdk23` / `toolsNode`, on Android; add an iOS key with a string, boolean, array or dictionary value (preserves existing structure/comments and `tools:node="remove"` lines). |
+| `remove_permission` | Remove a permission from Android and/or iOS (merger removals are kept). |
 | `list_services` | Available third-party service integrations and their native/runtime setup metadata. |
 | `list_translations` | ARB/JSON translation files in the project with locale and key counts. |
 | `translate_locale` | Machine-translate a locale file from the reference locale (free keyless providers: MyMemory → Google → LibreTranslate). |

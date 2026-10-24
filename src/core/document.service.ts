@@ -5,6 +5,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import type {
+  AndroidPermissionEntry,
   IOSPermissionEntry,
   SaveResult,
   ServiceEntry,
@@ -547,6 +548,16 @@ export async function replaceDocumentContent(
   });
 }
 
+/** Every catalog Info.plist key (managed by the plist writer), or undefined without a catalog. */
+function knownIosPermissionKeys(
+  categorized?: Record<string, { permission: string; podfileMacro?: string }[]>,
+): Set<string> | undefined {
+  if (!categorized) {
+    return undefined;
+  }
+  return new Set(Object.values(categorized).flat().map((p) => p.permission).filter(Boolean));
+}
+
 /**
  * Saves permissions to both Android and iOS platform files (legacy, saves everything)
  */
@@ -712,10 +723,9 @@ export async function savePermissions(ctx: SaveContext): Promise<SaveResult> {
     if (macosPlistUri && macosPermissions) {
       const doc = await vscode.workspace.openTextDocument(macosPlistUri);
 
-      // We reuse updateIOSPlist since the format is identical (Info.plist with NS*UsageDescription)
-      // We pass undefined for allKnownKeys so it will simply replace all found permission keys
-      // with the ones provided in macosPermissions.
-      let updated = updateIOSPlist(doc.getText(), macosPermissions);
+      // Same writer as iOS: only catalog keys and *UsageDescription keys are managed;
+      // NSPrincipalClass, NSMainNibFile and other app keys are never touched.
+      let updated = updateIOSPlist(doc.getText(), macosPermissions, knownIosPermissionKeys(categorizedIosPermissions));
 
       // We do NOT apply services to macOS plist for now as services are currently Android/iOS specific
 
@@ -827,7 +837,7 @@ export async function savePermissions(ctx: SaveContext): Promise<SaveResult> {
  * Saves only permissions (Android, iOS, macOS) without affecting services or app name
  */
 export async function savePermissionsOnly(
-  androidPermissions: string[],
+  androidPermissions: Array<AndroidPermissionEntry | string>,
   iosPermissions: IOSPermissionEntry[],
   androidManifestUri?: vscode.Uri,
   iosPlistUri?: vscode.Uri,
@@ -876,7 +886,7 @@ export async function savePermissionsOnly(
 
     if (macosPlistUri && macosPermissions) {
       const doc = await vscode.workspace.openTextDocument(macosPlistUri);
-      const updated = updateIOSPlist(doc.getText(), macosPermissions);
+      const updated = updateIOSPlist(doc.getText(), macosPermissions, knownIosPermissionKeys(categorizedIosPermissions));
       await replaceDocumentContent(macosPlistUri, updated);
     }
 

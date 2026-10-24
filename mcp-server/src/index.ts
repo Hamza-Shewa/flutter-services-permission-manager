@@ -29,6 +29,8 @@ import {
 import {
   addPermissionSchema,
   addPermissionTool,
+  auditPermissionsSchema,
+  auditPermissionsTool,
   listPermissionsSchema,
   listPermissionsTool,
   removePermissionSchema,
@@ -137,10 +139,21 @@ export function createServer(root: string): McpServer {
     {
       title: 'List project permissions',
       description:
-        'Lists the permissions currently present in the Android manifest and iOS/macOS Info.plist files, enriched with catalog metadata (description, category, equivalent cross-platform permissions) where known.',
+        'Lists the permissions currently present in the Android manifest and iOS/macOS Info.plist files with catalog metadata (description, category, API level, deprecation, equivalents), the attributes of each element (maxSdkVersion, usesPermissionFlags, sdk-23, tools:node), the entries removed by the manifest merger (tools:node="remove"), the project SDK levels, and variant advice.',
       inputSchema: listPermissionsSchema,
     },
-    async (args) => listPermissionsTool(files, args as Record<string, unknown>),
+    async (args) => listPermissionsTool(files, args as Record<string, unknown>, root),
+  );
+
+  server.registerTool(
+    'audit_permissions',
+    {
+      title: 'Audit permission variants',
+      description:
+        'Read-only. Reads minSdk / targetSdk / compileSdk (Groovy or Kotlin DSL, flutter.* defaults), AGP / Gradle and the iOS deployment target, then reports for every declared permission whether it applies: missing maxSdkVersion / usesPermissionFlags variants (READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, legacy Bluetooth, BODY_SENSORS -> Health Connect...), deprecated / removed / newer-than-compileSdk permissions, Play policy notes, tools:node="remove" entries, and iOS pairs (NSLocalNetworkUsageDescription + NSBonjourServices...). Items with "fix" can be applied with add_permission.',
+      inputSchema: auditPermissionsSchema,
+    },
+    async (args) => auditPermissionsTool(files, args as Record<string, unknown>, root),
   );
 
   server.registerTool(
@@ -148,10 +161,10 @@ export function createServer(root: string): McpServer {
     {
       title: 'Add a permission',
       description:
-        'Adds a permission to the Android manifest and/or iOS/macOS Info.plist. For Android use a name like "CAMERA" or "android.permission.CAMERA"; for iOS use an NS key like "NSCameraUsageDescription" (optionally with a value/type). Non-destructive: existing structure and comments are preserved.',
+        'Adds a permission (or updates its attributes) in the Android manifest and/or iOS/macOS Info.plist. Android: "CAMERA", "android.permission.CAMERA", "health.READ_STEPS" or a vendor name, with optional maxSdkVersion / minSdkVersion / usesPermissionFlags / sdk23 / toolsNode. iOS: an Info.plist key with a string, boolean, array or dictionary value. Non-destructive: other elements, their attributes, tools:node="remove" lines, comments and <queries> are preserved. Returns the advice for the permission.',
       inputSchema: addPermissionSchema,
     },
-    async (args) => addPermissionTool(files, args as Record<string, unknown>),
+    async (args) => addPermissionTool(files, args as Record<string, unknown>, root),
   );
 
   server.registerTool(
@@ -162,7 +175,7 @@ export function createServer(root: string): McpServer {
         'Removes a permission from the Android manifest and/or iOS/macOS Info.plist. Use the full constant for Android (e.g. "android.permission.CAMERA") or the NS key for iOS (e.g. "NSCameraUsageDescription").',
       inputSchema: removePermissionSchema,
     },
-    async (args) => removePermissionTool(files, args as Record<string, unknown>),
+    async (args) => removePermissionTool(files, args as Record<string, unknown>, root),
   );
 
   server.registerTool(

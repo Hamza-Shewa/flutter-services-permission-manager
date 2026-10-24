@@ -1,10 +1,35 @@
 import { state, getState, setState, on } from '../../core/state.js';
 import * as api from '../../core/api.js';
 import { applyTabVisibility } from '../../core/router.js';
+import * as variants from './permission-variants.js';
 import { androidTableBody, iosTableBody, searchInput, categoryFilter, addAndroidButton, addIosButton, saveAndroidBuildDetailsButton, saveIosBuildDetailsButton, iosSearchInput, iosCategoryFilter, saveButton, saveAppNameButton, saveServicesButton, savePackageNamesButton, saveAllButton, statusMessage, toastContainer, refreshButton, androidPackageNameInput, iosBundleIdentifierInput, analyzePackagesButton, updateAllPackagesButton, toggleTransitiveButton, packagesLoadingIndicator, packagesTableContainer, packagesTableBody, packageSearchInput, packageSearchSpinner, packageSearchDropdown, popularPackagesContainer, packagePreviewCard, previewPackageName, previewPackageVersion, previewPackageDescription, previewLoading, previewAddButton, validatorHeaderActions, validatorLoadingIndicator, validatorLoadingText, validatorTableContainer, validatorTableBody, validatorNotInstalledContainer, installValidatorButton, modalBackdrop, modalSearch, modalResults, modalError, modalValueContainer, modalValueInput, modalValueSelect, modalValueHint, androidCountChip, iosCountChip, macosCountChip, macosTableBody, macosSearchInput, macosCategoryFilter, addMacosButton, androidDetailsSection, iosDetailsSection, androidDetailsGrid, iosDetailsGrid, androidSection, iosSection, macosSection, modalCancel, modalAdd, crossPlatformModalBackdrop, crossPlatformModalTitle, crossPlatformModalMessage, crossPlatformSuggestions, crossPlatformModalError, crossPlatformModalSkip, crossPlatformModalAdd, syncPermissionsButton, equivalentModalBackdrop, equivalentModalTitle, equivalentModalMessage, equivalentSuggestions, equivalentModalError, equivalentModalCancel, equivalentModalAdd, syncModalBackdrop, syncModalList, syncModalError, syncModalCancel, syncModalConfirm, deleteSafetyModalBackdrop, deleteSafetyCancel, deleteSafetyConfirm, addServiceButton, servicesContainer, serviceSearch, serviceModalBackdrop, serviceModalTitle, serviceModalContent, serviceModalError, serviceModalCancel, serviceModalSave, addServiceModalBackdrop, addServiceList, addServiceModalCancel, appNameDefault, appNameLangDropdown, appNameLangDropdownTrigger, appNameLangDropdownMenu, appNameLangSearch, appNameLangOptions, appNameLangList } from '../../core/elements.js';
 
+/** Adds catalog permissions by full name (successors such as USE_BIOMETRIC for USE_FINGERPRINT). */
+function addAndroidPermissionsByName(names) {
+  if (!state.allAndroidPermissions.length) {
+    api.postMessage({ type: "requestAllAndroidPermissions" });
+    showToast("Loading the permission catalog, click again in a moment.", "info");
+    return;
+  }
+  const added = [];
+  for (const name of names) {
+    if (state.androidPermissions.some((p) => variants.permissionName(p) === name && !p.mergerRemoved)) { continue; }
+    const info = state.allAndroidPermissions.find((p) => p.constantValue === name);
+    if (info) {
+      state.androidPermissions = [...state.androidPermissions, { ...info, entry: { name } }];
+      added.push(info.permission);
+    }
+  }
+  if (added.length) {
+    showToast(`Added ${added.join(", ")}`, "success");
+  }
+  updateView();
+}
+
 export function renderAndroidTable() {
-  const uniquePermissions = utils.dedupePermissions(state.androidPermissions);
+  // tools:node="remove" rows are listed separately under "Removed by manifest merger".
+  const declared = (state.androidPermissions || []).filter((p) => !p.mergerRemoved && p.entry?.toolsNode !== "remove");
+  const uniquePermissions = utils.dedupePermissions(declared);
   const filtered = utils.filterPermissions(
     uniquePermissions,
     state.search,
@@ -17,10 +42,11 @@ export function renderAndroidTable() {
   );
 
   androidTableBody.innerHTML = "";
+  variants.renderMergerRemoved();
   if (sorted.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 6;
+    cell.colSpan = 8;
     cell.className = "empty-state";
     cell.textContent = "No permissions found.";
     row.appendChild(cell);
@@ -28,14 +54,26 @@ export function renderAndroidTable() {
     return;
   }
 
-  sorted.forEach((permission, index) => {
+  const onVariantChange = () => {
+    variants.requestAdvice();
+  };
+
+  sorted.forEach((permission) => {
     const row = document.createElement("tr");
+    const name = variants.permissionName(permission);
 
     // Permission cell
     const permissionCell = document.createElement("td");
     const permissionText = document.createElement("span");
     permissionText.textContent = permission.permission || "";
     permissionCell.appendChild(permissionText);
+    if (permission.audience === "system") {
+      const badge = document.createElement("span");
+      badge.className = "perm-badge warning";
+      badge.textContent = "system";
+      badge.title = `Protection level ${permission.protectionLevel}: only the system or privileged apps can hold it.`;
+      permissionCell.appendChild(badge);
+    }
     row.appendChild(permissionCell);
 
     // Other cells
@@ -43,18 +81,38 @@ export function renderAndroidTable() {
       permission.description || "",
       permission.constantValue || "",
       permission.category || "",
-      permission.apiLevel || "",
     ];
     otherCells.forEach((value) => {
       const cell = document.createElement("td");
       cell.textContent = value;
       row.appendChild(cell);
     });
+    if (permission.playPolicy) {
+      row.children[1].title = `Google Play: ${permission.playPolicy}`;
+    }
+    row.appendChild(variants.apiLevelCell(permission));
+    row.appendChild(variants.variantCell(permission, onVariantChange));
 
-    // Actions: equivalent + delete buttons
+    const appliesCell = document.createElement("td");
+    appliesCell.appendChild(variants.adviceBadge("android", name));
+    row.appendChild(appliesCell);
+
+    // Actions: successor + equivalent + delete buttons
     const actionsCell = document.createElement("td");
     const rowActions = document.createElement("div");
     rowActions.className = "row-actions";
+
+    const successors = (permission.replacedBy || []).filter(
+      (successor) => !state.androidPermissions.some((p) => variants.permissionName(p) === successor),
+    );
+    if (successors.length > 0) {
+      const successorButton = document.createElement("button");
+      successorButton.className = "equivalent-button";
+      successorButton.textContent = "Add successor";
+      successorButton.title = successors.join("\n");
+      successorButton.addEventListener("click", () => addAndroidPermissionsByName(successors));
+      rowActions.appendChild(successorButton);
+    }
 
     if (
       permission.equivalentIosPermissions &&
@@ -97,6 +155,20 @@ function autoResizeTextarea(textarea) {
   textarea.style.overflowY = "hidden";
 }
 
+/** Adds iOS keys (successors of a deprecated key) reusing the source key's text. */
+function addIosKeysWithValue(keys, source) {
+  for (const key of keys) {
+    if (state.iosPermissions.some((p) => p.permission === key)) { continue; }
+    const info = (state.allIosPermissions || []).find((p) => p.permission === key);
+    state.iosPermissions = [
+      ...state.iosPermissions,
+      { ...(info || { permission: key, type: "string", category: source.category || "", description: "" }), value: typeof source.value === "string" ? source.value : "" },
+    ];
+  }
+  showToast(`Added ${keys.join(", ")}`, "success");
+  updateView();
+}
+
 export function renderIOSTable() {
   iosTableBody.innerHTML = "";
   const filtered = utils.filterPermissions(
@@ -107,7 +179,7 @@ export function renderIOSTable() {
   if (!filtered || filtered.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 5;
+    cell.colSpan = 7;
     cell.className = "empty-state";
     cell.textContent = "No permissions found.";
     row.appendChild(cell);
@@ -135,8 +207,15 @@ export function renderIOSTable() {
       select.addEventListener("change", (event) => {
         const target = event.target;
         state.iosPermissions[index].value = target.value === "true";
+        variants.requestAdvice();
       });
       valueCell.appendChild(select);
+    } else if (type === "array" || type === "dictionary") {
+      const editor = variants.createIosStructuredEditor(permission, (value) => {
+        state.iosPermissions[index].value = value;
+        variants.requestAdvice();
+      });
+      valueCell.appendChild(editor);
     } else {
       const textarea = document.createElement("textarea");
       textarea.placeholder = "Usage description";
@@ -148,6 +227,7 @@ export function renderIOSTable() {
         state.iosPermissions[index].value = target.value;
         autoResizeTextarea(target);
       });
+      textarea.addEventListener("change", () => variants.requestAdvice());
       valueCell.appendChild(textarea);
     }
     row.appendChild(valueCell);
@@ -159,6 +239,14 @@ export function renderIOSTable() {
     const categoryCell = document.createElement("td");
     categoryCell.textContent = permission.category || "";
     row.appendChild(categoryCell);
+
+    row.appendChild(variants.iosVersionCell(permission, (successors) => {
+      addIosKeysWithValue(successors, permission);
+    }));
+
+    const appliesCell = document.createElement("td");
+    appliesCell.appendChild(variants.adviceBadge("ios", permission.permission));
+    row.appendChild(appliesCell);
 
     // Actions: equivalent + delete buttons
     const actionsCell = document.createElement("td");
@@ -295,6 +383,10 @@ export function renderMacOSTable() {
         state.macosPermissions[index].value = target.value === "true";
       });
       valueCell.appendChild(select);
+    } else if (type === "array" || type === "dictionary") {
+      valueCell.appendChild(variants.createIosStructuredEditor(permission, (value) => {
+        state.macosPermissions[index].value = value;
+      }));
     } else {
       const textarea = document.createElement("textarea");
       textarea.placeholder = "Usage description";
@@ -442,6 +534,7 @@ export function updateView() {
   applySortIndicator();
   updateCounts();
   updateSectionVisibility();
+  variants.requestAdvice();
 }
 
 export function updateSectionVisibility() {
@@ -811,6 +904,10 @@ export function openModal(mode) {
   modalValueSelect.style.display = "none";
   modalValueHint.textContent =
     "Provide a usage description required by Apple.";
+  const showSystemRow = document.getElementById("modalShowSystemRow");
+  const showSystem = document.getElementById("modalShowSystem");
+  if (showSystemRow) { showSystemRow.style.display = isApplePlatform ? "none" : ""; }
+  if (showSystem) { showSystem.onchange = () => renderModalResults(); }
   renderModalCategoryTabs();
   renderModalResults();
   modalSearch.focus();
@@ -844,13 +941,16 @@ export function renderModalResults() {
     state.modalQuery,
     state.modalCategory,
   );
+  // System-only and removed Android permissions stay out of the picker unless asked for.
+  const showSystem = isApplePlatform || document.getElementById("modalShowSystem")?.checked === true;
   const available = filtered.filter(
     (permission) =>
       !usedKeys.has(
         utils.normalizeText(
           permission.permission || permission.constantValue,
         ),
-      ),
+      ) &&
+      (showSystem || (permission.audience !== "system" && !permission.removedIn)),
   );
 
   if (available.length === 0) {
@@ -876,12 +976,20 @@ export function renderModalResults() {
       item.classList.add("selected");
       state.modalSelection = permission;
       modalError.textContent = "";
-      if (isIos) {
+      if (isApplePlatform) {
         const type = (permission.type || "").toLowerCase();
         if (type === "boolean") {
           modalValueInput.style.display = "none";
           modalValueSelect.style.display = "block";
           modalValueHint.textContent = "Select true or false for this key.";
+        } else if (type === "array") {
+          modalValueInput.style.display = "block";
+          modalValueSelect.style.display = "none";
+          modalValueHint.textContent = "Array: separate values with commas (e.g. _ipp._tcp, _printer._tcp). You can edit them one per line in the table.";
+        } else if (type === "dictionary") {
+          modalValueInput.style.display = "block";
+          modalValueSelect.style.display = "none";
+          modalValueHint.textContent = "Dictionary: key = value pairs separated by semicolons.";
         } else {
           modalValueInput.style.display = "block";
           modalValueSelect.style.display = "none";
@@ -978,6 +1086,8 @@ export function addPermissionDirectly(selected, isIos) {
     let value;
     if (type === "boolean") {
       value = modalValueSelect.value === "true";
+    } else if (type === "array" || type === "dictionary") {
+      value = variants.iosTextToValue(type, modalValueInput.value);
     } else {
       value = modalValueInput.value.trim();
       if (!value || value === "TODO: Provide usage description.") {
@@ -1006,7 +1116,7 @@ export function addPermissionDirectly(selected, isIos) {
       );
     }
   } else {
-    state.androidPermissions = [...state.androidPermissions, selected];
+    state.androidPermissions = [...state.androidPermissions, { ...selected, entry: { name: selected.constantValue || selected.permission } }];
     showToast(
       `Android permission "${selected.permission}" added successfully`,
       "success",
@@ -1488,24 +1598,11 @@ export function addEquivalentPermissions() {
 export function handleSavePermissions() {
   console.log("[PermissionManager] handleSavePermissions called");
 
-  const androidPermissions = utils
-    .dedupePermissions(state.androidPermissions)
-    .map((permission) => permission.constantValue || permission.permission)
-    .filter(Boolean);
-  const iosPermissions = (state.iosPermissions || [])
-    .map((permission) => ({
-      permission: permission.permission,
-      value: permission.value,
-      type: permission.type,
-    }))
-    .filter((entry) => entry.permission);
-  const macosPermissions = (state.macosPermissions || [])
-    .map((permission) => ({
-      permission: permission.permission,
-      value: permission.value,
-      type: permission.type,
-    }))
-    .filter((entry) => entry.permission);
+  // Writer entries: attributes (maxSdkVersion, flags, sdk-23, tools:*) are kept or
+  // changed per entry, and tools:node="remove" lines travel with the list.
+  const androidPermissions = variants.androidEntries();
+  const iosPermissions = variants.iosEntries(state.iosPermissions);
+  const macosPermissions = variants.iosEntries(state.macosPermissions);
 
   console.log("[PermissionManager] Posting savePermissions message");
   showToast("Saving permissions...", "info");

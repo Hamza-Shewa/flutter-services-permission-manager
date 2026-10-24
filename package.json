@@ -249,6 +249,8 @@
     "lint": "eslint src",
     "test": "c8 vscode-test",
     "test:mcp": "node mcp-server/smoke-test.mjs",
+    "catalog:build": "node scripts/build-permission-catalog.js",
+    "catalog:check": "node scripts/build-permission-catalog.js --check",
     "coverage:report": "c8 report --reporter=html",
     "package": "npm run compile:mcp && vsce package",
     "publish": "vsce publish"

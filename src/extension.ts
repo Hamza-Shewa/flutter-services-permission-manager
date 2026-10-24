@@ -12,6 +12,7 @@ import {
   getUsedIOSPermissions,
 } from "./features/permissions/extractor.js";
 import { createPermissionPanel } from "./webview/index.js";
+import { createExtensionApi, type FlutterConfigManagerApi } from "./webview/diagnostics.js";
 import { discoverProjectFilesWithContent } from "./core/workspace.service.js";
 import {
   analyzeUnusedAssets,
@@ -39,7 +40,7 @@ export { getExtensionBaseUri as extensionBaseUri } from "./core/utils/file.js";
 /**
  * Extension activation - called when extension is first used
  */
-export function activate(context: vscode.ExtensionContext): void {
+export function activate(context: vscode.ExtensionContext): FlutterConfigManagerApi {
   setExtensionBaseUri(context.extensionUri);
 
   // Apply debug logging preference
@@ -91,6 +92,8 @@ export function activate(context: vscode.ExtensionContext): void {
     configChangeDisposable,
     checkAssetsDisposable,
   );
+
+  return createExtensionApi();
 }
 
 /**

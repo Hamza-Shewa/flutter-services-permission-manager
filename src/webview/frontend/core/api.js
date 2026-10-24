@@ -1,5 +1,17 @@
 const vscode = window.vscode || acquireVsCodeApi();
 
+/** Forward a script error to the extension host (logged there; asserted on by the webview runtime test). */
+export function reportWebviewError(entry) {
+  try {
+    vscode.postMessage({ type: "webviewError", ...entry });
+  } catch {
+    // Nothing else to do: the error is already in the developer console.
+  }
+}
+// Errors recorded by webview-utils.js before this module loaded, then live reporting from here on.
+(window.__fcmErrors || []).splice(0).forEach(reportWebviewError);
+window.__fcmReportError = reportWebviewError;
+
 export function sendRefresh() { vscode.postMessage({ type: "refresh" }); }
 export function requestAllAndroidPermissions() { vscode.postMessage({ type: "requestAllAndroidPermissions" }); }
 export function requestAllIOSPermissions() { vscode.postMessage({ type: "requestAllIOSPermissions" }); }

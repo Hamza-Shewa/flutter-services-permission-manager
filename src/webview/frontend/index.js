@@ -3,6 +3,7 @@ import * as api from './core/api.js';
 import { androidTableBody, iosTableBody, searchInput, categoryFilter, addAndroidButton, addIosButton, saveAndroidBuildDetailsButton, saveIosBuildDetailsButton, iosSearchInput, iosCategoryFilter, saveButton, saveAppNameButton, saveServicesButton, savePackageNamesButton, saveAllButton, statusMessage, toastContainer, refreshButton, androidPackageNameInput, iosBundleIdentifierInput, analyzePackagesButton, updateAllPackagesButton, toggleTransitiveButton, packagesLoadingIndicator, packagesTableContainer, packagesTableBody, packageSearchInput, packageSearchSpinner, packageSearchDropdown, popularPackagesContainer, packagePreviewCard, previewPackageName, previewPackageVersion, previewPackageDescription, previewLoading, previewAddButton, validatorHeaderActions, validatorLoadingIndicator, validatorLoadingText, validatorTableContainer, validatorTableBody, validatorNotInstalledContainer, installValidatorButton, validatorInstalledContainer, runValidatorButton, modalBackdrop, modalSearch, modalResults, modalError, modalValueContainer, modalValueInput, modalValueSelect, modalValueHint, androidCountChip, iosCountChip, macosCountChip, macosTableBody, macosSearchInput, macosCategoryFilter, addMacosButton, androidDetailsSection, iosDetailsSection, androidDetailsGrid, iosDetailsGrid, androidSection, iosSection, macosSection, modalCancel, modalAdd, crossPlatformModalBackdrop, crossPlatformModalTitle, crossPlatformModalMessage, crossPlatformSuggestions, crossPlatformModalError, crossPlatformModalSkip, crossPlatformModalAdd, syncPermissionsButton, equivalentModalBackdrop, equivalentModalTitle, equivalentModalMessage, equivalentSuggestions, equivalentModalError, equivalentModalCancel, equivalentModalAdd, syncModalBackdrop, syncModalList, syncModalError, syncModalCancel, syncModalConfirm, deleteSafetyModalBackdrop, deleteSafetyCancel, deleteSafetyConfirm, addServiceButton, servicesContainer, serviceSearch, serviceModalBackdrop, serviceModalTitle, serviceModalContent, serviceModalError, serviceModalCancel, serviceModalSave, addServiceModalBackdrop, addServiceList, addServiceModalCancel, appNameDefault, appNameLangDropdown, appNameLangDropdownTrigger, appNameLangDropdownMenu, appNameLangSearch, appNameLangOptions, appNameLangList } from './core/elements.js';
 
 import * as permissions from './features/permissions/permissions.js';
+import * as permissionVariants from './features/permissions/permission-variants.js';
 import * as services from './features/services/services.js';
 import * as packages from './features/packages/packages.js';
 import * as assets from './features/assets/assets.js';
@@ -955,6 +956,27 @@ bus.on("permissions", (message) => {
     api.checkDependencyValidator();
     assets.scanUnusedAssets();
   }
+});
+
+bus.on("permissionAdvice", (message) => {
+  permissionVariants.handleAdviceMessage(message);
+  // Re-render so the "Applies" badges pick up the new advice.
+  renderAndroidTable();
+  renderIOSTable();
+});
+
+bus.on("permissionChangesPreview", (message) => {
+  permissionVariants.showPermissionChangesPreview(message);
+});
+
+document.getElementById("applyRecommendedVariantsButton")?.addEventListener("click", () => {
+  permissionVariants.applyRecommendedVariants();
+});
+document.getElementById("permissionDiffCancel")?.addEventListener("click", () => {
+  permissionVariants.closePermissionChangesPreview();
+});
+document.getElementById("permissionDiffConfirm")?.addEventListener("click", () => {
+  permissionVariants.confirmPermissionChanges();
 });
 
 bus.on("translations", (message) => {

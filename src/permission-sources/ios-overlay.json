@@ -1,0 +1,315 @@
+{
+  "categories": [
+    "Accessories",
+    "Alarms",
+    "Bluetooth",
+    "Calendar and reminders",
+    "Camera and sound",
+    "Contacts",
+    "Face ID",
+    "Files and folders",
+    "Game Center",
+    "Health",
+    "Home",
+    "Location",
+    "MediaPlayer",
+    "Messages",
+    "Motion",
+    "Networking",
+    "NFC",
+    "Photos",
+    "Scripting",
+    "Security",
+    "Sensors",
+    "Siri",
+    "Speech",
+    "System Extensions",
+    "TV",
+    "Vision",
+    "Wallet",
+    "Wi-Fi"
+  ],
+  "keys": {
+    "ITSAppUsesNonExemptEncryption": {
+      "category": "Security"
+    },
+    "ITSEncryptionExportComplianceCode": {
+      "category": "Security"
+    },
+    "NFCReaderUsageDescription": {
+      "category": "NFC"
+    },
+    "NSAccessorySetupBluetoothCompanyIdentifiers": {
+      "category": "Accessories"
+    },
+    "NSAccessorySetupBluetoothNames": {
+      "category": "Accessories"
+    },
+    "NSAccessorySetupBluetoothServices": {
+      "category": "Accessories"
+    },
+    "NSAccessorySetupKitSupports": {
+      "category": "Accessories",
+      "pairsWith": [
+        "NSAccessorySetupBluetoothServices",
+        "NSAccessorySetupBluetoothCompanyIdentifiers",
+        "NSAccessorySetupBluetoothNames"
+      ]
+    },
+    "NSAccessoryTrackingUsageDescription": {
+      "category": "Vision"
+    },
+    "NSAlarmKitUsageDescription": {
+      "category": "Alarms"
+    },
+    "NSAppBundlesUsageDescription": {
+      "category": "Security"
+    },
+    "NSAppDataUsageDescription": {
+      "category": "Security"
+    },
+    "NSAppleEventsUsageDescription": {
+      "category": "Security"
+    },
+    "NSAppleMusicUsageDescription": {
+      "category": "MediaPlayer",
+      "podfileMacro": "PERMISSION_MEDIA_LIBRARY"
+    },
+    "NSAppleScriptEnabled": {
+      "category": "Scripting"
+    },
+    "NSAudioCaptureUsageDescription": {
+      "category": "Camera and sound"
+    },
+    "NSBluetoothAlwaysUsageDescription": {
+      "category": "Bluetooth",
+      "podfileMacro": "PERMISSION_BLUETOOTH"
+    },
+    "NSBluetoothPeripheralUsageDescription": {
+      "category": "Bluetooth",
+      "podfileMacro": "PERMISSION_BLUETOOTH",
+      "replacedBy": [
+        "NSBluetoothAlwaysUsageDescription"
+      ]
+    },
+    "NSBonjourServices": {
+      "category": "Networking",
+      "pairsWith": [
+        "NSLocalNetworkUsageDescription"
+      ]
+    },
+    "NSCalendarsFullAccessUsageDescription": {
+      "category": "Calendar and reminders",
+      "podfileMacro": "PERMISSION_EVENTS_FULL_ACCESS"
+    },
+    "NSCalendarsUsageDescription": {
+      "category": "Calendar and reminders",
+      "podfileMacro": "PERMISSION_EVENTS",
+      "replacedBy": [
+        "NSCalendarsFullAccessUsageDescription",
+        "NSCalendarsWriteOnlyAccessUsageDescription"
+      ]
+    },
+    "NSCalendarsWriteOnlyAccessUsageDescription": {
+      "category": "Calendar and reminders",
+      "podfileMacro": "PERMISSION_EVENTS"
+    },
+    "NSCameraUsageDescription": {
+      "category": "Camera and sound",
+      "podfileMacro": "PERMISSION_CAMERA"
+    },
+    "NSContactsUsageDescription": {
+      "category": "Contacts",
+      "podfileMacro": "PERMISSION_CONTACTS"
+    },
+    "NSCriticalMessagingUsageDescription": {
+      "category": "Messages"
+    },
+    "NSDesktopFolderUsageDescription": {
+      "category": "Files and folders"
+    },
+    "NSDocumentsFolderUsageDescription": {
+      "category": "Files and folders"
+    },
+    "NSDownloadsFolderUsageDescription": {
+      "category": "Files and folders"
+    },
+    "NSEnterpriseMCAMUsageDescription": {
+      "category": "Camera and sound",
+      "replacedBy": [
+        "NSMainCameraUsageDescription"
+      ]
+    },
+    "NSFaceIDUsageDescription": {
+      "category": "Face ID"
+    },
+    "NSFallDetectionUsageDescription": {
+      "category": "Motion"
+    },
+    "NSFileProviderDomainUsageDescription": {
+      "category": "Files and folders"
+    },
+    "NSFileProviderPresenceUsageDescription": {
+      "category": "Files and folders"
+    },
+    "NSFinancialDataUsageDescription": {
+      "category": "Wallet"
+    },
+    "NSGKFriendListUsageDescription": {
+      "category": "Game Center"
+    },
+    "NSHandsTrackingUsageDescription": {
+      "category": "Vision"
+    },
+    "NSHealthClinicalHealthRecordsShareUsageDescription": {
+      "category": "Health"
+    },
+    "NSHealthRequiredReadAuthorizationTypeIdentifiers": {
+      "category": "Health"
+    },
+    "NSHealthShareUsageDescription": {
+      "category": "Health"
+    },
+    "NSHealthUpdateUsageDescription": {
+      "category": "Health"
+    },
+    "NSHomeKitUsageDescription": {
+      "category": "Home"
+    },
+    "NSIdentityUsageDescription": {
+      "category": "Wallet"
+    },
+    "NSIdentityUsageDescriptionDictionary": {
+      "category": "Wallet"
+    },
+    "NSLocalNetworkUsageDescription": {
+      "category": "Networking",
+      "pairsWith": [
+        "NSBonjourServices"
+      ]
+    },
+    "NSLocationAlwaysAndWhenInUseUsageDescription": {
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION",
+      "pairsWith": [
+        "NSLocationWhenInUseUsageDescription"
+      ]
+    },
+    "NSLocationAlwaysUsageDescription": {
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION",
+      "replacedBy": [
+        "NSLocationAlwaysAndWhenInUseUsageDescription"
+      ]
+    },
+    "NSLocationDefaultAccuracyReduced": {
+      "category": "Location"
+    },
+    "NSLocationTemporaryUsageDescriptionDictionary": {
+      "category": "Location"
+    },
+    "NSLocationUsageDescription": {
+      "category": "Location"
+    },
+    "NSLocationWhenInUseUsageDescription": {
+      "category": "Location",
+      "podfileMacro": "PERMISSION_LOCATION_WHENINUSE"
+    },
+    "NSMainCameraUsageDescription": {
+      "category": "Camera and sound"
+    },
+    "NSMicrophoneUsageDescription": {
+      "category": "Camera and sound",
+      "podfileMacro": "PERMISSION_MICROPHONE"
+    },
+    "NSMotionUsageDescription": {
+      "category": "Motion",
+      "podfileMacro": "PERMISSION_SENSORS"
+    },
+    "NSNearbyInteractionAllowOnceUsageDescription": {
+      "category": "Networking",
+      "replacedBy": [
+        "NSNearbyInteractionUsageDescription"
+      ]
+    },
+    "NSNearbyInteractionUsageDescription": {
+      "category": "Networking"
+    },
+    "NSNetworkVolumesUsageDescription": {
+      "category": "Files and folders"
+    },
+    "NSPhotoLibraryAddUsageDescription": {
+      "category": "Photos",
+      "podfileMacro": "PERMISSION_PHOTOS_ADD_ONLY"
+    },
+    "NSPhotoLibraryUsageDescription": {
+      "category": "Photos",
+      "podfileMacro": "PERMISSION_PHOTOS"
+    },
+    "NSRemindersFullAccessUsageDescription": {
+      "category": "Calendar and reminders",
+      "podfileMacro": "PERMISSION_REMINDERS"
+    },
+    "NSRemindersUsageDescription": {
+      "category": "Calendar and reminders",
+      "podfileMacro": "PERMISSION_REMINDERS",
+      "replacedBy": [
+        "NSRemindersFullAccessUsageDescription"
+      ]
+    },
+    "NSRemovableVolumesUsageDescription": {
+      "category": "Files and folders"
+    },
+    "NSSensorKitPrivacyPolicyURL": {
+      "category": "Sensors"
+    },
+    "NSSensorKitUsageDescription": {
+      "category": "Sensors"
+    },
+    "NSSensorKitUsageDetail": {
+      "category": "Sensors"
+    },
+    "NSSiriUsageDescription": {
+      "category": "Siri",
+      "podfileMacro": "PERMISSION_ASSISTANT"
+    },
+    "NSSpeechRecognitionUsageDescription": {
+      "category": "Speech",
+      "podfileMacro": "PERMISSION_SPEECH_RECOGNIZER"
+    },
+    "NSSystemAdministrationUsageDescription": {
+      "category": "Security"
+    },
+    "NSSystemExtensionUsageDescription": {
+      "category": "System Extensions"
+    },
+    "NSUpdateSecurityPolicy": {
+      "category": "Security"
+    },
+    "NSUserTrackingMarkdownUsageDescription": {
+      "category": "Security",
+      "pairsWith": [
+        "NSUserTrackingUsageDescription"
+      ]
+    },
+    "NSUserTrackingUsageDescription": {
+      "category": "Security",
+      "podfileMacro": "PERMISSION_APP_TRACKING_TRANSPARENCY"
+    },
+    "NSVideoSubscriberAccountUsageDescription": {
+      "category": "TV"
+    },
+    "NSWidgetWantsLocation": {
+      "category": "Location"
+    },
+    "NSWorldSensingUsageDescription": {
+      "category": "Vision"
+    },
+    "OSBundleUsageDescription": {
+      "category": "System Extensions"
+    },
+    "UIRequiresPersistentWiFi": {
+      "category": "Wi-Fi"
+    }
+  }
+}

@@ -18,8 +18,8 @@
     "android.permission.NFC": ["NFCReaderUsageDescription"],
     "android.permission.BODY_SENSORS": ["NSMotionUsageDescription"],
     "android.permission.ACTIVITY_RECOGNITION": ["NSMotionUsageDescription"],
-    "android.permission.POST_NOTIFICATIONS": ["NSUserNotificationsUsageDescription"],
-    "android.permission.USE_BIOMETRIC": ["NSFaceIDUsageDescription"]
+    "android.permission.USE_BIOMETRIC": ["NSFaceIDUsageDescription"],
+    "android.permission.ACCESS_LOCAL_NETWORK": ["NSLocalNetworkUsageDescription"]
   },
   "iosToAndroid": {
     "NSCameraUsageDescription": ["android.permission.CAMERA"],
@@ -34,6 +34,13 @@
     "NSBluetoothAlwaysUsageDescription": ["android.permission.BLUETOOTH_CONNECT", "android.permission.BLUETOOTH_SCAN"],
     "NFCReaderUsageDescription": ["android.permission.NFC"],
     "NSMotionUsageDescription": ["android.permission.BODY_SENSORS", "android.permission.ACTIVITY_RECOGNITION"],
-    "NSFaceIDUsageDescription": ["android.permission.USE_BIOMETRIC"]
+    "NSFaceIDUsageDescription": ["android.permission.USE_BIOMETRIC"],
+    "NSLocalNetworkUsageDescription": ["android.permission.ACCESS_LOCAL_NETWORK"]
+  },
+  "androidToIosPodfileMacros": {
+    "android.permission.POST_NOTIFICATIONS": {
+      "podfileMacro": "PERMISSION_NOTIFICATIONS",
+      "note": "iOS notifications need no Info.plist key: permission_handler needs PERMISSION_NOTIFICATIONS=1 in the Podfile, and remote (push) notifications need the aps-environment entitlement (Push Notifications capability)."
+    }
   }
 }

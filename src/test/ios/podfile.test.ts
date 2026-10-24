@@ -112,6 +112,39 @@ end`;
             ];
             const updated = await runUpdate(content, entries);
             assert.ok(updated.includes("'PERMISSION_CAMERA=1'"));
+            assert.ok(updated.includes("'some_other_flag=1'"), 'non-permission definitions are kept');
+        });
+
+        test('migrates the legacy PERMISSION_CALENDARS macro on save', async () => {
+            const content = `
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_CALENDARS=1',
+        'PERMISSION_CAMERA=1',
+      ]
+    end
+  end
+end`;
+            const catalog = {
+                Calendar: [
+                    { permission: 'NSCalendarsFullAccessUsageDescription', podfileMacro: 'PERMISSION_EVENTS_FULL_ACCESS' },
+                    { permission: 'NSCalendarsWriteOnlyAccessUsageDescription', podfileMacro: 'PERMISSION_EVENTS' },
+                ],
+                Camera: [{ permission: 'NSCameraUsageDescription', podfileMacro: 'PERMISSION_CAMERA' }],
+            };
+            const doc = await vscode.workspace.openTextDocument({ content, language: 'ruby' });
+            // An entry from an older payload still carrying the legacy macro must not bring it back.
+            const edit = await updateIOSPodfile(doc, [
+                { permission: 'NSCalendarsFullAccessUsageDescription', podfileMacro: 'PERMISSION_CALENDARS' },
+                { permission: 'NSCameraUsageDescription' },
+            ], catalog);
+            assert.ok(edit);
+            const textEdit = edit!.entries()[0][1][0];
+            const updated = content.slice(0, doc.offsetAt(textEdit.range.start)) + textEdit.newText + content.slice(doc.offsetAt(textEdit.range.end));
+            assert.deepStrictEqual(extractPodfileMacros(updated).sort(), ['PERMISSION_CAMERA', 'PERMISSION_EVENTS_FULL_ACCESS']);
         });
     });
 });

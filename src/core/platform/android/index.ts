@@ -8,7 +8,11 @@
 
 export {
     normalizePermissionNames,
+    normalizeAndroidPermissionName,
     updateAndroidManifest,
+    parseManifestPermissions,
+    permissionEntryFromElement,
+    extractAndroidPermissionEntries,
     updateAndroidManifestWithServices,
     removeServicesFromAndroidManifest
 } from './manifest.service.js';

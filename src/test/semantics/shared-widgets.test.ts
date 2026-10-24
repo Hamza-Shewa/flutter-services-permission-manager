@@ -131,7 +131,8 @@ suite("Shared widget semantics", () => {
   });
 
   test("prompt usage distinguishes missing, dynamic and duplicate call sites despite aggregate flags", () => {
-    const updated = structuredClone(scan);
+    // The extension host of VS Code 1.80 runs Node 16, which has no structuredClone.
+    const updated = JSON.parse(JSON.stringify(scan)) as typeof scan;
     const calls = flattenInteractiveFindings(updated);
     const primary = calls.filter((finding) => finding.resolved?.className === "PrimaryButton");
     primary[0].automation = "dynamic";

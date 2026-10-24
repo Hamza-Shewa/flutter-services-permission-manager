@@ -8,6 +8,7 @@ src/test/**
 !src/categorized-ios-permissions.json
 !src/permission-mapping.json
 !src/services-config.json
+src/permission-sources/**
 !src/media/**
 .gitignore
 .yarnrc

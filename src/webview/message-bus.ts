@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { WebviewMessage } from '../core/types/webview.js';
 import { logger } from '../core/shared/index.js';
+import { webviewDiagnostics } from './diagnostics.js';
 
 type Handler<T extends WebviewMessage> = (msg: T) => Promise<void> | void;
 
@@ -8,6 +9,7 @@ export class MessageBus {
   private readonly _handlers = new Map<string, Handler<WebviewMessage>>();
 
   constructor(private readonly webview: vscode.Webview) {
+    webviewDiagnostics.attach(webview);
     this.webview.onDidReceiveMessage(this.dispatch.bind(this));
   }
 
@@ -20,6 +22,7 @@ export class MessageBus {
   }
 
   private async dispatch(message: unknown): Promise<void> {
+    webviewDiagnostics.fire(message);
     if (!this._isValid(message)) {
       logger.warn('Invalid webview message', { message });
       return;

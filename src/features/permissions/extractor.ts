@@ -1,74 +1,44 @@
 /**
- * Permission extraction and enrichment utilities
+ * Permission extraction and enrichment utilities (vscode side).
+ *
+ * The parsing itself is pure and lives in `catalog.ts` so the MCP server
+ * reuses it; this module only loads the catalogs through `readJsonFile`.
  */
 
-import type { AndroidPermission, IOSPermission, PermissionMapping } from '../../core/types/index.js';
+import type { AndroidPermission, IOSPermission, PermissionMapping, UsedAndroidPermission } from '../../core/types/index.js';
 import { readJsonFile } from '../../core/utils/file.js';
 import { logger } from '../../core/shared/index.js';
+import {
+    buildUsedAndroidPermissions,
+    buildUsedIOSPermissions,
+    enrichAndroidPermissionsWithEquivalents,
+    enrichIOSPermissionsWithEquivalents,
+    flattenCatalog,
+} from './catalog.js';
 
 /**
- * Extracts used Android permissions from manifest content
+ * Extracts every permission element of a manifest: catalog details, the
+ * element's attributes (`entry`), `mergerRemoved` for `tools:node="remove"`,
+ * and `unknown: true` entries for names the catalog does not have.
  */
-export async function getUsedAndroidPermissions(manifestContent: string): Promise<AndroidPermission[]> {
-    const androidPermissionRegex = /<uses-permission\b[^>]*android:name="([^"]+)"[^>]*>/g;
-    const usedPermissions: AndroidPermission[] = [];
-    const allPermissions = await getAndroidPermissions();
-
-    let match;
-    while ((match = androidPermissionRegex.exec(manifestContent)) !== null) {
-        const permissionName = match[1];
-        const shortName = permissionName.replace(/^android\.permission\./, '');
-        const permissionInfo = allPermissions.find(p =>
-            p.constantValue === permissionName ||
-            p.permission === permissionName ||
-            p.permission === shortName
-        );
-        if (permissionInfo) {
-            usedPermissions.push(permissionInfo);
-        }
-    }
-
-    logger.debug('Android permissions extracted', { count: usedPermissions.length });
-    return usedPermissions;
+export async function getUsedAndroidPermissions(manifestContent: string): Promise<UsedAndroidPermission[]> {
+    const used = buildUsedAndroidPermissions(manifestContent, await getAndroidPermissions());
+    logger.debug('Android permissions extracted', {
+        count: used.length,
+        mergerRemoved: used.filter(p => p.mergerRemoved).length,
+        unknown: used.filter(p => p.unknown).length,
+    });
+    return used;
 }
 
 /**
- * Extracts used iOS permissions from plist content
+ * Extracts the permission keys of an Info.plist (strings, booleans, arrays,
+ * dictionaries), plus usage-description keys the catalog does not know.
  */
 export async function getUsedIOSPermissions(plistContent: string): Promise<IOSPermission[]> {
-    const usedPermissions: IOSPermission[] = [];
-    const allPermissions = await getIOSPermissions();
-
-    const stringRegex = /<key>((?:NS|ITS)[^<]*)<\/key>\s*<string>([^<]*)<\/string>/g;
-    const boolRegex = /<key>((?:NS|ITS)[^<]*)<\/key>\s*<(true|false)\/>/g;
-
-    logger.debug('iOS permission extraction started', { plistLength: plistContent.length, catalogCount: allPermissions.length });
-
-    let match;
-    while ((match = stringRegex.exec(plistContent)) !== null) {
-        const permissionName = match[1];
-        const value = match[2];
-        const permissionInfo = allPermissions.find(p => p.permission === permissionName);
-        if (permissionInfo) {
-            usedPermissions.push({ ...permissionInfo, value });
-        } else {
-            logger.debug('iOS permission key not in catalog', { key: permissionName });
-        }
-    }
-
-    while ((match = boolRegex.exec(plistContent)) !== null) {
-        const permissionName = match[1];
-        const value = match[2] === 'true';
-        const permissionInfo = allPermissions.find(p => p.permission === permissionName);
-        if (permissionInfo) {
-            usedPermissions.push({ ...permissionInfo, value });
-        } else {
-            logger.debug('iOS boolean permission key not in catalog', { key: permissionName });
-        }
-    }
-
-    logger.debug('iOS permissions extracted', { count: usedPermissions.length });
-    return usedPermissions;
+    const used = buildUsedIOSPermissions(plistContent, await getIOSPermissions());
+    logger.debug('iOS permissions extracted', { count: used.length, unknown: used.filter(p => p.unknown).length });
+    return used;
 }
 
 /**
@@ -100,7 +70,6 @@ export async function getIOSPermissions(): Promise<IOSPermission[]> {
  */
 export async function getCategorizedIOSPermissions(): Promise<Record<string, { permission: string; podfileMacro?: string }[]>> {
     const raw = await readJsonFile<Record<string, IOSPermission[]>>('categorized-ios-permissions.json');
-    // Transform to only include the fields needed for Podfile updates
     const result: Record<string, { permission: string; podfileMacro?: string }[]> = {};
     for (const [category, permissions] of Object.entries(raw)) {
         result[category] = permissions.map(p => ({
@@ -124,11 +93,7 @@ export async function getPermissionMapping(): Promise<PermissionMapping> {
 export function flattenAndroidPermissions(
     raw: AndroidPermission[] | Record<string, AndroidPermission[]>
 ): AndroidPermission[] {
-    if (!raw) {return [];}
-    if (Array.isArray(raw)) {
-        return raw;
-    }
-    return Object.values(raw).flat();
+    return flattenCatalog(raw);
 }
 
 /**
@@ -137,32 +102,10 @@ export function flattenAndroidPermissions(
 export function flattenIOSPermissions(
     raw: IOSPermission[] | Record<string, IOSPermission[]>
 ): IOSPermission[] {
-    if (!raw) {return [];}
-    if (Array.isArray(raw)) {
-        return raw;
-    }
-    return Object.values(raw).flat();
+    return flattenCatalog(raw);
 }
 
-export function enrichAndroidPermissionsWithEquivalents(
-    permissions: AndroidPermission[],
-    mapping: PermissionMapping
-): AndroidPermission[] {
-    return permissions.map(permission => ({
-        ...permission,
-        equivalentIosPermissions: mapping.androidToIos[permission.constantValue] || []
-    }));
-}
-
-export function enrichIOSPermissionsWithEquivalents(
-    permissions: IOSPermission[],
-    mapping: PermissionMapping
-): IOSPermission[] {
-    return permissions.map(permission => ({
-        ...permission,
-        equivalentAndroidPermissions: mapping.iosToAndroid[permission.permission] || []
-    }));
-}
+export { enrichAndroidPermissionsWithEquivalents, enrichIOSPermissionsWithEquivalents } from './catalog.js';
 
 // Re-export types for convenience
-export type { AndroidPermission, IOSPermission, IOSPermissionEntry, PermissionMapping } from '../../core/types/index.js';
+export type { AndroidPermission, IOSPermission, IOSPermissionEntry, PermissionMapping, UsedAndroidPermission } from '../../core/types/index.js';

@@ -19,6 +19,7 @@ import { FILE_PATTERNS } from '../../out/core/constants/index.js';
 const ANDROID_CATALOG = 'categorized-android-permissions.json';
 const IOS_CATALOG = 'categorized-ios-permissions.json';
 const SERVICES_CONFIG = 'services-config.json';
+const PERMISSION_MAPPING = 'permission-mapping.json';
 
 /** Directories that are never searched for platform/translation files. */
 const IGNORED_DIRS = new Set([
@@ -33,7 +34,7 @@ const IGNORED_DIRS = new Set([
   '.vscode',
 ]);
 
-/** Android permission data structure (subset of the extension's type). */
+/** Android permission data structure (subset of the extension's type; the catalog carries more fields). */
 export interface AndroidPermission {
   permission: string;
   description: string;
@@ -41,6 +42,7 @@ export interface AndroidPermission {
   constantValue: string;
   category: string;
   apiLevel: number;
+  deprecatedIn?: number | null;
   removedIn?: number | null;
   equivalentIosPermissions?: string[];
 }
@@ -256,10 +258,10 @@ export function getAllAndroidPermissions(): AndroidPermission[] {
   const list = Array.isArray(raw) ? raw : Object.values(raw).flat();
   const seen = new Set<string>();
   return list.filter((p) => {
-    if (!p || !p.permission || seen.has(p.permission)) {
+    if (!p || !p.constantValue || seen.has(p.constantValue)) {
       return false;
     }
-    seen.add(p.permission);
+    seen.add(p.constantValue);
     return true;
   });
 }
@@ -276,6 +278,11 @@ export function getAllIOSPermissions(): IOSPermission[] {
     seen.add(p.permission);
     return true;
   });
+}
+
+/** Load the cross-platform permission mapping. */
+export function loadPermissionMapping(): Record<string, unknown> {
+  return loadCatalog<Record<string, unknown>>(PERMISSION_MAPPING);
 }
 
 /** Load the services configuration catalog. */

@@ -6,7 +6,14 @@
 // Permission types
 export type {
     AndroidPermission,
+    AndroidPermissionAudience,
+    AndroidPermissionSource,
+    AndroidPermissionVariant,
+    AndroidPermissionEntry,
+    UsedAndroidPermission,
     IOSPermission,
+    IOSPermissionType,
+    IOSPermissionValue,
     IOSPermissionEntry,
     PermissionMapping,
     CategorizedPermissions,

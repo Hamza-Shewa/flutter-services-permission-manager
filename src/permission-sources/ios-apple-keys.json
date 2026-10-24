@@ -1,0 +1,721 @@
+{
+  "ITSAppUsesNonExemptEncryption": {
+    "abstract": "A Boolean value indicating whether the app uses encryption.",
+    "type": "boolean",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.0"
+      }
+    }
+  },
+  "ITSEncryptionExportComplianceCode": {
+    "abstract": "The export compliance code provided by App Store Connect for apps that require it.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.0"
+      }
+    }
+  },
+  "NFCReaderUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to the device’s NFC hardware.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSAccessorySetupBluetoothCompanyIdentifiers": {
+    "abstract": "An array of strings that represent the Bluetooth company identifiers for accessories that your app configures.",
+    "type": "array",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "18.0"
+      }
+    }
+  },
+  "NSAccessorySetupBluetoothNames": {
+    "abstract": "An array of strings that represent the Bluetooth device names or substrings for accessories that your app configures.",
+    "type": "array",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "18.0"
+      }
+    }
+  },
+  "NSAccessorySetupBluetoothServices": {
+    "abstract": "An array of strings that represent the hexadecimal values of Bluetooth SIG-defined services or custom services for accessories your app configures.",
+    "type": "array",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "18.0"
+      }
+    }
+  },
+  "NSAccessorySetupKitSupports": {
+    "abstract": "An array of strings that indicates the wireless technologies AccessorySetupKit uses when discovering and configuring accessories.",
+    "type": "array",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "18.0"
+      }
+    }
+  },
+  "NSAccessoryTrackingUsageDescription": {
+    "abstract": "A message that tells a person why the app is requesting access to track accessory position and location.",
+    "type": "string",
+    "platforms": {}
+  },
+  "NSAlarmKitUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to schedule alarms.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "26.0"
+      }
+    }
+  },
+  "NSAppBundlesUsageDescription": {
+    "abstract": "A message that tells people why the app needs to access the contents of other apps’ bundles.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "13.0"
+      }
+    }
+  },
+  "NSAppDataUsageDescription": {
+    "abstract": "A message that tells people why the app needs to access files in other apps’ sandbox containers.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSAppleEventsUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting the ability to send Apple events.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.14"
+      }
+    }
+  },
+  "NSAppleMusicUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their media library.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "2.0"
+      },
+      "macOS": {
+        "introducedAt": "15.0"
+      }
+    }
+  },
+  "NSAppleScriptEnabled": {
+    "abstract": "A Boolean value indicating whether AppleScript is enabled.",
+    "type": "boolean",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.0"
+      }
+    }
+  },
+  "NSAudioCaptureUsageDescription": {
+    "abstract": "A message that tells people why your app is requesting access to capture system audio on macOS.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "14.2"
+      }
+    }
+  },
+  "NSBluetoothAlwaysUsageDescription": {
+    "abstract": "A message that tells people why the app needs access to Bluetooth.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "13.0"
+      },
+      "macOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSBluetoothPeripheralUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting the ability to connect to Bluetooth peripherals.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "6.0",
+        "deprecatedAt": "13.0"
+      }
+    }
+  },
+  "NSBonjourServices": {
+    "abstract": "Bonjour service types browsed by the app.",
+    "type": "array",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      },
+      "macOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSCalendarsFullAccessUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to read and write their calendar data.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "17.0"
+      },
+      "macOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSCalendarsUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their calendar data.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "6.0",
+        "deprecatedAt": "17.0"
+      },
+      "macOS": {
+        "introducedAt": "10.14",
+        "deprecatedAt": "14.0"
+      }
+    }
+  },
+  "NSCalendarsWriteOnlyAccessUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to create calendar events.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "17.0"
+      },
+      "macOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSCameraUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to the device’s camera.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "7.0"
+      },
+      "macOS": {
+        "introducedAt": "10.14"
+      }
+    }
+  },
+  "NSContactsUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their contacts.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "6.0"
+      },
+      "macOS": {
+        "introducedAt": "10.8"
+      }
+    }
+  },
+  "NSCriticalMessagingUsageDescription": {
+    "abstract": "A message that tells people why the app needs to send SMS messages.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "18.2"
+      }
+    }
+  },
+  "NSDesktopFolderUsageDescription": {
+    "abstract": "A message that tells people why the app needs access to their Desktop folder.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSDocumentsFolderUsageDescription": {
+    "abstract": "",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSDownloadsFolderUsageDescription": {
+    "abstract": "A message that tells people why the app needs access to the user’s Downloads folder.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSEnterpriseMCAMUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to the device’s main camera.",
+    "type": "string",
+    "platforms": {}
+  },
+  "NSFaceIDUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting the ability to authenticate with Face ID.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSFallDetectionUsageDescription": {
+    "abstract": "A message to the user that explains the app’s request for permission to access fall detection event data.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.2"
+      }
+    }
+  },
+  "NSFileProviderDomainUsageDescription": {
+    "abstract": "A message that tells people why the app needs access to files managed by a file provider.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSFileProviderPresenceUsageDescription": {
+    "abstract": "A message that tells people why the app’s file provider needs to determine which files the person is currently accessing.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSFinancialDataUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to financial data stored in Wallet.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "17.4"
+      }
+    }
+  },
+  "NSGKFriendListUsageDescription": {
+    "abstract": "A message that tells people why the app needs access to their Game Center friends list.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.5"
+      }
+    }
+  },
+  "NSHandsTrackingUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to track their hand position and location.",
+    "type": "string",
+    "platforms": {}
+  },
+  "NSHealthClinicalHealthRecordsShareUsageDescription": {
+    "abstract": "A message to the user that explains why the app requested permission to read clinical records.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "12.0"
+      }
+    }
+  },
+  "NSHealthRequiredReadAuthorizationTypeIdentifiers": {
+    "abstract": "The clinical record data types that your app must get permission to read.",
+    "type": "array",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "12.0"
+      }
+    }
+  },
+  "NSHealthShareUsageDescription": {
+    "abstract": "A message that explains to people why the app requests permission to read samples from the HealthKit store.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "8.0"
+      }
+    }
+  },
+  "NSHealthUpdateUsageDescription": {
+    "abstract": "A message to the user that explains why the app requested permission to save samples to the HealthKit store.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "8.0"
+      }
+    }
+  },
+  "NSHomeKitUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their HomeKit configuration data.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "8.0"
+      }
+    }
+  },
+  "NSIdentityUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting identity information.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "16.0"
+      }
+    }
+  },
+  "NSIdentityUsageDescriptionDictionary": {
+    "abstract": "A dictionary that contains messages that explain why your app is requesting identity information.",
+    "type": "dictionary",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "26.2"
+      }
+    }
+  },
+  "NSLocalNetworkUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to the local network.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      },
+      "macOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSLocationAlwaysAndWhenInUseUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their location information at all times.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSLocationAlwaysUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their location at all times.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "8.0",
+        "deprecatedAt": "10.0"
+      }
+    }
+  },
+  "NSLocationDefaultAccuracyReduced": {
+    "abstract": "A Boolean value that indicates whether the app requests reduced location accuracy by default.",
+    "type": "boolean",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSLocationTemporaryUsageDescriptionDictionary": {
+    "abstract": "A collection of messages that explain why the app is requesting temporary access to their location.",
+    "type": "dictionary",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      },
+      "macOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSLocationUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their location information.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "6.0",
+        "deprecatedAt": "8.0"
+      },
+      "macOS": {
+        "introducedAt": "10.14"
+      }
+    }
+  },
+  "NSLocationWhenInUseUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their location information while the app is running in the foreground.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSMainCameraUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to the device’s main camera.",
+    "type": "string",
+    "platforms": {}
+  },
+  "NSMicrophoneUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to the device’s microphone.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "7.0"
+      },
+      "macOS": {
+        "introducedAt": "10.14"
+      }
+    }
+  },
+  "NSMotionUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to the device’s motion data.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "7.0"
+      },
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSNearbyInteractionAllowOnceUsageDescription": {
+    "abstract": "A one-time request for user permission to begin an interaction session with nearby devices.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0",
+        "deprecatedAt": "15.0"
+      }
+    }
+  },
+  "NSNearbyInteractionUsageDescription": {
+    "abstract": "A request for user permission to begin an interaction session with nearby devices.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "15.0"
+      }
+    }
+  },
+  "NSNetworkVolumesUsageDescription": {
+    "abstract": "A message that tells people why the app needs access to files on a network volume.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSPhotoLibraryAddUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting add-only access to their photo library.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSPhotoLibraryUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their photo library.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "6.0"
+      },
+      "macOS": {
+        "introducedAt": "10.14"
+      }
+    }
+  },
+  "NSRemindersFullAccessUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to read and write their reminders data.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "17.0"
+      },
+      "macOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSRemindersUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their reminders.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "6.0",
+        "deprecatedAt": "17.0"
+      },
+      "macOS": {
+        "introducedAt": "10.14",
+        "deprecatedAt": "14.0"
+      }
+    }
+  },
+  "NSRemovableVolumesUsageDescription": {
+    "abstract": "A message that tells people why the app needs access to files on a removable volume.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSSensorKitPrivacyPolicyURL": {
+    "abstract": "A hyperlink to a webpage that displays the privacy policy for your app’s research study.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSSensorKitUsageDescription": {
+    "abstract": "A short description of the purpose of your app’s research study.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSSensorKitUsageDetail": {
+    "abstract": "A dictionary that includes keys for the specific information your app collects.",
+    "type": "dictionary",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSSiriUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting to send user data to Siri.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "10.0"
+      }
+    }
+  },
+  "NSSpeechRecognitionUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting to send user data to Apple’s speech recognition servers.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "10.0"
+      },
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSSystemAdministrationUsageDescription": {
+    "abstract": "A message in macOS that tells people why the app is requesting to manipulate the system configuration.",
+    "type": "string",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "10.14"
+      }
+    }
+  },
+  "NSSystemExtensionUsageDescription": {
+    "abstract": "A message that tells people why the app is trying to install a system extension bundle.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "18.4"
+      },
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "NSUpdateSecurityPolicy": {
+    "abstract": "A dictionary that identifies which apps or installer packages the operating system allows to write to the app’s bundle.",
+    "type": "dictionary",
+    "platforms": {
+      "macOS": {
+        "introducedAt": "13.0"
+      }
+    }
+  },
+  "NSUserTrackingMarkdownUsageDescription": {
+    "abstract": "A message that explains the purpose for accessing data that an application can use to track a person or device.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "27.2"
+      }
+    }
+  },
+  "NSUserTrackingUsageDescription": {
+    "abstract": "A message that explains the purpose for accessing data that an app can use to track a person or device.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      }
+    }
+  },
+  "NSVideoSubscriberAccountUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to their TV provider account.",
+    "type": "string",
+    "platforms": {}
+  },
+  "NSWidgetWantsLocation": {
+    "abstract": "A Boolean value that indicates a widget uses the user’s location information.",
+    "type": "boolean",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "14.0"
+      },
+      "macOS": {
+        "introducedAt": "11.0"
+      }
+    }
+  },
+  "NSWorldSensingUsageDescription": {
+    "abstract": "A message that tells people why the app is requesting access to image tracking, plane detection, or scene reconstruction.",
+    "type": "string",
+    "platforms": {}
+  },
+  "OSBundleUsageDescription": {
+    "abstract": "A message that tells people why the app is trying to install a driver extension bundle.",
+    "type": "string",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "18.4"
+      },
+      "macOS": {
+        "introducedAt": "10.15"
+      }
+    }
+  },
+  "UIRequiresPersistentWiFi": {
+    "abstract": "A Boolean value that indicates whether the app requires a Wi-Fi connection.",
+    "type": "boolean",
+    "platforms": {
+      "iOS": {
+        "introducedAt": "2.0"
+      }
+    }
+  }
+}

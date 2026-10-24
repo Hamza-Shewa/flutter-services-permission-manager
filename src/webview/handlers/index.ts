@@ -5,6 +5,7 @@
 
 import * as vscode from "vscode";
 import type {
+  AndroidPermissionEntry,
   IOSPermissionEntry,
   ServiceEntry,
   PermissionsPayload,
@@ -161,7 +162,7 @@ export function handleRequestServices(ref: WebviewRef): void {
  */
 export async function handleSave(
   ref: WebviewRef,
-  androidPermissions: string[],
+  androidPermissions: Array<AndroidPermissionEntry | string>,
   iosPermissions: IOSPermissionEntry[],
   macosPermissions: IOSPermissionEntry[],
   appName: AppNameLocalization | undefined,
@@ -216,7 +217,7 @@ export async function handleSave(
  */
 export async function handleSavePermissions(
   ref: WebviewRef,
-  androidPermissions: string[],
+  androidPermissions: Array<AndroidPermissionEntry | string>,
   iosPermissions: IOSPermissionEntry[],
   macosPermissions: IOSPermissionEntry[],
   files: ProjectFiles,

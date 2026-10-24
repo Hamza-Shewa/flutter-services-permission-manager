@@ -2317,6 +2317,52 @@
       .mcp-client-row { grid-template-columns: 1fr; }
       .mcp-client-row button { justify-self: start; }
     }
+    /* Permission variants: advice badges, SDK header, merger list, diff preview */
+    .perm-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 16px;
+      border: 1px solid currentColor;
+      white-space: nowrap;
+      cursor: default;
+    }
+    .perm-badge.ok { color: var(--success); }
+    .perm-badge.info { color: var(--accent); }
+    .perm-badge.warning { color: var(--warning); }
+    .perm-badge.error { color: var(--danger); }
+    .permission-advice-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .permission-advice-details summary { cursor: pointer; font-size: 12px; margin-top: 6px; color: var(--text-secondary); }
+    .advice-item { font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--border-default); }
+    .advice-item code, .merger-removed code { font-size: 11px; }
+    .variant-cell { white-space: nowrap; }
+    .variant-cell input[type="number"] { width: 70px; }
+    .variant-cell input[type="text"] { width: 120px; }
+    .variant-cell input { padding: 4px 6px; margin-right: 4px; }
+    .variant-sdk23 { font-size: 11px; }
+    .merger-removed { margin-top: 10px; font-size: 12px; }
+    .merger-removed summary { cursor: pointer; color: var(--text-secondary); }
+    .merger-removed ul { margin: 6px 0 0 18px; padding: 0; }
+    .perm-note { color: var(--text-secondary); }
+    .ios-structured-editor { width: 100%; font-family: var(--font-mono, monospace); font-size: 12px; }
+    .diff-file { margin-bottom: 12px; }
+    .diff-file-name { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+    .diff-block { max-height: 50vh; overflow: auto; font-size: 11px; padding: 8px; background: var(--bg-tertiary); border-radius: var(--radius-md); margin: 0; }
+    .diff-line { display: block; white-space: pre; }
+    .diff-line.add { color: var(--success); }
+    .diff-line.remove { color: var(--danger); text-decoration: line-through; }
   </style>
 </head>
 
@@ -2490,6 +2536,16 @@
           </button>
         </div>
       </div>
+      <div class="permission-advice-bar">
+        <span id="permissionAdviceHeader">Reading project SDK levels...</span>
+        <button id="applyRecommendedVariantsButton" type="button" class="btn-secondary" disabled>
+          Apply recommended variants
+        </button>
+      </div>
+      <details class="permission-advice-details">
+        <summary id="permissionAdviceSummary">Advice</summary>
+        <div id="permissionAdviceList"></div>
+      </details>
     </div>
   </section>
 
@@ -2514,13 +2570,22 @@
             <th data-column="description">Description</th>
             <th data-column="constantValue">Constant Value</th>
             <th data-column="category">Category</th>
-            <th data-column="apiLevel">API Level</th>
+            <th data-column="apiLevel" title="API level that introduced the permission, with deprecated / removed badges">API</th>
+            <th title="android:maxSdkVersion, android:usesPermissionFlags and &lt;uses-permission-sdk-23&gt;">Variant</th>
+            <th title="Whether the declaration applies for this project's minSdk / targetSdk / compileSdk">Applies</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="androidPermissionTable"></tbody>
       </table>
     </div>
+    <datalist id="usesPermissionFlagsOptions">
+      <option value="neverForLocation"></option>
+    </datalist>
+    <details id="androidMergerRemovedDetails" class="merger-removed" style="display: none">
+      <summary id="androidMergerRemovedSummary">Removed by manifest merger</summary>
+      <ul id="androidMergerRemovedList"></ul>
+    </details>
   </section>
 
 
@@ -2551,6 +2616,8 @@
           <col style="min-width: 240px" />
           <col style="width: 180px" />
           <col style="width: 110px" />
+          <col style="width: 110px" />
+          <col style="width: 70px" />
           <col style="width: 150px" />
         </colgroup>
         <thead>
@@ -2559,6 +2626,8 @@
             <th>Value</th>
             <th>Description</th>
             <th>Category</th>
+            <th title="First iOS release that reads the key, deprecation and successor">iOS</th>
+            <th title="Whether the key applies for this project's deployment target">Applies</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -2785,6 +2854,18 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="permissionDiffModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="permissionDiffTitle">
+      <h3 id="permissionDiffTitle">Apply recommended variants</h3>
+      <p style="font-size: 12px; color: var(--text-secondary);">These lines will change. Nothing is written until you confirm.</p>
+      <div id="permissionDiffBody"></div>
+      <div class="modal-actions">
+        <button id="permissionDiffCancel" type="button" class="btn-secondary">Cancel</button>
+        <button id="permissionDiffConfirm" type="button" class="btn-save">Apply and save</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="modalBackdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <h3 id="modalTitle">Add Permission</h3>
@@ -2792,6 +2873,9 @@
       <div id="modalCategoryTabs" class="category-tabs">
         <button class="category-tab active" data-category="">All</button>
       </div>
+      <label id="modalShowSystemRow" style="display: block; font-size: 12px; margin: 6px 0;">
+        <input type="checkbox" id="modalShowSystem" /> Show system-only and removed permissions
+      </label>
       <div class="modal-results" id="modalResults"></div>
       <div id="modalValueContainer" style="display: none; margin-top: 14px">
         <label for="modalValueInput" style="

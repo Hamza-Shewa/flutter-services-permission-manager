@@ -3,7 +3,8 @@
  */
 
 import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../../types/index.js';
-import { PlistDocument, detectPlistIndent } from '../../shared/plist-parser.js';
+import { detectPlistIndent } from '../../shared/plist-parser.js';
+import { escapePlistText, parsePlistTopLevel, type PlistTopLevelEntry } from '../../shared/plist-entries.js';
 
 type ArrayBounds = { openEnd: number; closeStart: number };
 
@@ -176,13 +177,75 @@ function upsertServiceUrlScheme(
     return cleaned.slice(0, dictEnd) + urlTypes + cleaned.slice(dictEnd);
 }
 
+/** Keys that look like privacy usage descriptions (managed even when not in the catalog). */
+export function isUsageDescriptionKey(key: string): boolean {
+    return /UsageDescription(?:Dictionary)?$/.test(key);
+}
+
+function serializePlistValue(entry: IOSPermissionEntry, existing: PlistTopLevelEntry | undefined, indent: string): string {
+    const type = (entry.type ?? '').toLowerCase() || (existing?.type ?? 'string');
+    const value = entry.value;
+    if (type === 'boolean') {
+        const bool = typeof value === 'boolean'
+            ? value
+            : typeof value === 'string'
+                ? value.trim().toLowerCase() === 'true'
+                : existing?.type === 'boolean' ? existing.value === true : false;
+        return bool ? '<true/>' : '<false/>';
+    }
+    if (type === 'array') {
+        const items = Array.isArray(value)
+            ? value
+            : typeof value === 'string'
+                ? value.split(/\r?\n/)
+                : undefined;
+        if (!items) {
+            return existing?.type === 'array' ? existing.rawValue : '<array/>';
+        }
+        const cleaned = items.map(item => String(item).trim()).filter(Boolean);
+        if (cleaned.length === 0) {
+            return '<array/>';
+        }
+        return `<array>\n${cleaned.map(item => `${indent}${indent}<string>${escapePlistText(item)}</string>`).join('\n')}\n${indent}</array>`;
+    }
+    if (type === 'dictionary' || type === 'dict') {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return existing?.type === 'dictionary' ? existing.rawValue : '<dict/>';
+        }
+        const pairs = Object.entries(value as Record<string, string>).filter(([key]) => key.trim());
+        if (pairs.length === 0) {
+            return '<dict/>';
+        }
+        return `<dict>\n${pairs.map(([key, item]) => `${indent}${indent}<key>${escapePlistText(key.trim())}</key>\n${indent}${indent}<string>${escapePlistText(String(item))}</string>`).join('\n')}\n${indent}</dict>`;
+    }
+    const text = typeof value === 'string' && value.trim().length > 0
+        ? value
+        : existing?.type === 'string' && typeof existing.value === 'string' && existing.value.trim()
+            ? existing.value
+            : 'TODO: Provide usage description.';
+    return `<string>${escapePlistText(text)}</string>`;
+}
+
+/** Whether the serialized value means the same thing as what is already in the file. */
+function sameValue(existing: PlistTopLevelEntry, serialized: string): boolean {
+    if (existing.rawValue === serialized) {
+        return true;
+    }
+    const parsedNew = parsePlistTopLevel(`<plist><dict><key>k</key>${serialized}</dict></plist>`)?.entries[0];
+    return !!parsedNew && parsedNew.type === existing.type && existing.value !== undefined
+        && JSON.stringify(parsedNew.value) === JSON.stringify(existing.value);
+}
+
 /**
- * Updates Info.plist content with new permission entries
- * Preserves existing structure and closing tags
- * @param plistContent - The current plist content
- * @param permissionEntries - The permissions to keep/update
- * @param allKnownKeys - Optional set of all known permission keys; if provided, any key in this set
- *                       but NOT in permissionEntries will be removed from the plist
+ * Updates Info.plist content with permission entries, in place.
+ *
+ * - A key in `permissionEntries` that already exists keeps its position; only its value changes.
+ * - New keys are appended before the closing root `</dict>`.
+ * - A key is removed only when it is managed and missing from the list: managed means it is in
+ *   `allKnownKeys` (the catalog) or it is a `*UsageDescription` key. Every other key
+ *   (`NSPrincipalClass`, `NSHumanReadableCopyright`, `CFBundle*`...) is never touched.
+ * - String, boolean, array (of strings) and dictionary (of strings) values are supported; an
+ *   entry without a value keeps the value already in the file.
  */
 export function updateIOSPlist(
     plistContent: string,
@@ -192,83 +255,64 @@ export function updateIOSPlist(
     const uniqueEntries = new Map<string, IOSPermissionEntry>();
     permissionEntries
         .filter(entry => entry.permission?.trim())
-        .forEach(entry => uniqueEntries.set(entry.permission.trim(), entry));
+        .forEach(entry => uniqueEntries.set(entry.permission.trim(), { ...entry, permission: entry.permission.trim() }));
 
-    // Build a set of permission keys we're keeping
-    const permissionKeys = new Set(Array.from(uniqueEntries.keys()));
-    const existingStringPairs = new Map<string, string>();
-    const existingBooleanPairs = new Map<string, boolean>();
-
-    // Work only on the content before the final </dict> so we never drop closing tags
-    const dictCloseIndex = plistContent.lastIndexOf('</dict>');
-    if (dictCloseIndex === -1) {
+    const parsed = parsePlistTopLevel(plistContent);
+    if (!parsed) {
         return plistContent;
     }
+    const newline = plistContent.includes('\r\n') ? '\r\n' : '\n';
+    const indent = detectPlistIndent(plistContent);
+    const byKey = new Map(parsed.entries.map(entry => [entry.key, entry]));
 
-    const prefix = plistContent.slice(0, dictCloseIndex);
-    const suffix = plistContent.slice(dictCloseIndex); // contains </dict></plist>
+    type Edit = { start: number; end: number; text: string };
+    const edits: Edit[] = [];
 
-    // Extract existing permission values for potential re-use
-    const stringRegex = /<key>((?:NS|ITS)\w*)<\/key>\s*<string>([^<]*)<\/string>/g;
-    const boolRegex = /<key>((?:NS|ITS)\w*)<\/key>\s*<(true|false)\/>/g;
-    let match;
-    while ((match = stringRegex.exec(prefix)) !== null) {
-        existingStringPairs.set(match[1], match[2]);
-    }
-    while ((match = boolRegex.exec(prefix)) !== null) {
-        existingBooleanPairs.set(match[1], match[2] === 'true');
-    }
-
-    // Build the set of keys to remove:
-    // 1. All keys from allKnownKeys (if provided) - for explicit permission management
-    // 2. All existing NS*UsageDescription keys found in the plist - for generic cleanup
-    // 3. All keys we're about to re-add (permissionKeys)
-    const keysToRemove = new Set<string>(permissionKeys);
-
-    // Add all known keys from config
-    if (allKnownKeys) {
-        for (const key of allKnownKeys) {
-            keysToRemove.add(key);
+    for (const existing of parsed.entries) {
+        const entry = uniqueEntries.get(existing.key);
+        if (!entry) {
+            const managed = allKnownKeys?.has(existing.key) || isUsageDescriptionKey(existing.key);
+            if (managed) {
+                let start = existing.keyStart;
+                while (start > 0 && (plistContent[start - 1] === ' ' || plistContent[start - 1] === '\t')) {
+                    start--;
+                }
+                let end = existing.valueEnd;
+                if (plistContent[end] === '\r') {
+                    end++;
+                }
+                if (plistContent[end] === '\n') {
+                    end++;
+                }
+                edits.push({ start, end, text: '' });
+            }
+            continue;
+        }
+        const serialized = serializePlistValue(entry, existing, indent).replace(/\n/g, newline);
+        if (!sameValue(existing, serialized)) {
+            edits.push({ start: existing.valueStart, end: existing.valueEnd, text: serialized });
         }
     }
 
-    // Also add any existing NS*UsageDescription keys found in the plist
-    for (const key of existingStringPairs.keys()) {
-        keysToRemove.add(key);
-    }
-    for (const key of existingBooleanPairs.keys()) {
-        keysToRemove.add(key);
-    }
-
-    // Remove all permission keys (they'll be re-added if still in permissionEntries)
-    let doc = new PlistDocument(plistContent);
-    for (const key of keysToRemove) {
-        doc = doc.removeKey(key);
-    }
-    const cleanedPrefix = doc.source.slice(0, doc.source.lastIndexOf('</dict>'));
-
-    const entries = Array.from(uniqueEntries.values())
-        .map(entry => {
-            const type = entry.type?.toLowerCase();
-            if (type === 'boolean') {
-                const value = entry.value ?? existingBooleanPairs.get(entry.permission) ?? false;
-                return `\t<key>${entry.permission}</key>\n\t<${value ? 'true' : 'false'}/>`;
-            }
-            const value = typeof entry.value === 'string' && entry.value.trim().length > 0
-                ? entry.value
-                : existingStringPairs.get(entry.permission) ?? 'TODO: Provide usage description.';
-            return `\t<key>${entry.permission}</key>\n\t<string>${value}</string>`;
-        })
-        .join('\n');
-
-    if (!entries) {
-        return cleanedPrefix + suffix;
+    const additions = Array.from(uniqueEntries.values())
+        .filter(entry => !byKey.has(entry.permission))
+        .map(entry => `${indent}<key>${entry.permission}</key>${newline}${indent}${serializePlistValue(entry, undefined, indent).replace(/\n/g, newline)}${newline}`);
+    if (additions.length > 0) {
+        // Insert at the start of the line holding the root </dict>.
+        let insertAt = parsed.rootCloseStart;
+        while (insertAt > 0 && (plistContent[insertAt - 1] === ' ' || plistContent[insertAt - 1] === '\t')) {
+            insertAt--;
+        }
+        const atLineStart = insertAt === 0 || plistContent[insertAt - 1] === '\n';
+        edits.push({ start: insertAt, end: insertAt, text: `${atLineStart ? '' : newline}${additions.join('')}` });
     }
 
-    // Insert entries before the closing </dict>, maintaining proper formatting
-    const trimmedPrefix = cleanedPrefix.replace(/\s+$/, '');
-    const merged = `${trimmedPrefix}\n${entries}\n${suffix}`;
-    return merged;
+    edits.sort((a, b) => (b.start - a.start) || (b.end - a.end));
+    let result = plistContent;
+    for (const edit of edits) {
+        result = result.slice(0, edit.start) + edit.text + result.slice(edit.end);
+    }
+    return result;
 }
 
 /**

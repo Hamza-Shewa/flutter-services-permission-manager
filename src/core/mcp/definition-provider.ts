@@ -31,7 +31,10 @@ const MCP_SERVER_VERSION = '1.2.0';
 export function registerMcpServerDefinitionProvider(
   context: vscode.ExtensionContext,
 ): void {
-  const register = (vscode.lm as Partial<typeof vscode.lm>).registerMcpServerDefinitionProvider;
+  // `vscode.lm` itself only exists from VS Code 1.90; reading a property of it on
+  // 1.80 to 1.89 threw and made activation fail, so check the namespace first.
+  const lm = (vscode as { lm?: Partial<typeof vscode.lm> }).lm;
+  const register = lm?.registerMcpServerDefinitionProvider;
   if (typeof register !== 'function') {
     return; // MCP not supported on this VS Code version.
   }

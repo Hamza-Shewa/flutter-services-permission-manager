@@ -8,10 +8,22 @@
 
 export {
     updateIOSPlist,
+    isUsageDescriptionKey,
     normalizePlistSpacing,
     updateIOSPlistWithServices,
     removeServicesFromIOSPlist
 } from './plist.service.js';
+
+export {
+    PERMISSION_HANDLER_MACROS,
+    LEGACY_PODFILE_MACROS,
+    replacementForLegacyMacro,
+    extractPodfileMacroNames,
+    migrateLegacyPodfileMacros,
+    isPermissionHandlerMacro,
+    nonPermissionDefinitions,
+    buildGccPreprocessorBlock
+} from './podfile-macros.js';
 
 export {
     extractPodfileMacros,

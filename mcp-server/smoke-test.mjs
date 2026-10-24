@@ -48,8 +48,9 @@ function resetFixture() {
   const manifest = fs.readFileSync(manifestPath, 'utf8');
   const cleanManifest = manifest
     .split('\n')
-    .filter((l) => !l.includes('android.permission.RECORD_AUDIO'))
-    .join('\n');
+    .filter((l) => !/android\.permission\.(RECORD_AUDIO|READ_EXTERNAL_STORAGE|BLUETOOTH_SCAN)"|com\.google\.android\.gms\.permission\.AD_ID"/.test(l))
+    .join('\n')
+    .replace(' xmlns:tools="http://schemas.android.com/tools"', '');
   fs.writeFileSync(manifestPath, cleanManifest, 'utf8');
 
   const plist = fs.readFileSync(plistPath, 'utf8');
@@ -162,6 +163,69 @@ check('remove_permission (android) removes from manifest', () => {
   const content = fs.readFileSync(manifestPath, 'utf8');
   assert.ok(!content.includes('android.permission.RECORD_AUDIO'));
 });
+
+// ---- SDK-gated variants and merger removals --------------------------------
+const variantRes = await client.callTool({
+  name: 'add_permission',
+  arguments: { platform: 'android', name: 'READ_EXTERNAL_STORAGE', maxSdkVersion: 32 },
+});
+const variant = JSON.parse(variantRes.content[0].text);
+const flagRes = await client.callTool({
+  name: 'add_permission',
+  arguments: { platform: 'android', name: 'BLUETOOTH_SCAN', usesPermissionFlags: 'neverForLocation' },
+});
+const adIdRes = await client.callTool({
+  name: 'add_permission',
+  arguments: { platform: 'android', name: 'com.google.android.gms.permission.AD_ID', toolsNode: 'remove' },
+});
+check('add_permission writes maxSdkVersion, usesPermissionFlags and tools:node="remove"', () => {
+  assert.strictEqual(variant.ok, true);
+  assert.strictEqual(JSON.parse(flagRes.content[0].text).ok, true);
+  assert.strictEqual(JSON.parse(adIdRes.content[0].text).ok, true);
+  const content = fs.readFileSync(manifestPath, 'utf8');
+  assert.ok(content.includes('<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />'));
+  assert.ok(content.includes('<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />'));
+  assert.ok(content.includes('<uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />'));
+  assert.ok(content.includes('xmlns:tools="http://schemas.android.com/tools"'));
+  assert.ok(content.includes('<uses-permission android:name="android.permission.CAMERA" />'));
+});
+
+const removeFlagRes = await client.callTool({
+  name: 'remove_permission',
+  arguments: { platform: 'android', name: 'BLUETOOTH_SCAN' },
+});
+check('remove_permission keeps the other attributes and the merger removal', () => {
+  assert.strictEqual(JSON.parse(removeFlagRes.content[0].text).ok, true);
+  const content = fs.readFileSync(manifestPath, 'utf8');
+  assert.ok(!content.includes('BLUETOOTH_SCAN'));
+  assert.ok(content.includes('android:maxSdkVersion="32"'));
+  assert.ok(content.includes('tools:node="remove"'));
+});
+
+const adviceListRes = await client.callTool({ name: 'list_permissions', arguments: {} });
+const adviceList = JSON.parse(adviceListRes.content[0].text);
+check('list_permissions returns attributes, merger removals, SDK facts and advice', () => {
+  const storage = adviceList.android.permissions.find((p) => p.name === 'android.permission.READ_EXTERNAL_STORAGE');
+  assert.strictEqual(storage.maxSdkVersion, 32);
+  assert.strictEqual(storage.apiLevel, 16);
+  assert.ok(Array.isArray(storage.replacedBy) && storage.replacedBy.includes('android.permission.READ_MEDIA_IMAGES'));
+  assert.ok(!adviceList.android.permissions.some((p) => p.name === 'com.google.android.gms.permission.AD_ID'), 'merger removals are not counted as used');
+  assert.deepStrictEqual(adviceList.android.mergerRemoved.map((p) => p.name), ['com.google.android.gms.permission.AD_ID']);
+  assert.ok(adviceList.sdk && Array.isArray(adviceList.sdk.notes));
+  assert.ok(adviceList.advice.some((a) => a.code === 'merger-removed' && a.permission === 'com.google.android.gms.permission.AD_ID'));
+  assert.ok(!adviceList.advice.some((a) => a.code === 'max-sdk' && a.permission === 'android.permission.READ_EXTERNAL_STORAGE'), 'maxSdkVersion 32 already applied');
+});
+
+const auditRes = await client.callTool({ name: 'audit_permissions', arguments: {} });
+const audit = JSON.parse(auditRes.content[0].text);
+check('audit_permissions is read-only and counts advice by level', () => {
+  assert.ok(Array.isArray(audit.advice));
+  assert.strictEqual(audit.counts.error + audit.counts.warning + audit.counts.info, audit.advice.length);
+  assert.ok(audit.header.notes.some((note) => note.includes('SDK level')));
+});
+
+// Put the manifest back so later failures cannot leave these lines in the fixture.
+resetFixture();
 
 // ---- list_translations ------------------------------------------------------
 const transRes = await client.callTool({ name: 'list_translations', arguments: {} });
@@ -347,6 +411,9 @@ const mockAppium = http.createServer((request, response) => {
     }
   });
 });
+// Node's default 5 s keep-alive timeout races the client's pooled socket when the
+// session steps below take longer than that (seen as ECONNRESET); keep it open.
+mockAppium.keepAliveTimeout = 120_000;
 await new Promise((resolve) => mockAppium.listen(0, '127.0.0.1', resolve));
 const address = mockAppium.address();
 const mockAppiumUrl = `http://127.0.0.1:${address.port}`;

@@ -1,9 +1,10 @@
 import type * as vscode from 'vscode';
-import type { IOSPermissionEntry, ServiceEntry, ServiceConfig, AppNameLocalization } from './index.js';
+import type { AndroidPermissionEntry, IOSPermissionEntry, ServiceEntry, ServiceConfig, AppNameLocalization } from './index.js';
 
 export interface AndroidSaveContext {
   manifestUri?: vscode.Uri;
-  permissions: string[];
+  /** Writer entries; plain names keep the existing attributes of an element. */
+  permissions: Array<AndroidPermissionEntry | string>;
   services?: ServiceEntry[];
 }
 

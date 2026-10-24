@@ -4,6 +4,7 @@
 
 import type {
   AndroidPermission,
+  AndroidPermissionEntry,
   IOSPermission,
   IOSPermissionEntry,
 } from "./permissions.js";
@@ -57,15 +58,27 @@ export interface PlatformDetails {
 /** Webview incoming message types */
 export type WebviewMessage =
   | { type: "ready" }
+  | { type: "webviewError"; message: string; source?: string; line?: number; stack?: string }
   | { type: "refresh" }
   | { type: "requestAllAndroidPermissions" }
   | { type: "requestAllIOSPermissions" }
   | { type: "requestServices" }
   | {
     type: "savePermissions";
-    androidPermissions: string[];
+    /** Writer entries (attributes kept/changed per entry); plain names are still accepted. */
+    androidPermissions: Array<AndroidPermissionEntry | string>;
     iosPermissions: IOSPermissionEntry[];
     macosPermissions: IOSPermissionEntry[];
+  }
+  | {
+    type: "requestPermissionAdvice";
+    androidPermissions?: AndroidPermissionEntry[];
+    iosPermissions?: IOSPermissionEntry[];
+  }
+  | {
+    type: "previewPermissionChanges";
+    androidPermissions?: AndroidPermissionEntry[];
+    iosPermissions?: IOSPermissionEntry[];
   }
   | {
     type: "saveAppName";

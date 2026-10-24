@@ -4,7 +4,7 @@
 
 import type { ServiceEntry, ServiceConfig } from '../../types/index.js';
 import { findXmlElementBounds } from '../../shared/xml.js';
-import { removeXmlElements } from '../../shared/xml-parser.js';
+import { normalizeAndroidPermissionName } from './manifest-permissions.js';
 
 const APPLINKS_START = '<!-- start applinks configuration -->';
 const APPLINKS_END = '<!-- end applinks configuration -->';
@@ -92,22 +92,16 @@ function replaceOrInsertApplinksBlock(manifestContent: string, block: string): s
 }
 
 /**
- * Normalizes permission names to full Android format
+ * Normalizes permission names to their full form. Names without a dot get the
+ * `android.permission.` prefix; vendor names (`com.google.android.gms.permission.AD_ID`)
+ * are kept as-is.
  */
 export function normalizePermissionNames(permissionNames: string[]): string[] {
     const seen = new Set<string>();
     const result: string[] = [];
-    
     for (const entry of permissionNames) {
-        const trimmed = entry?.trim();
-        if (!trimmed) {
-            continue;
-        }
-        const normalized = trimmed.startsWith('android.permission.')
-            ? trimmed
-            : `android.permission.${trimmed}`;
-        
-        if (!seen.has(normalized)) {
+        const normalized = normalizeAndroidPermissionName(entry ?? '');
+        if (normalized && !seen.has(normalized)) {
             seen.add(normalized);
             result.push(normalized);
         }
@@ -115,54 +109,14 @@ export function normalizePermissionNames(permissionNames: string[]): string[] {
     return result;
 }
 
-/**
- * Updates AndroidManifest.xml content with new permissions
- * Preserves existing structure including <queries> blocks
- */
-export function updateAndroidManifest(manifestContent: string, permissionNames: string[]): string {
-    const normalized = normalizePermissionNames(permissionNames);
-    const usesPermissionsXml = normalized
-        .map(permission => `    <uses-permission android:name="${permission}" />`)
-        .join('\n');
-
-    // Extract and preserve <queries> block before cleaning
-    const queriesMatch = manifestContent.match(/(\s*<queries>[\s\S]*?<\/queries>\s*)/);
-
-    // Use position-safe removal powered by fast-xml-parser
-    let cleaned = removeXmlElements(manifestContent, 'uses-permission', 'android:name');
-
-    // Clean up multiple consecutive blank lines (more than one newline in a row)
-    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-
-    const manifestMatch = cleaned.match(/<manifest[^>]*>/);
-    if (!manifestMatch) {
-        return manifestContent;
-    }
-
-    const insertIndex = manifestMatch.index! + manifestMatch[0].length;
-    const prefix = cleaned.slice(0, insertIndex);
-    let suffix = cleaned.slice(insertIndex);
-    
-    // Trim leading whitespace from suffix but keep one newline
-    suffix = suffix.replace(/^\n+/, '\n');
-
-    // Restore <queries> block if it was accidentally removed
-    if (queriesMatch && !suffix.includes('<queries>')) {
-        const manifestCloseIndex = suffix.lastIndexOf('</manifest>');
-        if (manifestCloseIndex !== -1) {
-            suffix = suffix.slice(0, manifestCloseIndex) + queriesMatch[1] + suffix.slice(manifestCloseIndex);
-        } else {
-            suffix = `${suffix}${queriesMatch[1]}`;
-        }
-    }
-
-    if (!usesPermissionsXml) {
-        return `${prefix}${suffix}`;
-    }
-
-    const insertBlock = `\n${usesPermissionsXml}`;
-    return `${prefix}${insertBlock}${suffix}`;
-}
+export {
+    updateAndroidManifest,
+    parseManifestPermissions,
+    permissionEntryFromElement,
+    extractAndroidPermissionEntries,
+    normalizeAndroidPermissionName,
+} from './manifest-permissions.js';
+export type { ManifestPermissionElement, AndroidPermissionEntryInput } from './manifest-permissions.js';
 
 /**
  * Updates AndroidManifest.xml with service configurations (e.g., Facebook SDK)

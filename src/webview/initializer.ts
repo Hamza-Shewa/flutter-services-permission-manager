@@ -18,6 +18,7 @@ import { extractServices } from "../features/index.js";
 import { extractAndroidAppNameLocalizations } from "../features/localization/android.localization.service.js";
 import { extractIOSAppNameLocalizations } from "../features/localization/ios.localization.service.js";
 import { getWebviewContent } from "./content.js";
+import { logger } from "../core/shared/index.js";
 import { readJsonFile } from "../core/utils/file.js";
 import { discoverProjectPlatformDetails } from "../core/workspace.service.js";
 import type { ProjectFiles } from "../core/workspace.service.js";
@@ -29,6 +30,7 @@ import {
   getServicesConfigCache,
 } from "./state.js";
 import { debounce } from "../core/utils/debounce.js";
+import { handlePreviewPermissionChanges, handleRequestPermissionAdvice } from "./handlers/permissions.js";
 import { MessageBus } from "./message-bus.js";
 import {
   handleRefresh,
@@ -256,6 +258,14 @@ function setupMessageHandler(
       console.log("[Extension Backend] Received 'ready' from webview. Sending initial payload...");
       ref.webview.postMessage(initialPayload);
     })
+    .register("webviewError", (msg) => {
+      // Uncaught errors in the webview page (see webview-utils.js / core/api.js); surfaced here so they
+      // reach the extension log and the webview runtime test.
+      logger.error(`Webview script error: ${msg.message}`, new Error([msg.source, msg.line].filter(Boolean).join(":") || msg.message));
+      if (msg.stack) {
+        logger.debug("Webview script error stack", { stack: msg.stack });
+      }
+    })
     .register("refresh", async () => {
       console.log("[Extension Backend] Received 'refresh' from webview. Reloading data...");
       await handleRefresh(ref, files);
@@ -265,6 +275,12 @@ function setupMessageHandler(
     .register("requestServices", () => handleRequestServices(ref))
     .register("savePermissions", async (msg) =>
       await handleSavePermissions(ref, msg.androidPermissions ?? [], msg.iosPermissions ?? [], msg.macosPermissions ?? [], files)
+    )
+    .register("requestPermissionAdvice", async (msg) =>
+      await handleRequestPermissionAdvice(ref, files, msg.androidPermissions, msg.iosPermissions)
+    )
+    .register("previewPermissionChanges", async (msg) =>
+      await handlePreviewPermissionChanges(ref, files, msg.androidPermissions, msg.iosPermissions)
     )
     .register("saveAppName", async (msg) => await handleSaveAppName(ref, msg.appName, files))
     .register("savePlatformDetails", async (msg) => await handleSavePlatformDetails(ref, msg.platformDetails, files))

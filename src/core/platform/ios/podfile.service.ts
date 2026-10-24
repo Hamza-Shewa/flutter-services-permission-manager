@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import type { IOSPermissionEntry, ServiceEntry, ServiceConfig } from '../../types/index.js';
+import { buildGccPreprocessorBlock, isPermissionHandlerMacro, nonPermissionDefinitions } from './podfile-macros.js';
 
 const SERVICES_MARKER_START = '# --- BEGIN FLUTTER CONFIG SERVICES ---';
 const SERVICES_MARKER_END = '# --- END FLUTTER CONFIG SERVICES ---';
@@ -91,15 +92,18 @@ export async function updateIOSPodfile(
     // Collect unique macros from the permissions being saved
     const macrosToAdd = new Set<string>();
     for (const perm of iosPermissions) {
-        let macro = perm.podfileMacro;
-        if (!macro) {
-            for (const category of Object.values(categorizedPermissions)) {
-                const found = category.find(p => p.permission === perm.permission);
-                if (found?.podfileMacro) {
-                    macro = found.podfileMacro;
-                    break;
-                }
+        // The catalog wins over a macro carried by the entry, so stale macros
+        // from older releases (PERMISSION_CALENDARS) are never written back.
+        let macro: string | undefined;
+        for (const category of Object.values(categorizedPermissions)) {
+            const found = category.find(p => p.permission === perm.permission);
+            if (found) {
+                macro = found.podfileMacro;
+                break;
             }
+        }
+        if (!macro && perm.podfileMacro && isPermissionHandlerMacro(perm.podfileMacro)) {
+            macro = perm.podfileMacro;
         }
         if (macro) {
             macrosToAdd.add(macro);
@@ -116,22 +120,21 @@ export async function updateIOSPodfile(
     }
     
     const edit = new vscode.WorkspaceEdit();
-    const macrosList = Array.from(macrosToAdd).sort();
-    
-    // Build the new block content
-    const indent = '              ';
-    const macroEntries = macrosList.map(m => `${indent}'${m}=1',`).join('\n');
-    const gccBlockContent = `config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
-              '$(inherited)',
-${macroEntries}
-            ]`;
-    
+
+    // Rebuild the block from the saved keys; definitions that are not
+    // permission macros are kept, legacy permission macros are dropped.
+    const existingBlock = findGccBlock(content);
+    const extraDefinitions = existingBlock
+        ? nonPermissionDefinitions(content.slice(existingBlock.start, existingBlock.end))
+        : [];
+    const gccBlockContent = buildGccPreprocessorBlock(macrosToAdd, extraDefinitions);
+
     // Derive deployment target from the Podfile's existing platform line, or fall back to 13.0
     const platformMatch = content.match(/platform\s*:ios,\s*['"]([^'"]+)['"]/i);
     const deploymentTarget = platformMatch?.[1] ?? "13.0";
 
     // Check if GCC_PREPROCESSOR_DEFINITIONS block exists
-    const gccBlock = findGccBlock(content);
+    const gccBlock = existingBlock;
     
     if (gccBlock) {
         // Replace existing block entirely

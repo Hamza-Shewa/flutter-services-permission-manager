@@ -83,6 +83,27 @@ Streamline your Flutter project configuration with the **Flutter Config Manager*
 
 > **Note for iOS/macOS**: Some permissions require a usage description string (e.g., "We need camera access to scan QR codes"). The extension will prompt you to enter these descriptions directly in the UI.
 
+### SDK-gated permission variants
+
+Whether a permission declaration does anything depends on the device's API level and on the app's `targetSdk`, so the Permissions tab reads `minSdk`, `targetSdk` and `compileSdk` from `android/app/build.gradle` or `build.gradle.kts` (literal values, `flutter.minSdkVersion` & co. resolved from the Flutter SDK, `maxOf(...)`) and the iOS deployment target from the `Podfile` or `project.pbxproj`, and shows them above the tables. Each permission then gets an **Applies** badge (ok / info / warning / error, details in the tooltip and in the Advice list):
+
+| Declaration | When | Recommended variant |
+| :--- | :--- | :--- |
+| `READ_EXTERNAL_STORAGE` | targetSdk 33+ | `android:maxSdkVersion="32"` plus `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` / `READ_MEDIA_AUDIO` (and `READ_MEDIA_VISUAL_USER_SELECTED` at 34+) |
+| `WRITE_EXTERNAL_STORAGE` | targetSdk 30+ | `maxSdkVersion="28"` (29 with `requestLegacyExternalStorage`); removed when minSdk is 30+ |
+| `BLUETOOTH`, `BLUETOOTH_ADMIN` | targetSdk 31+ | `maxSdkVersion="30"` plus `BLUETOOTH_SCAN` (`usesPermissionFlags="neverForLocation"` unless you derive location) and `BLUETOOTH_CONNECT` |
+| `ACCESS_FINE_LOCATION` alone | targetSdk 31+ | add `ACCESS_COARSE_LOCATION` (error otherwise) |
+| `BODY_SENSORS` / `_BACKGROUND` | targetSdk 36+ | `maxSdkVersion="35"` plus `android.permission.health.READ_HEART_RATE` (`READ_HEALTH_DATA_IN_BACKGROUND`) |
+| `FOREGROUND_SERVICE` | targetSdk 34+ | a matching `FOREGROUND_SERVICE_<TYPE>` |
+| `SCHEDULE_EXACT_ALARM` + `USE_EXACT_ALARM` | always | `SCHEDULE_EXACT_ALARM` with `maxSdkVersion="32"` |
+| `INTERNET` without `ACCESS_LOCAL_NETWORK` | targetSdk 37 | info: LAN / mDNS access needs `ACCESS_LOCAL_NETWORK` |
+
+Deprecated (`USE_FINGERPRINT` -> `USE_BIOMETRIC`), removed, system-only and newer-than-`compileSdk` permissions are flagged, and restricted permissions carry their Google Play policy note. On iOS the advice covers deprecated keys and their successors, keys newer than the deployment target (harmless), `NSLocalNetworkUsageDescription` without `NSBonjourServices`, Always location without When-In-Use, AccessorySetupKit Bluetooth keys and permission_handler Podfile macros.
+
+**Apply recommended variants** collects every suggested change, shows the exact line diff of `AndroidManifest.xml` and `Info.plist`, and writes only when you confirm. The **Variant** column edits `maxSdkVersion`, `usesPermissionFlags` and `<uses-permission-sdk-23>` per permission. Elements with `tools:node="remove"` (for example `com.google.android.gms.permission.AD_ID` in an ad-free app) are listed under **Removed by manifest merger**: they are never counted as used and are always kept. Variants are keyed by SDK level, not by Gradle: `tools:` attributes work with every AGP version and `<uses-permission-sdk-23>` needs AGP 2.0+. The same advice is available to AI agents through the MCP tools `list_permissions` and `audit_permissions`.
+
+The permission catalogs are generated: `npm run catalog:build` rebuilds `src/categorized-*-permissions.json` from `src/permission-sources/` (Android SDK `api-versions.xml`, the AOSP core manifest, Apple's documentation data and the curated overlays). Edit `src/permission-sources/android-overlay.json` or `ios-overlay.json`, never the catalogs.
+
 ## 📦 Supported Platforms
 
 | Feature               | Android | iOS | macOS |
